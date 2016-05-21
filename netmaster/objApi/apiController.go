@@ -646,6 +646,35 @@ func (ac *APIController) EndpointGroupDelete(endpointGroup *contivModel.Endpoint
 	}
 
 	endpointGroupCleanup(endpointGroup)
+	// delete the endpoint group state
+	err := master.DeleteEndpointGroup(endpointGroup.TenantName, endpointGroup.NetworkName, endpointGroup.GroupName)
+	if err != nil {
+		log.Errorf("Error deleting endpoint group %+v. Err: %v", endpointGroup, err)
+	}
+
+	// Detach the endpoint group from the Policies
+	for _, policyName := range endpointGroup.Policies {
+		policyKey := endpointGroup.TenantName + ":" + policyName
+
+		// find the policy
+		policy := contivModel.FindPolicy(policyKey)
+		if policy == nil {
+			log.Errorf("Could not find policy %s", policyName)
+			continue
+		}
+
+		// detach policy to epg
+		err := master.PolicyDetach(endpointGroup, policy)
+		if err != nil && err != master.EpgPolicyExists {
+			log.Errorf("Error detaching policy %s from epg %s", policyName, endpointGroup.Key)
+		}
+
+		// Remove links
+		modeldb.RemoveLinkSet(&policy.LinkSets.EndpointGroups, endpointGroup)
+		modeldb.RemoveLinkSet(&endpointGroup.LinkSets.Policies, policy)
+		policy.Write()
+	}
+
 	return nil
 }
 

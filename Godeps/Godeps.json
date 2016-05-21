@@ -60,6 +60,7 @@
 			"ImportPath": "github.com/contiv/contivmodel/client",
 			"Rev": "f2e09da822072d6546029c9aca31311f38c77d16"
 		},
+		},
 		{
 			"ImportPath": "github.com/contiv/libovsdb",
 			"Comment": "v0.1-7-gbbc744d",

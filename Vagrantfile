@@ -224,7 +224,11 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
                 s.inline = "echo '#{node_ips[0]} netmaster' >> /etc/hosts; echo '#{node_ips[1]} netmaster' >> /etc/hosts;	echo '#{node_addr} #{node_name}' >> /etc/hosts"
             end
             node.vm.provision "shell" do |s|
+<<<<<<< HEAD
                 s.inline = provision_common_once
+=======
+                s.inline = provision_common
+>>>>>>> Add validators to fields (#378)
                 s.args = [node_name, node_addr, cluster_ip_nodes, ENV["http_proxy"] || "", ENV["https_proxy"] || "", ENV["USE_RELEASE"] || "", ENV["CONTIV_CLUSTER_STORE"] || "etcd://localhost:2379", ENV["CONTIV_DOCKER_VERSION"] || "", ENV['CONTIV_NODE_OS'] || "", *ENV['CONTIV_ENV']]
             end
             if ENV['CONTIV_L3'] then
