@@ -90,7 +90,7 @@ Vagrant.configure(2) do |config|
   config.vm.synced_folder "./export", "/shared"
   #config.vm.provider(:virtualbox){|v| v.functional_vboxsf = false }
 
-  cluster.each do |role, member_list|
+    cluster.each do |role, member_list|
     member_list.each do |member_info|
       config.vm.define vm_name = member_info["name"] do |c|
          if ENV['CONTIV_K8'] == "1" then
@@ -162,4 +162,8 @@ Vagrant.configure(2) do |config|
     end # member_info
   end #role
 end #config
+<<<<<<< 2f3849cc92e71c1d963081ad1b10c967b959f2c3
 #
+=======
+
+>>>>>>> kube first commmit
