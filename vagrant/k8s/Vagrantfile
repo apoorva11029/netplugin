@@ -39,14 +39,21 @@ cluster = read_cluster_config
 create_etc_hosts(cluster)
 
 Vagrant.configure(2) do |config|
-  config.vm.box = "contiv/k8s-centos"
-  config.vm.box_version = "0.0.6"
+  config.vm.box = "contiv/centos71-netplugin"
+  config.vm.box_version = "0.3.1"
 
   config.ssh.password = 'vagrant'
 
   config.vm.synced_folder "./export", "/shared", disabled: false
   config.vm.synced_folder ".", "/vagrant", disabled: true
- 
+  # mount the host directories
+  config.vm.synced_folder "../../bin", File.join("/opt/gopath", "bin")
+    if ENV["GOPATH"] && ENV['GOPATH'] != ""
+              config.vm.synced_folder "../../../../../", File.join("/opt/gopath", "src"), rsync: true
+            else
+              config.vm.synced_folder "./../../", File.join("/opt/gopath", "src/github.com/contiv/netplugin"), rsync: true
+            end
+
   config.vm.provider(:virtualbox){|v| v.functional_vboxsf = false }
  
   cluster.each do |role, member_list|
@@ -73,3 +80,4 @@ Vagrant.configure(2) do |config|
     end # member_info
   end #role
 end #config
+
