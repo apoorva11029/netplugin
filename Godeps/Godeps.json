@@ -118,21 +118,6 @@
 			"Rev": "7d2545c72e5cbf1f072e99537dafc3883c73740e"
 		},
 		{
-			"ImportPath": "github.com/coreos/go-etcd/etcd",
-			"Comment": "v2.0.0-7-g73a8ef7",
-			"Rev": "73a8ef737e8ea002281a28b4cb92a1de121ad4c6"
-		},
-		{
-			"ImportPath": "github.com/docker/distribution/digest",
-			"Comment": "v2.4.0-rc.1-36-g9d49169",
-			"Rev": "9d491698ccf3eba4e87213350518dbaacf8e9650"
-		},
-		{
-			"ImportPath": "github.com/docker/distribution/reference",
-			"Comment": "v2.4.0-rc.1-36-g9d49169",
-			"Rev": "9d491698ccf3eba4e87213350518dbaacf8e9650"
-		},
-		{
 			"ImportPath": "github.com/docker/docker/pkg/listenbuffer",
 			"Comment": "v1.4.1-5404-gc471b7a",
 			"Rev": "c471b7aba50f5034bf44853b1dd3520bd02391ac"

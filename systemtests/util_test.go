@@ -250,42 +250,6 @@ func randSeq(n int) string {
 	return string(b)
 }
 
-func (s *systemtestSuite) runContainersOnNode(num int, networkName string, n *node) ([]*container, error) {
-	containers := []*container{}
-	mutex := sync.Mutex{}
-
-	errChan := make(chan error)
-
-	for i := 0; i < num; i++ {
-		go func(i int) {
-			spec := containerSpec{
-				imageName:   "alpine",
-				networkName: networkName,
-				name:        fmt.Sprintf("%s-%d-%s", n.Name(), i, randSeq(16)),
-			}
-
-			cont, err := n.runContainer(spec)
-			if err != nil {
-				errChan <- err
-			}
-
-			mutex.Lock()
-			containers = append(containers, cont)
-			mutex.Unlock()
-
-			errChan <- nil
-		}(i)
-	}
-
-	for i := 0; i < num; i++ {
-		if err := <-errChan; err != nil {
-			return nil, err
-		}
-	}
-
-	return containers, nil
-}
-
 func (s *systemtestSuite) runContainersWithDNS(num int, tenantName, networkName, serviceName string) ([]*container, error) {
 	containers := []*container{}
 	mutex := sync.Mutex{}
