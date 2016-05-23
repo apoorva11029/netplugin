@@ -248,7 +248,6 @@ func RestoreServiceProviderLBDb() {
 		}
 		mastercfg.SvcMutex.Unlock()
 	}
-
 	//Recover from endpoint state as well .
 	epCfgState := mastercfg.CfgEndpointState{}
 	epCfgState.StateDriver = stateDriver
@@ -264,7 +263,6 @@ func RestoreServiceProviderLBDb() {
 				providerInfo.Network = strings.Split(ep.NetID, ".")[0]
 				providerInfo.Tenant = strings.Split(ep.NetID, ".")[1]
 				providerInfo.Labels = make(map[string]string)
-				providerInfo.IPAddress = ep.IPAddress
 
 				for k, v := range ep.Labels {
 					providerInfo.Labels[k] = v
