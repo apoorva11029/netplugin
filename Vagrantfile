@@ -171,7 +171,14 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         end
       end
     end
+    if ENV['CONTIV_K8']=="1"
+      config.vm.define "k8master" do |k8master|
 
+        quagga1.vm.box = "contiv/k8master"
+        quagga1.vm.host_name = "k8master"
+        quagga1.vm.network :private_network, ip: "192.168.1.50", virtualbox__intnet: "true", auto_config: false
+      end
+    end
      num_nodes.times do |n|
         node_name = node_names[n]
         node_addr = node_ips[n]
