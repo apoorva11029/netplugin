@@ -84,7 +84,6 @@ cluster = read_cluster_config
 create_etc_hosts(cluster)
 
 Vagrant.configure(2) do |config|
-
   config.ssh.password = 'vagrant'
 
   config.vm.synced_folder "./export", "/shared"
