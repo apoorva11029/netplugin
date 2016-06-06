@@ -46,14 +46,7 @@ Vagrant.configure(2) do |config|
 
   config.vm.synced_folder "./export", "/shared", disabled: false
   config.vm.synced_folder ".", "/vagrant", disabled: true
-  # mount the host directories
-  config.vm.synced_folder "../../bin", File.join("/opt/gopath", "bin")
-    if ENV["GOPATH"] && ENV['GOPATH'] != ""
-              config.vm.synced_folder "../../../../../", File.join("/opt/gopath", "src"), rsync: true
-            else
-              config.vm.synced_folder "./../../", File.join("/opt/gopath", "src/github.com/contiv/netplugin"), rsync: true
-            end
-
+  
   config.vm.provider(:virtualbox){|v| v.functional_vboxsf = false }
  
   cluster.each do |role, member_list|
@@ -80,4 +73,3 @@ Vagrant.configure(2) do |config|
     end # member_info
   end #role
 end #config
-

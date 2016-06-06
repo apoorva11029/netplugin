@@ -57,7 +57,6 @@ function GetContiv {
 top_dir=$(git rev-parse --show-toplevel | sed 's|/[^/]*$||')
 
 GetKubernetes
-GetContiv
 
 # add the vagrant box
 vagrant box list | grep "contiv/k8s-centos" | grep "0.0.6" >& /dev/null

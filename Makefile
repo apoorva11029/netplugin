@@ -88,9 +88,8 @@ k8s-demo-start:
 k8s-destroy:
 	cd vagrant/k8s/ && vagrant destroy -f
 k8s-test:
-	CONTIV_K8=1 CONTIV_NODES=3 vagrant up
-	CONTIV_K8=1 CONTIV_NODES=3 vagrant ssh k8master && -c 'sudo -i bash -lc "source /etc/profile.d/envvar.sh && cd /opt/gopath/src/github.com/con
-tiv/netplugin && make run-build"'
+	make k8s-cluster
+	CONTIV_K8=1 CONTIV_NODES=2 vagrant ssh k8master && -c 'sudo -i bash -lc "source /etc/profile.d/envvar.sh && cd /opt/gopath/src/github.com/contiv/netplugin && make run-build"'
 	CONTIV_K8=1 CONTIV_NODES=3 godep go test -v -timeout 240m ./systemtests -check.v
  
 # Mesos demo targets

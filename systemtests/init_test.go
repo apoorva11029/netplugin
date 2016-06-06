@@ -331,7 +331,3 @@ func (s *systemtestSuite) Test00SSH(c *C) {
 	}), IsNil)
 }
 
-func (s *systemtestSuite) KubeNodeSetup(c *C) {
-	cmd := exec.Command("/bin/sh", "./vagrant/k8s/setup_cluster.sh")
-	c.Assert(cmd.Run(), IsNil)
-}
