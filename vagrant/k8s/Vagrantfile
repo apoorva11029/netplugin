@@ -162,4 +162,3 @@ Vagrant.configure(2) do |config|
     end # member_info
   end #role
 end #config
-#
