@@ -113,7 +113,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     else
         config.vm.box = "contiv/centos72"
         config.vm.box_version = "0.7.0"
-    end
     config.vm.provider 'virtualbox' do |v|
         v.linked_clone = true if Vagrant::VERSION =~ /^1.8/
     end
