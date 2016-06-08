@@ -1089,13 +1089,6 @@ func TestEpgPolicies(t *testing.T) {
 	checkCreateNetwork(t, false, "default", "newnet", "data", "vxlan", "20.1.1.1/16", "20.1.1.254", 2, "", "")
 	checkCreateEpg(t, true, "default", "newnet", "group1", []string{}, []string{})
 
-	// verify name clash between network and epg is rejected
-	checkCreateEpg(t, true, "default", "contiv", "contiv", []string{})
-	checkCreateNetwork(t, true, "default", "group1", "data", "vxlan", "20.1.1.1/16", "20.1.1.254", 1)
-	// verify network association cant be changed on epg
-	checkCreateNetwork(t, false, "default", "newnet", "data", "vxlan", "20.1.1.1/16", "20.1.1.254", 2)
-	checkCreateEpg(t, true, "default", "newnet", "group1", []string{})
-
 	// change policy and verify EPG policy changes
 	checkCreateEpg(t, false, "default", "contiv", "group3", []string{"policy1"}, []string{})
 	checkCreateEpg(t, false, "default", "contiv", "group3", []string{"policy2"}, []string{})

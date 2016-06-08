@@ -7,8 +7,6 @@
 			"version": "v1",
 			"key": [ "tenantName", "appProfileName" ],
 			"cfgProperties": {
-			"key": [ "tenantName", "appProfileName" ],
-			"properties": {
 				"tenantName": {
 					"type": "string",
 					"title": "Tenant Name",

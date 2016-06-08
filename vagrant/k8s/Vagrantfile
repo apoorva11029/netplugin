@@ -7,6 +7,9 @@ require 'fileutils'
 # netplugin_synced_gopath="/opt/golang"
 gopath_folder="/opt/gopath"
 
+# netplugin_synced_gopath="/opt/golang"
+gopath_folder="/opt/gopath"
+
 # method to set up attributes for better performance
 def customize_vm(v)
   mem = `grep 'MemTotal' /proc/meminfo | sed -e 's/MemTotal://' -e 's/ kB//'`.to_i / 1024 / 8
@@ -63,6 +66,7 @@ echo "export no_proxy='k8master,192.168.2.10,192.168.2.11,192.168.2.12,netmaster
 source /etc/profile.d/envvar.sh
 # Change ownership for gopath folder
 chown vagrant #{gopath_folder}
+<<<<<<< d951b3906501bc746d4248235c173af061c9fe1b
 sudo yum install -y net-tools
 SCRIPT
 
@@ -79,6 +83,34 @@ sudo yum install -y net-tools
 #git config --global http.proxy $HTTP_PROXY
 SCRIPT
 
+=======
+SCRIPT
+
+provision_master = <<SCRIPT
+echo 'export GOPATH=#{gopath_folder}' > /etc/profile.d/envvar.sh
+echo 'export GOBIN=$GOPATH/bin' >> /etc/profile.d/envvar.sh
+echo 'export GOSRC=$GOPATH/src' >> /etc/profile.d/envvar.sh
+echo 'export PATH=$PATH:/usr/local/go/bin:$GOBIN' >> /etc/profile.d/envvar.sh
+echo "export http_proxy='$1'" >> /etc/profile.d/envvar.sh
+echo "export https_proxy='$2'" >> /etc/profile.d/envvar.sh
+echo "export no_proxy='k8master,192.168.2.10,192.168.2.11,192.168.2.12,netmaster,localhost,127.0.0.1'">> /etc/profile.d/envvar.sh
+echo "export no_proxy='k8master,192.168.2.10,192.168.2.11,192.168.2.12,netmaster,localhost,127.0.0.1'" >> ~/.profile
+echo "export http_proxy='$1'" >> ~/.profile
+echo "export https_proxy='$2'" >> ~/.profile
+source /etc/profile.d/envvar.sh
+#wget "http://storage.googleapis.com/golang/go1.6.2.linux-amd64.tar.gz" -O "/tmp/go1.6.2.linux-amd64.tar.gz"
+sudo -E bash
+#cd /usr/local
+#tar xvzf /tmp/go1.6.2.linux-amd64.tar.gz
+#mkdir /opt/gopath
+#sudo yum install -y git
+#sudo yum install -y gcc
+go get github.com/tools/godep
+cd $GOPATH/src/github.com/tools
+go install ./godep
+#git config --global http.proxy $HTTP_PROXY
+SCRIPT
+>>>>>>> precommit
 # begin execution here
 cluster = read_cluster_config
 create_etc_hosts(cluster)

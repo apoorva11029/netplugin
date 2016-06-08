@@ -1,5 +1,6 @@
 package systemtests
 
+/*
 import (
 	//"errors"
 	log "github.com/Sirupsen/logrus"
