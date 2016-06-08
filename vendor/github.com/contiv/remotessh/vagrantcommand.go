@@ -15,11 +15,9 @@ limitations under the License.
 
 package remotessh
 
-import (
-	"os"
-	"os/exec"
-)
-
+import "os"
+import "os/exec"
+import "fmt"
 // VagrantCommand is a command that is run on a vagrant node
 type VagrantCommand struct {
 	ContivNodes int
@@ -43,3 +41,12 @@ func (c *VagrantCommand) Run(cmd string, args ...string) error {
 func (c *VagrantCommand) RunWithOutput(cmd string, args ...string) ([]byte, error) {
 	return c.getCmd(cmd, args...).CombinedOutput()
 }
+
+
+
+
+
+
+
+
+

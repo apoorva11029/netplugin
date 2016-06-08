@@ -1,5 +1,6 @@
 package systemtests
 
+/*
 import (
 	//"errors"
 	log "github.com/Sirupsen/logrus"
@@ -418,57 +419,3 @@ func (s *systemtestSuite) TestACIProfile(c *C) {
 	}
 }
 
-func (s *systemtestSuite) AciTestSetup(c *C) {
-
-	log.Infof("ACI_SYS_TEST_MODE is ON")
-	log.Infof("Private keyFile = %s", s.keyFile)
-	log.Infof("Binary binpath = %s", s.binpath)
-	log.Infof("Interface vlanIf = %s", s.vlanIf)
-
-	s.baremetal = vagrantssh.Baremetal{}
-	bm := &s.baremetal
-
-	// To fill the hostInfo data structure for Baremetal VMs
-	name := "aci-swarm-node"
-	hostIPs := strings.Split(os.Getenv("HOST_IPS"), ",")
-	hostNames := strings.Split(os.Getenv("HOST_USER_NAMES"), ",")
-	hosts := make([]vagrantssh.HostInfo, 2)
-
-	for i := range hostIPs {
-		hosts[i].Name = name + strconv.Itoa(i+1)
-		log.Infof("Name=%s", hosts[i].Name)
-
-		hosts[i].SSHAddr = hostIPs[i]
-		log.Infof("SHAddr=%s", hosts[i].SSHAddr)
-
-		hosts[i].SSHPort = "22"
-
-		hosts[i].User = hostNames[i]
-		log.Infof("User=%s", hosts[i].User)
-
-		hosts[i].PrivKeyFile = s.keyFile
-		log.Infof("PrivKeyFile=%s", hosts[i].PrivKeyFile)
-	}
-
-	c.Assert(bm.Setup(hosts), IsNil)
-
-	s.nodes = []*node{}
-
-	for _, nodeObj := range s.baremetal.GetNodes() {
-		s.nodes = append(s.nodes, &node{tbnode: nodeObj, suite: s})
-	}
-
-	log.Info("Pulling alpine on all nodes")
-
-	s.baremetal.IterateNodes(func(node vagrantssh.TestbedNode) error {
-		node.RunCommand("sudo rm /tmp/*net*")
-		return node.RunCommand("docker pull alpine")
-	})
-
-	//Copying binaries
-	s.copyBinary("netmaster")
-	s.copyBinary("netplugin")
-	s.copyBinary("netctl")
-	s.copyBinary("contivk8s")
-
-}*/

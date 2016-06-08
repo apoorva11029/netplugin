@@ -101,58 +101,62 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 	logrus.Infof("Bootstrapping system tests")
 
 	if os.Getenv("ACI_SYS_TEST_MODE") == "ON" {
+		/*
+				logrus.Infof("ACI_SYS_TEST_MODE is ON")
+				logrus.Infof("Private keyFile = %s", s.keyFile)
+				logrus.Infof("Binary binpath = %s", s.binpath)
+				logrus.Infof("Interface vlanIf = %s", s.vlanIf)
 
-		logrus.Infof("ACI_SYS_TEST_MODE is ON")
-		logrus.Infof("Private keyFile = %s", s.keyFile)
-		logrus.Infof("Binary binpath = %s", s.binpath)
-		logrus.Infof("Interface vlanIf = %s", s.vlanIf)
+				s.baremetal = vagrantssh.Baremetal{}
+				bm := &s.baremetal
 
-		s.baremetal = remotessh.Baremetal{}
-		bm := &s.baremetal
+			s.baremetal = remotessh.Baremetal{}
+			bm := &s.baremetal
 
-		// To fill the hostInfo data structure for Baremetal VMs
-		name := "aci-swarm-node"
-		hostIPs := strings.Split(os.Getenv("HOST_IPS"), ",")
-		hostNames := strings.Split(os.Getenv("HOST_USER_NAMES"), ",")
-		hosts := make([]remotessh.HostInfo, 2)
+			// To fill the hostInfo data structure for Baremetal VMs
+			name := "aci-swarm-node"
+			hostIPs := strings.Split(os.Getenv("HOST_IPS"), ",")
+			hostNames := strings.Split(os.Getenv("HOST_USER_NAMES"), ",")
+			hosts := make([]remotessh.HostInfo, 2)
+				for i := range hostIPs {
+				hosts[i].Name = name + strconv.Itoa(i+1)
+				logrus.Infof("Name=%s", hosts[i].Name)
+					hosts[i].SSHAddr = hostIPs[i]
+					logrus.Infof("SHAddr=%s", hosts[i].SSHAddr)
 
-		for i := range hostIPs {
-			hosts[i].Name = name + strconv.Itoa(i+1)
-			logrus.Infof("Name=%s", hosts[i].Name)
+					hosts[i].SSHPort = "22"
 
-			hosts[i].SSHAddr = hostIPs[i]
-			logrus.Infof("SHAddr=%s", hosts[i].SSHAddr)
+					hosts[i].User = hostNames[i]
+					logrus.Infof("User=%s", hosts[i].User)
 
-			hosts[i].SSHPort = "22"
+					hosts[i].PrivKeyFile = s.keyFile
+					logrus.Infof("PrivKeyFile=%s", hosts[i].PrivKeyFile)
+				}
 
-			hosts[i].User = hostNames[i]
-			logrus.Infof("User=%s", hosts[i].User)
+				c.Assert(bm.Setup(hosts), IsNil)
 
-			hosts[i].PrivKeyFile = s.keyFile
-			logrus.Infof("PrivKeyFile=%s", hosts[i].PrivKeyFile)
-		}
+				s.nodes = []*node{}
 
-		c.Assert(bm.Setup(hosts), IsNil)
+				for _, nodeObj := range s.baremetal.GetNodes() {
+					s.nodes = append(s.nodes, &node{tbnode: nodeObj, suite: s})
+				}
 
-		s.nodes = []*node{}
+			s.baremetal.IterateNodes(func(node remotessh.TestbedNode) error {
+				node.RunCommand("sudo rm /tmp/*net*")
+				return node.RunCommand("docker pull alpine")
+			})
 
-		for _, nodeObj := range s.baremetal.GetNodes() {
-			s.nodes = append(s.nodes, &node{tbnode: nodeObj, suite: s})
-		}
+				s.baremetal.IterateNodes(func(node vagrantssh.TestbedNode) error {
+					node.RunCommand("sudo rm /tmp/*net*")
+					return node.RunCommand("docker pull alpine")
+				})
 
-		logrus.Info("Pulling alpine on all nodes")
-
-		s.baremetal.IterateNodes(func(node remotessh.TestbedNode) error {
-			node.RunCommand("sudo rm /tmp/*net*")
-			return node.RunCommand("docker pull alpine")
-		})
-
-		//Copying binaries
-		s.copyBinary("netmaster")
-		s.copyBinary("netplugin")
-		s.copyBinary("netctl")
-		s.copyBinary("contivk8s")
-
+				//Copying binaries
+				s.copyBinary("netmaster")
+				s.copyBinary("netplugin")
+				s.copyBinary("netctl")
+				s.copyBinary("contivk8s")
+		*/
 	} else {
 		s.vagrant = remotessh.Vagrant{}
 		nodesStr := os.Getenv("CONTIV_NODES")
@@ -242,7 +246,7 @@ func (s *systemtestSuite) SetUpTest(c *C) {
 		}
 
 		for _, node := range s.nodes {
-			node.stopNetmaster()
+			node.exec.stopNetmaster()
 
 		}
 		for _, node := range s.nodes {
@@ -264,7 +268,7 @@ func (s *systemtestSuite) SetUpTest(c *C) {
 		defer func() { s.enableDNS = prevDNSEnabled }()
 
 		for _, node := range s.nodes {
-			c.Assert(node.startNetmaster(), IsNil)
+			c.Assert(node.exec.startNetmaster(), IsNil)
 			time.Sleep(1 * time.Second)
 			c.Assert(node.exec.runCommandUntilNoNetmasterError(), IsNil)
 		}

@@ -7,6 +7,9 @@ require 'fileutils'
 # netplugin_synced_gopath="/opt/golang"
 gopath_folder="/opt/gopath"
 
+# netplugin_synced_gopath="/opt/golang"
+gopath_folder="/opt/gopath"
+
 # method to set up attributes for better performance
 def customize_vm(v)
   mem = `grep 'MemTotal' /proc/meminfo | sed -e 's/MemTotal://' -e 's/ kB//'`.to_i / 1024 / 8
@@ -79,6 +82,7 @@ sudo yum install -y net-tools
 #git config --global http.proxy $HTTP_PROXY
 SCRIPT
 
+
 # begin execution here
 cluster = read_cluster_config
 create_etc_hosts(cluster)
@@ -104,6 +108,7 @@ Vagrant.configure(2) do |config|
                 s.args = [ENV["http_proxy"] || "", ENV["https_proxy"] || ""]
               end
 	      c.vm.provision "shell" do |s|
+
                 s.inline = provision_master
 	        s.args = [ENV["http_proxy"] || "", ENV["https_proxy"] || ""]
               end
@@ -118,7 +123,6 @@ Vagrant.configure(2) do |config|
 		    c.vm.box = "contiv/k8node03"
  		 end
  	      end	
-	   end
 	   c.vm.synced_folder "./../../bin","/opt/gopath/bin"
 	   c.vm.provision "shell" do |s|
               s.inline = provision_k8
@@ -162,3 +166,4 @@ Vagrant.configure(2) do |config|
     end # member_info
   end #role
 end #config
+#

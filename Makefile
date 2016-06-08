@@ -96,7 +96,6 @@ k8s-test:
 	CONTIV_K8=1 cd vagrant/k8s/ && ./start_sanity_service.sh
 	CONTIV_K8=1 CONTIV_NODES=3 godep go test -v -timeout 540m ./systemtests -check.v -check.f "00SSH|Basic|Network|Policy|TestTrigger|ACIM|HostBridge" 
 	cd vagrant/k8s && vagrant destroy -f 
-# Mesos demo targets
 mesos-docker-demo:
 	cd vagrant/mesos-docker && vagrant up
 	cd vagrant/mesos-docker && vagrant ssh node1 -c 'bash -lc "source /etc/profile.d/envvar.sh && cd /opt/gopath/src/github.com/contiv/netplugin && make run-build"'
