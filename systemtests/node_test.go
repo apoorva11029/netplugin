@@ -13,19 +13,10 @@ import (
 	"github.com/contiv/vagrantssh"
 )
 
-type containerSpec struct {
-	imageName   string
-	commandName string
-	networkName string
-	serviceName string
-	name        string
-	dnsServer   string
-	labels      []string
-}
-
 type node struct {
 	tbnode vagrantssh.TestbedNode
 	suite  *systemtestSuite
+	exec   *systemTestScheduler
 }
 
 func (n *node) rotateLog(prefix string) error {
@@ -159,69 +150,6 @@ func (n *node) runCommand(cmd string) (string, error) {
 	}
 
 	return str, err
-}
-
-func (n *node) runContainer(spec containerSpec) (*container, error) {
-	var namestr, netstr, dnsStr, labelstr string
-
-	if spec.networkName != "" {
-		netstr = spec.networkName
-
-		if spec.serviceName != "" {
-			netstr = spec.serviceName
-		}
-
-		netstr = "--net=" + netstr
-	}
-
-	if spec.imageName == "" {
-		spec.imageName = "alpine"
-	}
-
-	if spec.commandName == "" {
-		spec.commandName = "sleep 60m"
-	}
-
-	if spec.name != "" {
-		namestr = "--name=" + spec.name
-	}
-
-	if spec.dnsServer != "" {
-		dnsStr = "--dns=" + spec.dnsServer
-	}
-
-	if len(spec.labels) > 0 {
-		l := "--label="
-		for _, label := range spec.labels {
-			labelstr += l + label + " "
-		}
-	}
-
-	logrus.Infof("Starting a container running %q on %s", spec.commandName, n.Name())
-
-	cmd := fmt.Sprintf("docker run -itd %s %s %s %s %s %s", namestr, netstr, dnsStr, labelstr, spec.imageName, spec.commandName)
-
-	out, err := n.tbnode.RunCommandWithOutput(cmd)
-	if err != nil {
-		logrus.Infof("cmd %q failed: output below", cmd)
-		logrus.Println(out)
-		out2, err := n.tbnode.RunCommandWithOutput(fmt.Sprintf("docker logs %s", strings.TrimSpace(out)))
-		if err == nil {
-			logrus.Println(out2)
-		} else {
-			logrus.Errorf("Container id %q is invalid", strings.TrimSpace(out))
-		}
-
-		return nil, err
-	}
-
-	cont, err := newContainer(n, strings.TrimSpace(out), spec.name)
-	if err != nil {
-		logrus.Info(err)
-		return nil, err
-	}
-
-	return cont, nil
 }
 
 func (n *node) checkForNetpluginErrors() error {

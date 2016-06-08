@@ -103,9 +103,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     if ENV['CONTIV_NODE_OS'] && ENV['CONTIV_NODE_OS'] == "ubuntu" then
         config.vm.box = "contiv/ubuntu1504-netplugin"
     else
-        if ENV['CONTIV_K8'] then
-            config.vm.box = "contiv/k8-netplugin" 
-	else
 	    config.vm.box = "contiv/centos71-netplugin"
     end
     config.vm.provider 'virtualbox' do |v|
@@ -161,14 +158,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
           s.inline = provision_bird
           s.args = [ENV["http_proxy"] || "", ENV["https_proxy"] || ""]
         end
-      end
-    end
-    if ENV['CONTIV_K8']=="1"
-      config.vm.define "k8master" do |k8master|
-
-        quagga1.vm.box = "contiv/k8master"
-        quagga1.vm.host_name = "k8master"
-        quagga1.vm.network :private_network, ip: "192.168.1.50", virtualbox__intnet: "true", auto_config: false
       end
     end
      num_nodes.times do |n|
