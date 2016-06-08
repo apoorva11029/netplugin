@@ -170,14 +170,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         end
       end
     end
-    if ENV['CONTIV_K8']=="1"
-      config.vm.define "k8master" do |k8master|
-
-        quagga1.vm.box = "contiv/k8master"
-        quagga1.vm.host_name = "k8master"
-        quagga1.vm.network :private_network, ip: "192.168.1.50", virtualbox__intnet: "true", auto_config: false
-      end
-    end
      num_nodes.times do |n|
         node_name = node_names[n]
         node_addr = node_ips[n]
@@ -208,7 +200,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
            end
         end
         config.vm.define node_name do |node|
-            # create an interface for etcd cluster
+           # create an interface for etcd cluster
             node.vm.network :private_network, ip: node_addr, virtualbox__intnet: "true", auto_config: false
             # create an interface for bridged network
             if ENV['CONTIV_L3'] then

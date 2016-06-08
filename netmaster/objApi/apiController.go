@@ -669,7 +669,7 @@ func (ac *APIController) EndpointGroupDelete(endpointGroup *contivModel.Endpoint
 
 	endpointGroupCleanup(endpointGroup)
 	// delete the endpoint group state
-	err := master.DeleteEndpointGroup(endpointGroup.TenantName, endpointGroup.NetworkName, endpointGroup.GroupName)
+	err := master.DeleteEndpointGroup(endpointGroup.TenantName, endpointGroup.GroupName)
 	if err != nil {
 		log.Errorf("Error deleting endpoint group %+v. Err: %v", endpointGroup, err)
 	}

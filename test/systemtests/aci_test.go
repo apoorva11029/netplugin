@@ -1,5 +1,6 @@
 package systemtests
 
+/*
 import (
 	//"errors"
 	log "github.com/Sirupsen/logrus"
@@ -85,7 +86,7 @@ func (s *systemtestSuite) TestACIMode(c *C) {
 	c.Assert(s.cli.EndpointGroupDelete("default", "epgb"), IsNil)
 	c.Assert(s.cli.NetworkDelete("default", "aciNet"), IsNil)
 }
-
+*/
 /*
 func (s *systemtestSuite) TestACIPingGateway(c *C) {
 	if s.fwdMode == "routing" {
