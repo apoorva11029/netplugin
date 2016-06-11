@@ -2038,6 +2038,263 @@ func GetOperGlobal(obj *GlobalInspect) error {
 }
 
 // LIST REST call
+func httpListExtContractsGroups(w http.ResponseWriter, r *http.Request, vars map[string]string) (interface{}, error) {
+	log.Debugf("Received httpListExtContractsGroups: %+v", vars)
+
+	list := make([]*ExtContractsGroup, 0)
+	for _, obj := range collections.extContractsGroups {
+		list = append(list, obj)
+	}
+
+	// Return the list
+	return list, nil
+}
+
+// GET REST call
+func httpGetExtContractsGroup(w http.ResponseWriter, r *http.Request, vars map[string]string) (interface{}, error) {
+	log.Debugf("Received httpGetExtContractsGroup: %+v", vars)
+
+	key := vars["key"]
+
+	obj := collections.extContractsGroups[key]
+	if obj == nil {
+		log.Errorf("extContractsGroup %s not found", key)
+		return nil, errors.New("extContractsGroup not found")
+	}
+
+	// Return the obj
+	return obj, nil
+}
+
+// CREATE REST call
+func httpCreateExtContractsGroup(w http.ResponseWriter, r *http.Request, vars map[string]string) (interface{}, error) {
+	log.Debugf("Received httpGetExtContractsGroup: %+v", vars)
+
+	var obj ExtContractsGroup
+	key := vars["key"]
+
+	// Get object from the request
+	err := json.NewDecoder(r.Body).Decode(&obj)
+	if err != nil {
+		log.Errorf("Error decoding extContractsGroup create request. Err %v", err)
+		return nil, err
+	}
+
+	// set the key
+	obj.Key = key
+
+	// Create the object
+	err = CreateExtContractsGroup(&obj)
+	if err != nil {
+		log.Errorf("CreateExtContractsGroup error for: %+v. Err: %v", obj, err)
+		return nil, err
+	}
+
+	// Return the obj
+	return obj, nil
+}
+
+// DELETE rest call
+func httpDeleteExtContractsGroup(w http.ResponseWriter, r *http.Request, vars map[string]string) (interface{}, error) {
+	log.Debugf("Received httpDeleteExtContractsGroup: %+v", vars)
+
+	key := vars["key"]
+
+	// Delete the object
+	err := DeleteExtContractsGroup(key)
+	if err != nil {
+		log.Errorf("DeleteExtContractsGroup error for: %s. Err: %v", key, err)
+		return nil, err
+	}
+
+	// Return the obj
+	return key, nil
+}
+
+// Create a extContractsGroup object
+func CreateExtContractsGroup(obj *ExtContractsGroup) error {
+	// Validate parameters
+	err := ValidateExtContractsGroup(obj)
+	if err != nil {
+		log.Errorf("ValidateExtContractsGroup retruned error for: %+v. Err: %v", obj, err)
+		return err
+	}
+
+	// Check if we handle this object
+	if objCallbackHandler.ExtContractsGroupCb == nil {
+		log.Errorf("No callback registered for extContractsGroup object")
+		return errors.New("Invalid object type")
+	}
+
+	saveObj := obj
+
+	// Check if object already exists
+	if collections.extContractsGroups[obj.Key] != nil {
+		// Perform Update callback
+		err = objCallbackHandler.ExtContractsGroupCb.ExtContractsGroupUpdate(collections.extContractsGroups[obj.Key], obj)
+		if err != nil {
+			log.Errorf("ExtContractsGroupUpdate retruned error for: %+v. Err: %v", obj, err)
+			return err
+		}
+
+		// save the original object after update
+		saveObj = collections.extContractsGroups[obj.Key]
+	} else {
+		// save it in cache
+		collections.extContractsGroups[obj.Key] = obj
+
+		// Perform Create callback
+		err = objCallbackHandler.ExtContractsGroupCb.ExtContractsGroupCreate(obj)
+		if err != nil {
+			log.Errorf("ExtContractsGroupCreate retruned error for: %+v. Err: %v", obj, err)
+			delete(collections.extContractsGroups, obj.Key)
+			return err
+		}
+	}
+
+	// Write it to modeldb
+	err = saveObj.Write()
+	if err != nil {
+		log.Errorf("Error saving extContractsGroup %s to db. Err: %v", saveObj.Key, err)
+		return err
+	}
+
+	return nil
+}
+
+// Return a pointer to extContractsGroup from collection
+func FindExtContractsGroup(key string) *ExtContractsGroup {
+	obj := collections.extContractsGroups[key]
+	if obj == nil {
+		return nil
+	}
+
+	return obj
+}
+
+// Delete a extContractsGroup object
+func DeleteExtContractsGroup(key string) error {
+	obj := collections.extContractsGroups[key]
+	if obj == nil {
+		log.Errorf("extContractsGroup %s not found", key)
+		return errors.New("extContractsGroup not found")
+	}
+
+	// Check if we handle this object
+	if objCallbackHandler.ExtContractsGroupCb == nil {
+		log.Errorf("No callback registered for extContractsGroup object")
+		return errors.New("Invalid object type")
+	}
+
+	// Perform callback
+	err := objCallbackHandler.ExtContractsGroupCb.ExtContractsGroupDelete(obj)
+	if err != nil {
+		log.Errorf("ExtContractsGroupDelete retruned error for: %+v. Err: %v", obj, err)
+		return err
+	}
+
+	// delete it from modeldb
+	err = obj.Delete()
+	if err != nil {
+		log.Errorf("Error deleting extContractsGroup %s. Err: %v", obj.Key, err)
+	}
+
+	// delete it from cache
+	delete(collections.extContractsGroups, key)
+
+	return nil
+}
+
+func (self *ExtContractsGroup) GetType() string {
+	return "extContractsGroup"
+}
+
+func (self *ExtContractsGroup) GetKey() string {
+	return self.Key
+}
+
+func (self *ExtContractsGroup) Read() error {
+	if self.Key == "" {
+		log.Errorf("Empty key while trying to read extContractsGroup object")
+		return errors.New("Empty key")
+	}
+
+	return modeldb.ReadObj("extContractsGroup", self.Key, self)
+}
+
+func (self *ExtContractsGroup) Write() error {
+	if self.Key == "" {
+		log.Errorf("Empty key while trying to Write extContractsGroup object")
+		return errors.New("Empty key")
+	}
+
+	return modeldb.WriteObj("extContractsGroup", self.Key, self)
+}
+
+func (self *ExtContractsGroup) Delete() error {
+	if self.Key == "" {
+		log.Errorf("Empty key while trying to Delete extContractsGroup object")
+		return errors.New("Empty key")
+	}
+
+	return modeldb.DeleteObj("extContractsGroup", self.Key)
+}
+
+func restoreExtContractsGroup() error {
+	strList, err := modeldb.ReadAllObj("extContractsGroup")
+	if err != nil {
+		log.Errorf("Error reading extContractsGroup list. Err: %v", err)
+	}
+
+	for _, objStr := range strList {
+		// Parse the json model
+		var extContractsGroup ExtContractsGroup
+		err = json.Unmarshal([]byte(objStr), &extContractsGroup)
+		if err != nil {
+			log.Errorf("Error parsing object %s, Err %v", objStr, err)
+			return err
+		}
+
+		// add it to the collection
+		collections.extContractsGroups[extContractsGroup.Key] = &extContractsGroup
+	}
+
+	return nil
+}
+
+// Validate a extContractsGroup object
+func ValidateExtContractsGroup(obj *ExtContractsGroup) error {
+	// Validate key is correct
+	keyStr := obj.TenantName + ":" + obj.ContractsGroupName
+	if obj.Key != keyStr {
+		log.Errorf("Expecting ExtContractsGroup Key: %s. Got: %s", keyStr, obj.Key)
+		return errors.New("Invalid Key")
+	}
+
+	// Validate each field
+
+	if len(obj.ContractsGroupName) > 64 {
+		return errors.New("contractsGroupName string too long")
+	}
+
+	contractsGroupNameMatch := regexp.MustCompile("^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]*[A-Za-z0-9])$")
+	if contractsGroupNameMatch.MatchString(obj.ContractsGroupName) == false {
+		return errors.New("contractsGroupName string invalid format")
+	}
+
+	if len(obj.TenantName) > 64 {
+		return errors.New("tenantName string too long")
+	}
+
+	tenantNameMatch := regexp.MustCompile("^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]*[A-Za-z0-9])$")
+	if tenantNameMatch.MatchString(obj.TenantName) == false {
+		return errors.New("tenantName string invalid format")
+	}
+
+	return nil
+}
+
+// LIST REST call
 func httpListGlobals(w http.ResponseWriter, r *http.Request, vars map[string]string) (interface{}, error) {
 	log.Debugf("Received httpListGlobals: %+v", vars)
 

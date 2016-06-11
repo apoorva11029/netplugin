@@ -187,7 +187,6 @@ var EndpointGroupSummaryView = React.createClass({
 				<ModalTrigger modal={<EndpointGroupModalView endpointGroup={ endpointGroup }/>}>
 					<tr key={ endpointGroup.key } className="info">
 						
-						      
 					</tr>
 				</ModalTrigger>
 			);
@@ -199,7 +198,6 @@ var EndpointGroupSummaryView = React.createClass({
 				<thead>
 					<tr>
 					
-					      
 					</tr>
 				</thead>
 				<tbody>
@@ -252,7 +250,6 @@ var ExtContractsGroupSummaryView = React.createClass({
 				<ModalTrigger modal={<ExtContractsGroupModalView extContractsGroup={ extContractsGroup }/>}>
 					<tr key={ extContractsGroup.key } className="info">
 						
-						    
 					</tr>
 				</ModalTrigger>
 			);
@@ -264,7 +261,6 @@ var ExtContractsGroupSummaryView = React.createClass({
 				<thead>
 					<tr>
 					
-					    
 					</tr>
 				</thead>
 				<tbody>

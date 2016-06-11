@@ -20,11 +20,20 @@ type container struct {
 	name        string
 	eth0        intf
 }
+type docker struct {
+	node *node
+}
 
-func newContainer(node *node, containerID, name string) (*container, error) {
+func (s *systemtestSuite) NewDockerExec(n *node) *docker {
+	d := new(docker)
+	d.node = n
+	return d
+}
+
+func (d *docker) newContainer(node *node, containerID, name string) (*container, error) {
 	cont := &container{node: node, containerID: containerID, name: name}
 
-	out, err := cont.GetIPAddr("eth0")
+	out, err := node.exec.getIPAddr(cont, "eth0")
 	if err != nil {
 		return nil, err
 	}
@@ -38,31 +47,84 @@ func newContainer(node *node, containerID, name string) (*container, error) {
 	return cont, nil
 }
 
-func (c *container) String() string {
-	return fmt.Sprintf("(container: %s (name: %q ip: %s ipv6: %s host: %s))", c.containerID, c.name, c.eth0.ip, c.eth0.ipv6, c.node.Name())
+func (d *docker) runContainer(spec containerSpec) (*container, error) {
+	var namestr, netstr, dnsStr, labelstr string
+
+	if spec.networkName != "" {
+		netstr = spec.networkName
+		if spec.tenantName != "" {
+			netstr = netstr + "/" + spec.tenantName
+		}
+
+		if spec.serviceName != "" {
+			netstr = spec.serviceName
+		}
+
+		netstr = "--net=" + netstr
+	}
+
+	if spec.imageName == "" {
+		spec.imageName = "alpine"
+	}
+
+	if spec.commandName == "" {
+		spec.commandName = "sleep 60m"
+	}
+
+	if spec.name != "" {
+		namestr = "--name=" + spec.name
+	}
+
+	if spec.dnsServer != "" {
+		dnsStr = "--dns=" + spec.dnsServer
+	}
+
+	if len(spec.labels) > 0 {
+		l := "--label="
+		for _, label := range spec.labels {
+			labelstr += l + label + " "
+		}
+	}
+
+	logrus.Infof("Starting a container running %q on %s", spec.commandName, d.node.Name())
+
+	cmd := fmt.Sprintf("docker run -itd %s %s %s %s %s %s", namestr, netstr, dnsStr, labelstr, spec.imageName, spec.commandName)
+
+	out, err := d.node.tbnode.RunCommandWithOutput(cmd)
+	if err != nil {
+		logrus.Infof("cmd %q failed: output below", cmd)
+		logrus.Println(out)
+		out2, err := d.node.tbnode.RunCommandWithOutput(fmt.Sprintf("docker logs %s", strings.TrimSpace(out)))
+		if err == nil {
+			logrus.Println(out2)
+		} else {
+			logrus.Errorf("Container id %q is invalid", strings.TrimSpace(out))
+		}
+
+		return nil, err
+	}
+
+	cont, err := d.newContainer(d.node, strings.TrimSpace(out), spec.name)
+	if err != nil {
+		logrus.Info(err)
+		return nil, err
+	}
+
+	return cont, nil
 }
 
-func (c *container) checkPingFailureWithCount(ipaddr string, count int) error {
+func (d *docker) checkPingFailure(c *container, ipaddr string) error {
 	logrus.Infof("Expecting ping failure from %v to %s", c, ipaddr)
-	if err := c.checkPingWithCount(ipaddr, count); err == nil {
+	if err := d.checkPing(c, ipaddr); err == nil {
 		return fmt.Errorf("Ping succeeded when expected to fail from %v to %s", c, ipaddr)
 	}
 
 	return nil
 }
-func (c *container) checkPingFailure(ipaddr string) error {
-	logrus.Infof("Expecting ping failure from %v to %s", c, ipaddr)
-	if err := c.checkPing(ipaddr); err == nil {
-		return fmt.Errorf("Ping succeeded when expected to fail from %v to %s", c, ipaddr)
-	}
 
-	return nil
-}
-
-func (c *container) checkPingWithCount(ipaddr string, count int) error {
+func (d *docker) checkPing(c *container, ipaddr string) error {
 	logrus.Infof("Checking ping from %v to %s", c, ipaddr)
-	cmd := fmt.Sprintf("ping -c %d %s", count, ipaddr)
-	out, err := c.exec(cmd)
+	out, err := d.exec(c, "ping -c 1 "+ipaddr)
 
 	if err != nil || strings.Contains(out, "0 received, 100% packet loss") {
 		logrus.Errorf("Ping from %v to %s FAILED: %q - %v", c, ipaddr, out, err)
@@ -73,12 +135,8 @@ func (c *container) checkPingWithCount(ipaddr string, count int) error {
 	return nil
 }
 
-func (c *container) checkPing(ipaddr string) error {
-	return c.checkPingWithCount(ipaddr, 1)
-}
-
-func (c *container) GetIPAddr(dev string) (string, error) {
-	out, err := c.exec(fmt.Sprintf("ip addr show dev %s | grep inet | head -1", dev))
+func (d *docker) getIPAddr(c *container, dev string) (string, error) {
+	out, err := d.exec(c, fmt.Sprintf("ip addr show dev %s | grep inet | head -1", dev))
 	if err != nil {
 		logrus.Errorf("Failed to get IP for container %q", c.containerID)
 		logrus.Println(out)
@@ -94,62 +152,7 @@ func (c *container) GetIPAddr(dev string) (string, error) {
 	return out, err
 }
 
-func (c *container) GetMACAddr(dev string) (string, error) {
-	out, err := c.exec(fmt.Sprintf("ip addr show dev %s | grep ether | head -1", dev))
-	if err != nil {
-		logrus.Errorf("Failed to get MAC for container %q", c.containerID)
-		logrus.Println(out)
-	}
-
-	parts := regexp.MustCompile(`\s+`).Split(strings.TrimSpace(out), -1)
-	if len(parts) < 2 {
-		return "", fmt.Errorf("Invalid output from container %q: %s", c.containerID, out)
-	}
-
-	out = parts[1]
-	return out, err
-}
-
-func (c *container) checkPing6Failure(ipaddr string) error {
-	logrus.Infof("Expecting ping6 failure from %v to %s", c, ipaddr)
-	if err := c.checkPing6(ipaddr); err == nil {
-		return fmt.Errorf("Ping6 succeeded when expected to fail from %v to %s", c, ipaddr)
-	}
-
-	return nil
-}
-
-func (c *container) checkPing6(ipaddr string) error {
-	logrus.Infof("Checking ping6 from %v to %s", c, ipaddr)
-	out, err := c.exec("ping6 -c 1 " + ipaddr)
-
-	if err != nil || strings.Contains(out, "0 received, 100% packet loss") {
-		logrus.Errorf("Ping6 from %v to %s FAILED: %q - %v", c, ipaddr, out, err)
-		return fmt.Errorf("Ping6 failed from %v to %s: %q - %v", c, ipaddr, out, err)
-	}
-
-	logrus.Infof("Ping6 from %v to %s SUCCEEDED", c, ipaddr)
-	return nil
-}
-
-func (c *container) getIPv6Addr(dev string) (string, error) {
-	out, err := c.exec(fmt.Sprintf("ip addr show dev %s | grep 'inet6.*scope.*global' | head -1", dev))
-	if err != nil {
-		logrus.Errorf("Failed to get IPv6 for container %q", c.containerID)
-		logrus.Println(out)
-	}
-
-	parts := regexp.MustCompile(`\s+`).Split(strings.TrimSpace(out), -1)
-	if len(parts) < 2 {
-		return "", fmt.Errorf("Invalid output from container %q: %s", c.containerID, out)
-	}
-
-	parts = strings.Split(parts[1], "/")
-	out = strings.TrimSpace(parts[0])
-	return out, err
-}
-
-func (c *container) exec(args string) (string, error) {
+func (d *docker) exec(c *container, args string) (string, error) {
 	out, err := c.node.runCommand(fmt.Sprintf("docker exec %s %s", c.containerID, args))
 	if err != nil {
 		logrus.Println(out)
@@ -159,11 +162,11 @@ func (c *container) exec(args string) (string, error) {
 	return out, nil
 }
 
-func (c *container) execBG(args string) (string, error) {
+func (d *docker) execBG(c *container, args string) (string, error) {
 	return c.node.runCommand(fmt.Sprintf("docker exec -d %s %s", c.containerID, args))
 }
 
-func (c *container) dockerCmd(arg string) error {
+func (d *docker) dockerCmd(c *container, arg string) error {
 	out, err := c.node.runCommand(fmt.Sprintf("docker %s %s", arg, c.containerID))
 	if err != nil {
 		logrus.Println(out)
@@ -173,23 +176,23 @@ func (c *container) dockerCmd(arg string) error {
 	return nil
 }
 
-func (c *container) start() error {
+func (d *docker) start(c *container) error {
 	logrus.Infof("Starting container %s on %s", c.containerID, c.node.Name())
-	return c.dockerCmd("start")
+	return d.dockerCmd(c, "start")
 }
 
-func (c *container) stop() error {
+func (d *docker) stop(c *container) error {
 	logrus.Infof("Stopping container %s on %s", c.containerID, c.node.Name())
-	return c.dockerCmd("stop")
+	return d.dockerCmd(c, "stop")
 }
 
-func (c *container) rm() error {
+func (d *docker) rm(c *container) error {
 	logrus.Infof("Removing container %s on %s", c.containerID, c.node.Name())
-	c.dockerCmd("kill -s 9")
-	return c.dockerCmd("rm -f")
+	d.dockerCmd(c, "kill -s 9")
+	return d.dockerCmd(c, "rm -f")
 }
 
-func (c *container) startListener(port int, protocol string) error {
+func (d *docker) startListener(c *container, port int, protocol string) error {
 	var protoStr string
 
 	if protocol == "udp" {
@@ -197,11 +200,11 @@ func (c *container) startListener(port int, protocol string) error {
 	}
 
 	logrus.Infof("Starting a %s listener on %v port %d", protocol, c, port)
-	_, err := c.execBG(fmt.Sprintf("nc -lk %s -p %v -e /bin/true", protoStr, port))
+	_, err := d.execBG(c, fmt.Sprintf("nc -lk %s -p %v -e /bin/true", protoStr, port))
 	return err
 }
 
-func (c *container) checkConnection(ipaddr, protocol string, port int) error {
+func (d *docker) checkConnection(c *container, ipaddr, protocol string, port int) error {
 	var protoStr string
 
 	if protocol == "udp" {
@@ -210,7 +213,7 @@ func (c *container) checkConnection(ipaddr, protocol string, port int) error {
 
 	logrus.Infof("Checking connection from %v to ip %s on port %d", c, ipaddr, port)
 
-	_, err := c.exec(fmt.Sprintf("nc -z -n -v -w 1 %s %s %v", protoStr, ipaddr, port))
+	_, err := d.exec(c, fmt.Sprintf("nc -z -n -v -w 1 %s %s %v", protoStr, ipaddr, port))
 	if err != nil {
 		logrus.Errorf("Connection from %v to ip %s on port %d FAILED", c, ipaddr, port)
 	} else {
@@ -220,48 +223,66 @@ func (c *container) checkConnection(ipaddr, protocol string, port int) error {
 	return err
 }
 
-func (c *container) checkNoConnection(ipaddr, protocol string, port int) error {
+func (d *docker) checkNoConnection(c *container, ipaddr, protocol string, port int) error {
 	logrus.Infof("Expecting connection to fail from %v to %s on port %d", c, ipaddr, port)
 
-	if err := c.checkConnection(ipaddr, protocol, port); err != nil {
+	if err := d.checkConnection(c, ipaddr, protocol, port); err != nil {
 		return nil
 	}
 
 	return fmt.Errorf("Connection SUCCEEDED on port %d from %s from %v when it should have FAILED.", port, ipaddr, c)
 }
-func (c *container) checkConnectionRetry(ipaddr, protocol string, port, delay, retries int) error {
-	var protoStr string
-	var err error
 
-	err = nil
-
-	if protocol == "udp" {
-		protoStr = "-u"
-	}
-
-	logrus.Infof("Checking connection from %v to ip %s on port %d, delay: %d, retries: %d",
-		c, ipaddr, port, delay, retries)
-
-	for i := 0; i < retries; i++ {
-
-		_, err = c.exec(fmt.Sprintf("nc -z -n -v -w 1 %s %s %v", protoStr, ipaddr, port))
-		if err == nil {
-			logrus.Infof("Connection to ip %s on port %d SUCCEEDED, tries: %d", ipaddr, port, i+1)
-			return nil
-		}
-		time.Sleep(2 * time.Second)
-	}
-
-	logrus.Errorf("Connection  to ip %s on port %d FAILED %v", ipaddr, port, err)
-	return err
+func (d *docker) cleanupDockerNetwork() error {
+	logrus.Infof("Cleaning up networks on %s", d.node.Name())
+	return d.node.tbnode.RunCommand("docker network ls | grep netplugin | awk '{print $2}'")
 }
 
-func (c *container) checkNoConnectionRetry(ipaddr, protocol string, port, delay, retries int) error {
-	logrus.Infof("Expecting connection to fail from %v to %s on port %d", c, ipaddr, port)
+func (d *docker) cleanupContainers() error {
+	logrus.Infof("Cleaning up containers on %s", d.node.Name())
+	return d.node.tbnode.RunCommand("docker kill -s 9 `docker ps -aq`; docker rm -f `docker ps -aq`")
+}
 
-	if err := c.checkConnectionRetry(ipaddr, protocol, port, delay, retries); err != nil {
-		return nil
+func (d *docker) startNetplugin(args string) error {
+	logrus.Infof("Starting netplugin on %s", d.node.Name())
+	return d.node.tbnode.RunCommandBackground("sudo " + d.node.suite.binpath + "/netplugin -plugin-mode docker -vlan-if " + d.node.suite.vlanIf + " --cluster-store " + d.node.suite.clusterStore + " " + args + "&> /tmp/netplugin.log")
+}
+
+func (d *docker) stopNetplugin() error {
+	logrus.Infof("Stopping netplugin on %s", d.node.Name())
+	return d.node.tbnode.RunCommand("sudo pkill netplugin")
+}
+
+func (d *docker) stopNetmaster() error {
+	logrus.Infof("Stopping netmaster on %s", d.node.Name())
+	return d.node.tbnode.RunCommand("sudo pkill netmaster")
+}
+
+func (d *docker) startNetmaster() error {
+	logrus.Infof("Starting netmaster on %s", d.node.Name())
+	dnsOpt := " --dns-enable=false "
+	if d.node.suite.enableDNS {
+		dnsOpt = " --dns-enable=true "
 	}
+	return d.node.tbnode.RunCommandBackground(d.node.suite.binpath + "/netmaster" + dnsOpt + " --cluster-store " + d.node.suite.clusterStore + " &> /tmp/netmaster.log")
+}
+func (d *docker) cleanupMaster() {
+	logrus.Infof("Cleaning up master on %s", d.node.Name())
+	vNode := d.node.tbnode
+	vNode.RunCommand("etcdctl rm --recursive /contiv")
+	vNode.RunCommand("etcdctl rm --recursive /contiv.io")
+	vNode.RunCommand("etcdctl rm --recursive /docker")
+	vNode.RunCommand("etcdctl rm --recursive /skydns")
+	vNode.RunCommand("curl -X DELETE localhost:8500/v1/kv/contiv.io?recurse=true")
+	vNode.RunCommand("curl -X DELETE localhost:8500/v1/kv/docker?recurse=true")
+}
 
-	return fmt.Errorf("Connection SUCCEEDED on port %d from %s from %v when it should have FAILED.", port, ipaddr, c)
+func (d *docker) cleanupSlave() {
+	logrus.Infof("Cleaning up slave on %s", d.node.Name())
+	vNode := d.node.tbnode
+	vNode.RunCommand("sudo ovs-vsctl del-br contivVxlanBridge")
+	vNode.RunCommand("sudo ovs-vsctl del-br contivVlanBridge")
+	vNode.RunCommand("for p in `ifconfig  | grep vport | awk '{print $1}'`; do sudo ip link delete $p type veth; done")
+	vNode.RunCommand("sudo rm /var/run/docker/plugins/netplugin.sock")
+	vNode.RunCommand("sudo service docker restart")
 }

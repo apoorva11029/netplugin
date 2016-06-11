@@ -28,7 +28,7 @@ func (s *systemtestSuite) TestTriggerNetmasterSwitchover(c *C) {
 	c.Assert(s.cli.NetworkPost(network), IsNil)
 
 	for i := 0; i < s.iterations; i++ {
-		containers, err := s.runContainers(s.containers, false, "private", nil, nil)
+		containers, err := s.runContainers(s.containers, false, "private", "", nil, nil)
 		c.Assert(err, IsNil)
 
 		var leader, oldLeader *node
@@ -45,7 +45,7 @@ func (s *systemtestSuite) TestTriggerNetmasterSwitchover(c *C) {
 			}
 		}
 
-		c.Assert(leader.stopNetmaster(), IsNil)
+		c.Assert(leader.exec.stopNetmaster(), IsNil)
 		c.Assert(leader.rotateLog("netmaster"), IsNil)
 
 		for x := 0; x < 15; x++ {
@@ -68,7 +68,7 @@ func (s *systemtestSuite) TestTriggerNetmasterSwitchover(c *C) {
 		}
 
 	finished:
-		c.Assert(oldLeader.startNetmaster(), IsNil)
+		c.Assert(oldLeader.exec.startNetmaster(), IsNil)
 		time.Sleep(5 * time.Second)
 
 		c.Assert(s.pingTest(containers), IsNil)
@@ -97,18 +97,18 @@ func (s *systemtestSuite) TestTriggerNetpluginDisconnect(c *C) {
 	c.Assert(s.cli.NetworkPost(network), IsNil)
 
 	for i := 0; i < s.iterations; i++ {
-		containers, err := s.runContainers(s.containers, false, "private", nil, nil)
+		containers, err := s.runContainers(s.containers, false, "private", "", nil, nil)
 		c.Assert(err, IsNil)
 
 		for _, node := range s.nodes {
-			c.Assert(node.stopNetplugin(), IsNil)
+			c.Assert(node.exec.stopNetplugin(), IsNil)
 			logrus.Info("Sleeping for a while to wait for netplugin's TTLs to expire")
 			time.Sleep(50 * time.Second)
 			c.Assert(node.rotateLog("netplugin"), IsNil)
 			if s.fwdMode == "routing" {
-				c.Assert(node.startNetplugin("-fwd-mode=routing"), IsNil)
+				c.Assert(node.exec.startNetplugin("-fwd-mode=routing"), IsNil)
 			} else {
-				c.Assert(node.startNetplugin(""), IsNil)
+				c.Assert(node.exec.startNetplugin(""), IsNil)
 			}
 			c.Assert(node.runCommandUntilNoError("pgrep netplugin"), IsNil)
 			time.Sleep(20 * time.Second)
@@ -260,7 +260,7 @@ func (s *systemtestSuite) TestTriggerNodeReload(c *C) {
 
 		// start containers on all nodes
 		for _, node := range s.nodes {
-			newContainers, err := s.runContainersOnNode(cntPerNode, "private", node)
+			newContainers, err := s.runContainersOnNode(cntPerNode, "private", "", node)
 			c.Assert(err, IsNil)
 			containers = append(containers, newContainers...)
 		}
@@ -275,19 +275,19 @@ func (s *systemtestSuite) TestTriggerNodeReload(c *C) {
 			c.Assert(node.rotateLog("netmaster"), IsNil)
 
 			if s.fwdMode == "routing" {
-				c.Assert(node.startNetplugin("-fwd-mode=routing"), IsNil)
+				c.Assert(node.exec.startNetplugin("-fwd-mode=routing"), IsNil)
 			} else {
-				c.Assert(node.startNetplugin(""), IsNil)
+				c.Assert(node.exec.startNetplugin(""), IsNil)
 			}
 			c.Assert(node.runCommandUntilNoError("pgrep netplugin"), IsNil)
 			time.Sleep(20 * time.Second)
-			c.Assert(node.startNetmaster(), IsNil)
+			c.Assert(node.exec.startNetmaster(), IsNil)
 			time.Sleep(1 * time.Second)
 			c.Assert(node.runCommandUntilNoError("pgrep netmaster"), IsNil)
 			time.Sleep(20 * time.Second)
 
 			// clear previous containers from reloaded node
-			node.cleanupContainers()
+			node.exec.cleanupContainers()
 
 			exContainers := []*container{}
 			for _, cont := range containers {
@@ -299,7 +299,7 @@ func (s *systemtestSuite) TestTriggerNodeReload(c *C) {
 			}
 
 			// start new containers on reloaded node
-			newContainers, err := s.runContainersOnNode(cntPerNode, "private", node)
+			newContainers, err := s.runContainersOnNode(cntPerNode, "private", "", node)
 			c.Assert(err, IsNil)
 			containers = append(exContainers, newContainers...)
 
@@ -411,12 +411,12 @@ func (s *systemtestSuite) TestTriggers(c *C) {
 		case 0:
 			logrus.Info("Triggering netplugin restart")
 			for _, node := range s.nodes {
-				c.Assert(node.stopNetplugin(), IsNil)
+				c.Assert(node.exec.stopNetplugin(), IsNil)
 				c.Assert(node.rotateLog("netplugin"), IsNil)
 				if s.fwdMode == "routing" {
-					c.Assert(node.startNetplugin("-fwd-mode=routing"), IsNil)
+					c.Assert(node.exec.startNetplugin("-fwd-mode=routing"), IsNil)
 				} else {
-					c.Assert(node.startNetplugin(""), IsNil)
+					c.Assert(node.exec.startNetplugin(""), IsNil)
 				}
 				c.Assert(node.runCommandUntilNoError("pgrep netplugin"), IsNil)
 				time.Sleep(20 * time.Second)
@@ -424,12 +424,12 @@ func (s *systemtestSuite) TestTriggers(c *C) {
 		case 1:
 			logrus.Info("Triggering netmaster restart")
 			for _, node := range s.nodes {
-				c.Assert(node.stopNetmaster(), IsNil)
+				c.Assert(node.exec.stopNetmaster(), IsNil)
 				c.Assert(node.rotateLog("netmaster"), IsNil)
 
 				time.Sleep(1 * time.Second)
 
-				c.Assert(node.startNetmaster(), IsNil)
+				c.Assert(node.exec.startNetmaster(), IsNil)
 				time.Sleep(1 * time.Second)
 				c.Assert(node.runCommandUntilNoError("pgrep netmaster"), IsNil)
 			}
@@ -456,12 +456,12 @@ func (s *systemtestSuite) TestTriggers(c *C) {
 }
 
 func (s *systemtestSuite) runTriggerContainers(groupNames []string) (map[*container]string, map[*container]string, []*container, error) {
-	netContainers, err := s.runContainers(s.containers, false, "private", nil, nil)
+	netContainers, err := s.runContainers(s.containers, false, "private", "", nil, nil)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	groupMapContainers, err := s.runContainersInGroups(s.containers, "other", groupNames)
+	groupMapContainers, err := s.runContainersInGroups(s.containers, "other", "", groupNames)
 	if err != nil {
 		return nil, nil, nil, err
 	}

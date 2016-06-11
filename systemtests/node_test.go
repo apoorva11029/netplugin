@@ -16,7 +16,19 @@ import (
 type node struct {
 	tbnode vagrantssh.TestbedNode
 	suite  *systemtestSuite
-	exec   *systemTestScheduler
+	exec   systemTestScheduler
+}
+
+type containerSpec struct {
+	imageName   string
+	commandName string
+	networkName string
+	serviceName string
+	tenantName  string
+	name        string
+	dnsServer   string
+	labels      []string
+	epGroup     string
 }
 
 func (n *node) rotateLog(prefix string) error {
@@ -59,12 +71,11 @@ func (s *systemtestSuite) getNodeByName(name string) *node {
 
 func (n *node) startNetplugin(args string) error {
 	logrus.Infof("Starting netplugin on %s", n.Name())
-	return n.tbnode.RunCommandBackground("sudo " + n.suite.binpath + "/netplugin -plugin-mode docker -vlan-if " + n.suite.vlanIf + " --cluster-store " + n.suite.clusterStore + " " + args + "&> /tmp/netplugin.log")
+	return n.exec.startNetplugin(args)
 }
 
 func (n *node) stopNetplugin() error {
-	logrus.Infof("Stopping netplugin on %s", n.Name())
-	return n.tbnode.RunCommand("sudo pkill netplugin")
+	return n.exec.stopNetplugin()
 }
 
 func (s *systemtestSuite) copyBinary(fileName string) error {
@@ -85,53 +96,19 @@ func (n *node) deleteFile(file string) error {
 }
 
 func (n *node) stopNetmaster() error {
-	logrus.Infof("Stopping netmaster on %s", n.Name())
-	return n.tbnode.RunCommand("sudo pkill netmaster")
+	return n.exec.stopNetmaster()
 }
 
 func (n *node) startNetmaster() error {
-	logrus.Infof("Starting netmaster on %s", n.Name())
-	dnsOpt := " --dns-enable=false "
-	if n.suite.enableDNS {
-		dnsOpt = " --dns-enable=true "
-	}
-	return n.tbnode.RunCommandBackground("sudo " + n.suite.binpath + "/netmaster" + dnsOpt + " --cluster-store " + n.suite.clusterStore + " &> /tmp/netmaster.log")
-}
-
-func (n *node) cleanupDockerNetwork() error {
-	logrus.Infof("Cleaning up networks on %s", n.Name())
-	return n.tbnode.RunCommand("docker network rm $(docker network ls | grep netplugin | awk '{print $2}')")
-}
-
-func (n *node) cleanupContainers() error {
-	logrus.Infof("Cleaning up containers on %s", n.Name())
-	if os.Getenv("ACI_SYS_TEST_MODE") == "ON" {
-		return n.tbnode.RunCommand("docker ps | grep alpine | awk '{print $s}' $(docker kill -s 9 `docker ps -aq`; docker rm -f `docker ps -aq`)")
-	}
-	return n.tbnode.RunCommand("docker kill -s 9 `docker ps -aq`; docker rm -f `docker ps -aq`")
+	return n.exec.startNetmaster()
 }
 
 func (n *node) cleanupSlave() {
-	logrus.Infof("Cleaning up slave on %s", n.Name())
-	vNode := n.tbnode
-	vNode.RunCommand("sudo ovs-vsctl del-br contivVxlanBridge")
-	vNode.RunCommand("sudo ovs-vsctl del-br contivVlanBridge")
-	vNode.RunCommand("for p in `ifconfig  | grep vport | awk '{print $1}'`; do sudo ip link delete $p type veth; done")
-	vNode.RunCommand("sudo rm /var/run/docker/plugins/netplugin.sock")
-	if os.Getenv("ACI_SYS_TEST_MODE") != "ON" {
-		vNode.RunCommand("sudo service docker restart")
-	}
+	n.exec.cleanupSlave()
 }
 
 func (n *node) cleanupMaster() {
-	logrus.Infof("Cleaning up master on %s", n.Name())
-	vNode := n.tbnode
-	vNode.RunCommand("etcdctl rm --recursive /contiv")
-	vNode.RunCommand("etcdctl rm --recursive /contiv.io")
-	vNode.RunCommand("etcdctl rm --recursive /docker")
-	vNode.RunCommand("etcdctl rm --recursive /skydns")
-	vNode.RunCommand("curl -X DELETE localhost:8500/v1/kv/contiv.io?recurse=true")
-	vNode.RunCommand("curl -X DELETE localhost:8500/v1/kv/docker?recurse=true")
+	n.exec.cleanupMaster()
 }
 
 func (n *node) runCommand(cmd string) (string, error) {

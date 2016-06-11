@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"os/exec"
 	"strconv"
 	"strings"
 	. "testing"
@@ -167,26 +166,42 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 			if err != nil {
 				c.Fatal(err)
 			}
-		}
+                }
+s.nodes = []*node{}
 
-		s.nodes = []*node{}
-
+	if s.fwdMode == "routing" {
+		contivL3Nodes := 2
 		if s.scheduler == "k8" {
-			s.KubeNodeSetup(c)
+			contivNodes = 3
+			c.Assert(s.vagrant.Setup(false, []string{"CONTIV_L3=1 VAGRANT_CWD=/home/ladmin/src/github.com/contiv/netplugin/vagrant/k8s/"}, contivNodes), IsNil)
+		} else {
+			c.Assert(s.vagrant.Setup(false, "CONTIV_NODES=3 CONTIV_L3=1", contivNodes+contivL3Nodes), IsNil)
 		}
-
-		if s.fwdMode == "routing" {
-			contivL3Nodes := 2
-			c.Assert(s.vagrant.Setup(false, "CONTIV_NODES=3 CONTIV_L3=2", contivNodes+contivL3Nodes), IsNil)
+	} else {
+		if s.scheduler == "k8" {
+			c.Assert(s.vagrant.Setup(false, []string{"VAGRANT_CWD=/home/ladmin/src/github.com/contiv/netplugin/vagrant/k8s/"}, contivNodes), IsNil)
 		} else {
 			c.Assert(s.vagrant.Setup(false, "", contivNodes), IsNil)
 		}
-		for _, nodeObj := range s.vagrant.GetNodes() {
-			nodeName := nodeObj.GetName()
-			if strings.Contains(nodeName, "netplugin-node") {
-				s.nodes = append(s.nodes, &node{tbnode: nodeObj, suite: s})
+	}
+
+	for _, nodeObj := range s.vagrant.GetNodes() {
+		nodeName := nodeObj.GetName()
+		if strings.Contains(nodeName, "netplugin-node") ||
+			strings.Contains(nodeName, "k8") {
+			node := &node{}
+			node.tbnode = nodeObj
+			node.suite = s
+
+			switch s.scheduler {
+			case "k8":
+				node.exec = s.NewK8sExec(node)
+			default:
+				node.exec = s.NewDockerExec(node)
 			}
+			s.nodes = append(s.nodes, node)
 		}
+	}
 
 		logrus.Info("Pulling alpine on all nodes")
 		s.vagrant.IterateNodes(func(node vagrantssh.TestbedNode) error {
@@ -233,6 +248,28 @@ func (s *systemtestSuite) SetUpTest(c *C) {
 			c.Assert(node.startNetmaster(), IsNil)
 			time.Sleep(1 * time.Second)
 			c.Assert(node.runCommandUntilNoError("pgrep netmaster"), IsNil)
+	for _, node := range s.nodes {
+		node.exec.cleanupContainers()
+		//node.cleanupDockerNetwork()
+		node.exec.stopNetplugin()
+		node.cleanupSlave()
+	}
+
+	for _, node := range s.nodes {
+		node.exec.stopNetmaster()
+
+	}
+	for _, node := range s.nodes {
+		node.exec.cleanupMaster()
+	}
+
+	for _, node := range s.nodes {
+		if s.fwdMode == "bridge" {
+			c.Assert(node.exec.startNetplugin(""), IsNil)
+			c.Assert(node.runCommandUntilNoError("pgrep netplugin"), IsNil)
+		} else if s.fwdMode == "routing" {
+			c.Assert(node.exec.startNetplugin("-fwd-mode=routing -vlan-if=eth2"), IsNil)
+			c.Assert(node.runCommandUntilNoError("pgrep netplugin"), IsNil)
 		}
 
 		time.Sleep(5 * time.Second)
@@ -260,6 +297,11 @@ func (s *systemtestSuite) SetUpTest(c *C) {
 			node.cleanupMaster()
 			node.cleanupSlave()
 		}
+	for _, node := range s.nodes {
+		c.Assert(node.exec.startNetmaster(), IsNil)
+		time.Sleep(1 * time.Second)
+		c.Assert(node.runCommandUntilNoError("pgrep netmaster"), IsNil)
+	}
 
 		for _, node := range s.nodes {
 			if s.fwdMode == "bridge" {
@@ -310,7 +352,7 @@ func (s *systemtestSuite) TearDownTest(c *C) {
 
 func (s *systemtestSuite) TearDownSuite(c *C) {
 	for _, node := range s.nodes {
-		node.cleanupContainers()
+		node.exec.cleanupContainers()
 	}
 
 	// Print all errors and fatal messages
@@ -330,4 +372,3 @@ func (s *systemtestSuite) Test00SSH(c *C) {
 		return node.RunCommand("true")
 	}), IsNil)
 }
-

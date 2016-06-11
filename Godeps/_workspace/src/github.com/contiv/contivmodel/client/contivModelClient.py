@@ -236,10 +236,7 @@ class objmodelClient:
 	        errorExit("list ExtContractsGroup failed")
 
 	    return json.loads(retData)
-
-
-
-
+	
 	# Create global
 	def createGlobal(self, obj):
 	    postUrl = self.baseUrl + '/api/v1/globals/' + obj.name  + '/'
