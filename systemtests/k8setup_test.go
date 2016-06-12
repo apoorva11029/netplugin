@@ -69,7 +69,7 @@ func (k *kubernetes) runContainer(spec containerSpec) (*container, error) {
 	}
 
 	if len(spec.labels) > 0 {
-		l := "--label="
+		l := "--selector="
 		for _, label := range spec.labels {
 			labelstr += l + label + " "
 		}

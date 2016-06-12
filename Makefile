@@ -88,9 +88,9 @@ k8s-demo-start:
 k8s-destroy:
 	cd vagrant/k8s/ && vagrant destroy -f
 k8s-test:
-	make k8s-cluster
-	make ssh-build 
-	#cd vagrant/k8s/ && vagrant ssh k8master -c 'sudo -i bash -lc "cd /opt/gopath/src/github.com/contiv/netplugin && make run-build"'
+	CONTIV_K8=1 make k8s-cluster
+	#make ssh-build 
+	cd vagrant/k8s/ && CONTIV_K8=1 vagrant ssh k8master -c 'sudo -i bash -lc "cd /opt/gopath/src/github.com/contiv/netplugin && make run-build"'
 	CONTIV_K8=1 cd vagrant/k8s/ && ./restart_cluster.sh
 	CONTIV_K8=1 CONTIV_NODES=3 godep go test -v -timeout 240m ./systemtests -check.v -check.f "00SSH|Basic|Network|Policy|TestTrigger|ACI"
  
