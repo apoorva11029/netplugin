@@ -266,10 +266,10 @@ func (s *systemtestSuite) SetUpTest(c *C) {
 	for _, node := range s.nodes {
 		if s.fwdMode == "bridge" {
 			c.Assert(node.exec.startNetplugin(""), IsNil)
-			c.Assert(node.runCommandUntilNoError("pgrep netplugin"), IsNil)
+			c.Assert(node.exec.runCommandUntilNoNetpluginError(), IsNil)
 		} else if s.fwdMode == "routing" {
 			c.Assert(node.exec.startNetplugin("-fwd-mode=routing -vlan-if=eth2"), IsNil)
-			c.Assert(node.runCommandUntilNoError("pgrep netplugin"), IsNil)
+			c.Assert(node.exec.runCommandUntilNoNetpluginError(), IsNil)
 		}
 
 		time.Sleep(5 * time.Second)
@@ -300,7 +300,7 @@ func (s *systemtestSuite) SetUpTest(c *C) {
 	for _, node := range s.nodes {
 		c.Assert(node.exec.startNetmaster(), IsNil)
 		time.Sleep(1 * time.Second)
-		c.Assert(node.runCommandUntilNoError("pgrep netmaster"), IsNil)
+		c.Assert(node.exec.runCommandUntilNoNetmasterError(), IsNil)
 	}
 
 		for _, node := range s.nodes {
@@ -338,14 +338,26 @@ func (s *systemtestSuite) SetUpTest(c *C) {
 			c.Assert((i < 10), Equals, true)
 			time.Sleep(500 * time.Millisecond)
 		}
+	time.Sleep(5 * time.Second)
+	if s.scheduler != "k8" {
+		for i := 0; i < 11; i++ {
+
+			_, err := s.cli.TenantGet("default")
+			if err == nil {
+				break
+			}
+			// Fail if we reached last iteration
+			c.Assert((i < 10), Equals, true)
+			time.Sleep(500 * time.Millisecond)
+		}
 	}
 }
 
 func (s *systemtestSuite) TearDownTest(c *C) {
 	for _, node := range s.nodes {
 		c.Check(node.checkForNetpluginErrors(), IsNil)
-		node.rotateLog("netplugin")
-		node.rotateLog("netmaster")
+		c.Assert(node.exec.rotateNetpluginLog(), IsNil)
+		c.Assert(node.exec.rotateNetmasterLog(), IsNil)
 	}
 	logrus.Infof("============================= %s completed ==========================", c.TestName())
 }

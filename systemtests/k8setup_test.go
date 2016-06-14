@@ -6,34 +6,37 @@ import (
 	"github.com/Sirupsen/logrus"
 	"regexp"
 	"strings"
+	"time"
 )
 
 type kubernetes struct {
-	node   *node
-	master *node
+	node *node
 }
+
+var k8master *node
 
 func (s *systemtestSuite) NewK8sExec(n *node) *kubernetes {
 	k8 := new(kubernetes)
 	k8.node = n
+
 	if n.Name() == "k8master" {
-		k8.master = n
+		fmt.Println("FOUND MASTERRRRRRRRRRRR")
+		k8master = n
 	}
 	return k8
 }
 
 type container struct {
 	node        *node
-	master      *node
 	containerID string
 	name        string
 	eth0        string
 }
 
 func (k *kubernetes) newContainer(node *node, containerID, name string) (*container, error) {
-	cont := &container{node: node, master: k.master, containerID: containerID, name: name}
+	cont := &container{node: node, containerID: containerID, name: name}
 
-	out, err := k.master.exec.getIPAddr(cont, "eth0")
+	out, err := k8master.exec.getIPAddr(cont, "eth0")
 	if err != nil {
 		return nil, err
 	}
@@ -49,27 +52,26 @@ func (k *kubernetes) runContainer(spec containerSpec) (*container, error) {
 		netstr = spec.networkName
 		labelstr = "--labels=io.contiv.network=" + netstr
 	}
-	if spec.tenantName != "default" {
-		labelstr = labelstr + " --label=io.contiv.tenant=" + spec.tenantName
-	}
-	if spec.serviceName != "" {
-		labelstr = labelstr + " --label=io.contiv.group=" + spec.serviceName
+	if len(spec.tenantName) != 0 && spec.tenantName != "default" {
+		labelstr = labelstr + " --labels=io.contiv.tenant=" + spec.tenantName
 	}
 
-	if spec.imageName == "" {
-		image = "--image=alpine"
+	if spec.serviceName != "" {
+		labelstr = labelstr + " --labels=io.contiv.group=" + spec.serviceName
 	}
+
+	image = "--image=contiv/nc-busybox"
 
 	if spec.commandName == "" {
 		spec.commandName = "sleep 60m"
 	}
 
 	if spec.name != "" {
-		namestr = "--name=" + spec.name
+		namestr = spec.name
 	}
 
 	if len(spec.labels) > 0 {
-		l := "--selector="
+		l := " --labels="
 		for _, label := range spec.labels {
 			labelstr += l + label + " "
 		}
@@ -79,16 +81,17 @@ func (k *kubernetes) runContainer(spec containerSpec) (*container, error) {
 
 	logrus.Infof("Starting Pod %s on with: %s", spec.name, cmd)
 
-	out, err := k.master.tbnode.RunCommandWithOutput(cmd)
+	out, err := k8master.tbnode.RunCommandWithOutput(cmd)
 	if err != nil {
 		logrus.Infof("cmd %q failed: output below", cmd)
 		logrus.Println(out)
 		return nil, err
 	}
 
+	time.Sleep(120 * time.Second)
 	//find out the node where pod is deployed
 	cmd = fmt.Sprintf("kubectl get pod %s -o wide | grep %s", spec.name, spec.name)
-	out, err = k.master.tbnode.RunCommandWithOutput(cmd)
+	out, err = k8master.tbnode.RunCommandWithOutput(cmd)
 	if err != nil {
 		logrus.Infof("cmd %q failed: output below", cmd)
 		logrus.Println(out)
@@ -161,7 +164,7 @@ func (k *kubernetes) getIPAddr(c *container, dev string) (string, error) {
 }
 
 func (k *kubernetes) exec(c *container, args string) (string, error) {
-	out, err := c.master.runCommand(fmt.Sprintf("kubectl exec %s %s", c.containerID, args))
+	out, err := k8master.runCommand(fmt.Sprintf("kubectl exec %s %s", c.containerID, args))
 	if err != nil {
 		logrus.Println(out)
 		return out, err
@@ -171,11 +174,11 @@ func (k *kubernetes) exec(c *container, args string) (string, error) {
 }
 
 func (k *kubernetes) execBG(c *container, args string) (string, error) {
-	return c.master.runCommand(fmt.Sprintf("kubectl exec -d %s %s", c.containerID, args))
+	return k8master.runCommand(fmt.Sprintf("kubectl exec -d %s %s", c.containerID, args))
 }
 
 func (k *kubernetes) kubeCmd(c *container, arg string) error {
-	out, err := c.master.runCommand(fmt.Sprintf("kubectl %s %s", arg, c.containerID))
+	out, err := k8master.runCommand(fmt.Sprintf("kubectl %s %s", arg, c.containerID))
 	if err != nil {
 		logrus.Println(out)
 		return err
@@ -248,20 +251,23 @@ func (n *node) cleanupDockerNetwork() error {
 */
 
 func (k *kubernetes) cleanupContainers() error {
-	logrus.Infof("Cleaning up containers on %s", k.node.Name())
-	return k.master.tbnode.RunCommand("kubectl delete pods --all")
+	if k.node.Name() == "k8master" {
+		logrus.Infof("Cleaning up containers on %s", k.node.Name())
+		return k8master.tbnode.RunCommand("kubectl delete pods --all")
+	}
+	return nil
 }
 
 func (k *kubernetes) startNetplugin(args string) error {
-	if k.node.Name() == k.master.Name() {
+	if k.node.Name() == "k8master" {
 		return nil
 	}
 	logrus.Infof("Starting netplugin on %s", k.node.Name())
-	return k.node.tbnode.RunCommandBackground("sudo " + k.node.suite.binpath + "/netplugin -plugin-mode docker -vlan-if " + k.node.suite.vlanIf + " --cluster-store " + k.node.suite.clusterStore + " " + args + "&> /tmp/netplugin.log")
+	return k.node.tbnode.RunCommandBackground("sudo " + k.node.suite.binpath + "/netplugin -plugin-mode kubernetes -vlan-if " + k.node.suite.vlanIf + " --cluster-store " + k.node.suite.clusterStore + " " + args + "&> /tmp/netplugin.log")
 }
 
 func (k *kubernetes) stopNetplugin() error {
-	if k.node.Name() == k.master.Name() {
+	if k.node.Name() == "k8master" {
 		return nil
 	}
 	logrus.Infof("Stopping netplugin on %s", k.node.Name())
@@ -269,7 +275,7 @@ func (k *kubernetes) stopNetplugin() error {
 }
 
 func (k *kubernetes) stopNetmaster() error {
-	if k.node.Name() != k.master.Name() {
+	if k.node.Name() != "k8master" {
 		return nil
 	}
 	logrus.Infof("Stopping netmaster on %s", k.node.Name())
@@ -277,7 +283,7 @@ func (k *kubernetes) stopNetmaster() error {
 }
 
 func (k *kubernetes) startNetmaster() error {
-	if k.node.Name() != k.master.Name() {
+	if k.node.Name() != "k8master" {
 		return nil
 	}
 	logrus.Infof("Starting netmaster on %s", k.node.Name())
@@ -285,14 +291,14 @@ func (k *kubernetes) startNetmaster() error {
 	if k.node.suite.enableDNS {
 		dnsOpt = " --dns-enable=true "
 	}
-	return k.node.tbnode.RunCommandBackground(k.node.suite.binpath + "/netmaster" + dnsOpt + " --cluster-store " + k.node.suite.clusterStore + " &> /tmp/netmaster.log")
+	return k.node.tbnode.RunCommandBackground(k.node.suite.binpath + "/netmaster" + dnsOpt + " --cluster-store " + k.node.suite.clusterStore + " " + "--cluster-mode kubernetes &> /tmp/netmaster.log")
 }
 func (k *kubernetes) cleanupMaster() {
-	if k.node.Name() != k.master.Name() {
+	if k.node.Name() != "k8master" {
 		return
 	}
-	logrus.Infof("Cleaning up master on %s", k.node.Name())
-	vNode := k.master.tbnode
+	logrus.Infof("Cleaning up master on %s", k8master.Name())
+	vNode := k8master.tbnode
 	vNode.RunCommand("etcdctl rm --recursive /contiv")
 	vNode.RunCommand("etcdctl rm --recursive /contiv.io")
 	vNode.RunCommand("etcdctl rm --recursive /docker")
@@ -302,7 +308,7 @@ func (k *kubernetes) cleanupMaster() {
 }
 
 func (k *kubernetes) cleanupSlave() {
-	if k.node.Name() == k.master.Name() {
+	if k.node.Name() == "k8master" {
 		return
 	}
 	logrus.Infof("Cleaning up slave on %s", k.node.Name())
@@ -312,4 +318,31 @@ func (k *kubernetes) cleanupSlave() {
 	vNode.RunCommand("for p in `ifconfig  | grep vport | awk '{print $1}'`; do sudo ip link delete $p type veth; done")
 	vNode.RunCommand("sudo rm /var/run/docker/plugins/netplugin.sock")
 	vNode.RunCommand("sudo service docker restart")
+}
+
+func (k *kubernetes) runCommandUntilNoNetmasterError() error {
+	if k.node.Name() == "k8master" {
+		return k.node.runCommandUntilNoError("pgrep netmaster")
+	}
+	return nil
+}
+func (k *kubernetes) runCommandUntilNoNetpluginError() error {
+	if k.node.Name() != "k8master" {
+		return k.node.runCommandUntilNoError("pgrep netplugin")
+	}
+	return nil
+}
+
+func (k *kubernetes) rotateNetmasterLog() error {
+	if k.node.Name() == "k8master" {
+		return k.node.rotateLog("netmaster")
+	}
+	return nil
+}
+
+func (k *kubernetes) rotateNetpluginLog() error {
+	if k.node.Name() != "k8master" {
+		return k.node.rotateLog("netplugin")
+	}
+	return nil
 }

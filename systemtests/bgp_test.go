@@ -515,7 +515,7 @@ func (s *systemtestSuite) TestBgpTriggerNetpluginRestart(c *C) {
 		time.Sleep(30 * time.Second)
 		c.Assert(node.rotateLog("netplugin"), IsNil)
 		c.Assert(node.exec.startNetplugin("-fwd-mode=routing"), IsNil)
-		c.Assert(node.runCommandUntilNoError("pgrep netplugin"), IsNil)
+		c.Assert(node.exec.runCommandUntilNoNetpluginError(), IsNil)
 		time.Sleep(15 * time.Second)
 		s.CheckBgpConnection(c)
 		_, err = s.CheckBgpRouteDistribution(c, allcontainers)

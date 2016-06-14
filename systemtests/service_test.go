@@ -818,7 +818,7 @@ func (s systemtestSuite) TestServiceTriggerNetpluginRestart(c *C) {
 			time.Sleep(2 * time.Minute)
 			c.Assert(node.rotateLog("netplugin"), IsNil)
 			c.Assert(node.startNetplugin("-fwd-mode=routing"), IsNil)
-			c.Assert(node.runCommandUntilNoError("pgrep netplugin"), IsNil)
+			c.Assert(node.exec.runCommandUntilNoNetpluginError(), IsNil)
 			time.Sleep(20 * time.Second)
 			for _, ips := range serviceIPs {
 				endChan := make(chan error)

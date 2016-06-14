@@ -18,4 +18,8 @@ type systemTestScheduler interface {
 	checkPingFailure(c *container, ipaddr string) error
 	cleanupSlave()
 	cleanupMaster()
+	runCommandUntilNoNetpluginError() error
+	runCommandUntilNoNetmasterError() error
+	rotateNetmasterLog() error
+	rotateNetpluginLog() error
 }

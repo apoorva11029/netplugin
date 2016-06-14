@@ -110,7 +110,7 @@ func (s *systemtestSuite) TestTriggerNetpluginDisconnect(c *C) {
 			} else {
 				c.Assert(node.exec.startNetplugin(""), IsNil)
 			}
-			c.Assert(node.runCommandUntilNoError("pgrep netplugin"), IsNil)
+			c.Assert(node.exec.runCommandUntilNoNetpluginError(), IsNil)
 			time.Sleep(20 * time.Second)
 
 			c.Assert(s.pingTest(containers), IsNil)
@@ -279,11 +279,11 @@ func (s *systemtestSuite) TestTriggerNodeReload(c *C) {
 			} else {
 				c.Assert(node.exec.startNetplugin(""), IsNil)
 			}
-			c.Assert(node.runCommandUntilNoError("pgrep netplugin"), IsNil)
+			c.Assert(node.exec.runCommandUntilNoNetpluginError(), IsNil)
 			time.Sleep(20 * time.Second)
 			c.Assert(node.exec.startNetmaster(), IsNil)
 			time.Sleep(1 * time.Second)
-			c.Assert(node.runCommandUntilNoError("pgrep netmaster"), IsNil)
+			c.Assert(node.exec.runCommandUntilNoNetmasterError(), IsNil)
 			time.Sleep(20 * time.Second)
 
 			// clear previous containers from reloaded node
@@ -418,7 +418,7 @@ func (s *systemtestSuite) TestTriggers(c *C) {
 				} else {
 					c.Assert(node.exec.startNetplugin(""), IsNil)
 				}
-				c.Assert(node.runCommandUntilNoError("pgrep netplugin"), IsNil)
+				c.Assert(node.exec.runCommandUntilNoNetpluginError(), IsNil)
 				time.Sleep(20 * time.Second)
 			}
 		case 1:
@@ -431,7 +431,7 @@ func (s *systemtestSuite) TestTriggers(c *C) {
 
 				c.Assert(node.exec.startNetmaster(), IsNil)
 				time.Sleep(1 * time.Second)
-				c.Assert(node.runCommandUntilNoError("pgrep netmaster"), IsNil)
+				c.Assert(node.exec.runCommandUntilNoNetmasterError(), IsNil)
 			}
 			time.Sleep(30 * time.Second)
 		case 2:

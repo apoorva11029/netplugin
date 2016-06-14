@@ -286,3 +286,19 @@ func (d *docker) cleanupSlave() {
 	vNode.RunCommand("sudo rm /var/run/docker/plugins/netplugin.sock")
 	vNode.RunCommand("sudo service docker restart")
 }
+
+func (d *docker) runCommandUntilNoNetpluginError() error {
+	return d.node.runCommandUntilNoError("pgrep netplugin")
+}
+
+func (d *docker) runCommandUntilNoNetmasterError() error {
+	return d.node.runCommandUntilNoError("pgrep netmaster")
+}
+
+func (d *docker) rotateNetmasterLog() error {
+	return d.node.rotateLog("netmaster")
+}
+
+func (d *docker) rotateNetpluginLog() error {
+	return d.node.rotateLog("netplugin")
+}

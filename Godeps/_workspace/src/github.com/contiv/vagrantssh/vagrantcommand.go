@@ -15,15 +15,13 @@ limitations under the License.
 
 package vagrantssh
 
-import (
-	"os"
-	"os/exec"
-)
-
+import "os"
+import "os/exec"
+import "fmt"
 // VagrantCommand is a command that is run on a vagrant node
 type VagrantCommand struct {
 	ContivNodes int
-	ContivEnv   string
+	Env        string
 }
 
 func (c *VagrantCommand) getCmd(cmd string, args ...string) *exec.Cmd {
@@ -31,10 +29,10 @@ func (c *VagrantCommand) getCmd(cmd string, args ...string) *exec.Cmd {
 	osCmd := exec.Command("vagrant", newArgs...)
 	osCmd.Env = os.Environ()
 
-	if c.ContivEnv != "" {
-		osCmd.Env = append(osCmd.Env, c.ContivEnv)
+	if c.Env != "" {
+		osCmd.Env = append(osCmd.Env, c.Env)
 	}
-
+        fmt.Printf("THE COMMAND IS %v \n",osCmd)
 	return osCmd
 }
 
@@ -47,3 +45,12 @@ func (c *VagrantCommand) Run(cmd string, args ...string) error {
 func (c *VagrantCommand) RunWithOutput(cmd string, args ...string) ([]byte, error) {
 	return c.getCmd(cmd, args...).CombinedOutput()
 }
+
+
+
+
+
+
+
+
+
