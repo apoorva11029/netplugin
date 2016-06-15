@@ -62,9 +62,7 @@ func (k *kubernetes) runContainer(spec containerSpec) (*container, error) {
 
 	image = "--image=contiv/nc-busybox"
 
-	if spec.commandName == "" {
-		spec.commandName = "sleep 60m"
-	}
+	cmdStr := " --command -- sleep 7000"
 
 	if spec.name != "" {
 		namestr = spec.name
@@ -77,7 +75,7 @@ func (k *kubernetes) runContainer(spec containerSpec) (*container, error) {
 		}
 	}
 
-	cmd := fmt.Sprintf("kubectl run %s %s %s %s", namestr, netstr, labelstr, image)
+	cmd := fmt.Sprintf("kubectl run %s %s %s -restart=Never %s ", namestr, labelstr, image, cmdStr)
 
 	logrus.Infof("Starting Pod %s on with: %s", spec.name, cmd)
 
@@ -90,7 +88,7 @@ func (k *kubernetes) runContainer(spec containerSpec) (*container, error) {
 
 	time.Sleep(120 * time.Second)
 	//find out the node where pod is deployed
-	cmd = fmt.Sprintf("kubectl get pod %s -o wide | grep %s", spec.name, spec.name)
+	cmd = fmt.Sprintf("kubectl get pods -o wide | grep %s", spec.name)
 	out, err = k8master.tbnode.RunCommandWithOutput(cmd)
 	if err != nil {
 		logrus.Infof("cmd %q failed: output below", cmd)

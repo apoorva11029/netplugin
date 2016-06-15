@@ -73,13 +73,13 @@ echo 'export GOBIN=$GOPATH/bin' >> /etc/profile.d/envvar.sh
 echo 'export GOSRC=$GOPATH/src' >> /etc/profile.d/envvar.sh
 echo 'export PATH=$PATH:/usr/local/go/bin:$GOBIN' >> /etc/profile.d/envvar.sh
 echo "export http_proxy='$1'" >> /etc/profile.d/envvar.sh
-echo "export https_proxy='$1'" >> /etc/profile.d/master.sh
+echo "export https_proxy='$2'" >> /etc/profile.d/envvar.sh
 echo "export no_proxy='k8master,192.168.2.10,192.168.2.11,192.168.2.12,netmaster,localhost,127.0.0.1'">> /etc/profile.d/envvar.sh 
 echo "export no_proxy='k8master,192.168.2.10,192.168.2.11,192.168.2.12,netmaster,localhost,127.0.0.1'" >> ~/.profile
 echo "export http_proxy='$1'" >> ~/.profile
-echo "export https_proxy='$1'" >> ~/.profile
+echo "export https_proxy='$2'" >> ~/.profile
 source /etc/profile.d/envvar.sh
-wget "https://storage.googleapis.com/golang/go1.6.2.linux-amd64.tar.gz" -O "/tmp/go1.6.2.linux-amd64.tar.gz"
+wget "http://storage.googleapis.com/golang/go1.6.2.linux-amd64.tar.gz" -O "/tmp/go1.6.2.linux-amd64.tar.gz"
 sudo -E bash
 cd /usr/local
 tar xvzf /tmp/go1.6.2.linux-amd64.tar.gz
@@ -123,9 +123,9 @@ Vagrant.configure(2) do |config|
               c.vm.network "forwarded_port", guest: 9999, host: 9999
        	   else
 	      if vm_name =="k8node-01" then
-	      	c.vm.box = "contiv/k8node-01"
+	      	c.vm.box = "contiv/k8node01"
 	      else 
-		c.vm.box = "contiv/k8node-02"
+		c.vm.box = "contiv/k8node02"
               end
 	      c.vm.box_version = "0.0.0"
 	   end
