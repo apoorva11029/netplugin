@@ -50,7 +50,6 @@ def read_cluster_config
   return clust_cfg
 end
 
-
 provision_k8 = <<SCRIPT
 echo 'export GOPATH=#{gopath_folder}' > /etc/profile.d/envvar.sh
 echo 'export GOBIN=$GOPATH/bin' >> /etc/profile.d/envvar.sh
@@ -103,7 +102,6 @@ Vagrant.configure(2) do |config|
 
   config.vm.synced_folder "./export", "/shared"
   #config.vm.synced_folder ".", "/vagrant" 
-  
   config.vm.provider(:virtualbox){|v| v.functional_vboxsf = false }
  
   cluster.each do |role, member_list|
@@ -114,7 +112,7 @@ Vagrant.configure(2) do |config|
        	   if  role == "master" then
 	      print "inside master \n"
 	      c.vm.box = "contiv/k8master"
-              c.vm.synced_folder "./../../","/opt/gopath/src/github.com/contiv/netplugin", rsync: true 
+              c.vm.synced_folder "./../../","/opt/gopath/src/github.com/contiv/netplugin" 
               c.vm.box_version = "0.0.0"
               c.vm.provision "shell" do |s|
                 s.inline = provision_master
@@ -146,8 +144,18 @@ Vagrant.configure(2) do |config|
         # configure ip address etc
         c.vm.hostname = vm_name
         c.vm.network :private_network, ip: member_info["contiv_control_ip"]
-        c.vm.network :private_network, ip: member_info["contiv_network_ip"]
-
+        c.vm.network :private_network, ip: member_info["contiv_network_ip"], virtualbox__intnet: "true", auto_config: false
+                    c.vm.provider "virtualbox" do |v|
+                # make all nics 'virtio' to take benefit of builtin vlan tag
+                # support, which otherwise needs to be enabled in Intel drivers,
+                # which are used by default by virtualbox
+                v.customize ['modifyvm', :id, '--nictype1', 'virtio']
+                v.customize ['modifyvm', :id, '--nictype2', 'virtio']
+                v.customize ['modifyvm', :id, '--nictype3', 'virtio']
+                v.customize ['modifyvm', :id, '--nicpromisc2', 'allow-all']
+                v.customize ['modifyvm', :id, '--nicpromisc3', 'allow-all']
+                v.customize ['modifyvm', :id, '--paravirtprovider', "kvm"]
+            end
         c.vm.provision "shell", inline: <<-EOS
           sudo setenforce 0
           sudo systemctl stop firewalld

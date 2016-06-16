@@ -45,6 +45,7 @@ func (s *systemtestSuite) testBasicStartRemoveContainer(c *C, encap string) {
 		}
 
 		c.Assert(s.pingTest(containers), IsNil)
+		logrus.Infof("I MA DONE WITH PINGTEST > WILL REMOVE CONTAINERS NOW !!!!!!!!!!!!!!!!!!!!!!!!!!")
 		c.Assert(s.removeContainers(containers), IsNil)
 	}
 
