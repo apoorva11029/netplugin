@@ -96,7 +96,7 @@ func (k *kubernetes) runContainer(spec containerSpec) (*container, error) {
 		return nil, err
 	}
 
-	time.Sleep(320 * time.Second)
+	time.Sleep(120 * time.Second)
 	//find out the node where pod is deployed
 	cmd = fmt.Sprintf("kubectl get pods -o wide | grep %s", spec.name)
 	fmt.Println("PRINTING=================================")
