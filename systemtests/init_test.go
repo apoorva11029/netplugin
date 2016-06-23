@@ -64,8 +64,8 @@ func TestMain(m *M) {
 	// flag.StringVar(&sts.password, "password", "vagrant", "Password for SSH")
 	flag.IntVar(&sts.iterations, "iterations", 3, "Number of iterations")
 
+	mast := getMaster()
 	if os.Getenv("ACI_SYS_TEST_MODE") == "ON" {
-		mast := getMaster()
 		flag.StringVar(&sts.vlanIf, "vlan-if", mast.HostDataInterface, "Data interface in Baremetal setup node")
 		flag.StringVar(&sts.binpath, "binpath", "/home/admin/bin", "netplugin/netmaster binary path")
 
@@ -119,11 +119,10 @@ func TestSystem(t *T) {
 func (s *systemtestSuite) SetUpSuite(c *C) {
 	logrus.Infof("Bootstrapping system tests")
 
+	mast := getMaster()
+	s.acinfo = mast
 	if os.Getenv("ACI_SYS_TEST_MODE") == "ON" {
 
-		mast := getMaster()
-
-		s.acinfo = mast
 		logrus.Infof("ACI_SYS_TEST_MODE is ON")
 		logrus.Infof("Private keyFile = %s", s.keyFile)
 		logrus.Infof("Binary binpath = %s", s.binpath)
