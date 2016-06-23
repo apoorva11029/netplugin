@@ -3,17 +3,17 @@ package systemtests
 import (
 	"flag"
 	"fmt"
+	"github.com/Sirupsen/logrus"
+	"github.com/contiv/contivmodel/client"
+	"github.com/contiv/vagrantssh"
+	. "gopkg.in/check.v1"
+
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 	. "testing"
 	"time"
-
-	"github.com/Sirupsen/logrus"
-	"github.com/contiv/contivmodel/client"
-	"github.com/contiv/vagrantssh"
-	. "gopkg.in/check.v1"
 )
 
 type systemtestSuite struct {
@@ -34,6 +34,21 @@ type systemtestSuite struct {
 	// user       string
 	// password   string
 	// nodes      []string
+	acinfo ACInfo
+}
+type ACInfo struct {
+	IP                string `json:"IP"`
+	HostIPs           string `json:"HOSTIPS"`
+	HostUsernames     string `json:"HOSTUSERNAMES"`
+	HostDataInterface string `json:"HOSTDATA"`
+	Vlan              string `json:"VLAN"`
+	Vxlan             string `json:"VXLAN"`
+	Subnet            string `json:"SUBNET"`
+	Gateway           string `json:"GATEWAY"`
+	Network           string `json:"NETWORK"`
+	Tenant            string `json:"Tenant"`
+	Encap             string `json:"Encap"`
+	Master            int    `json:"Master"`
 }
 
 var sts = &systemtestSuite{}
@@ -50,14 +65,17 @@ func TestMain(m *M) {
 	flag.IntVar(&sts.iterations, "iterations", 3, "Number of iterations")
 
 	if os.Getenv("ACI_SYS_TEST_MODE") == "ON" {
-		flag.StringVar(&sts.vlanIf, "vlan-if", os.Getenv("HOST_DATA_INTERFACE"), "Data interface in Baremetal setup node")
+		mast := getMaster()
+		flag.StringVar(&sts.vlanIf, "vlan-if", mast.HostDataInterface, "Data interface in Baremetal setup node")
 		flag.StringVar(&sts.binpath, "binpath", "/home/admin/bin", "netplugin/netmaster binary path")
+
 		if os.Getenv("KEY_FILE") == "" {
 			flag.StringVar(&sts.keyFile, "keyFile", "/home/admin/.ssh/id_rsa", "Insecure private key in ACI-systemtests")
 		} else {
 			keyFileValue := os.Getenv("KEY_FILE")
 			flag.StringVar(&sts.keyFile, "keyFile", keyFileValue, "Insecure private key in ACI-systemtests")
 		}
+
 	} else {
 		flag.StringVar(&sts.binpath, "binpath", "/opt/gopath/bin", "netplugin/netmaster binary path")
 		flag.StringVar(&sts.vlanIf, "vlan-if", "eth2", "VLAN interface for OVS bridge")
@@ -103,6 +121,9 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 
 	if os.Getenv("ACI_SYS_TEST_MODE") == "ON" {
 
+		mast := getMaster()
+
+		s.acinfo = mast
 		logrus.Infof("ACI_SYS_TEST_MODE is ON")
 		logrus.Infof("Private keyFile = %s", s.keyFile)
 		logrus.Infof("Binary binpath = %s", s.binpath)
@@ -113,8 +134,10 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 
 		// To fill the hostInfo data structure for Baremetal VMs
 		name := "aci-swarm-node"
-		hostIPs := strings.Split(os.Getenv("HOST_IPS"), ",")
-		hostNames := strings.Split(os.Getenv("HOST_USER_NAMES"), ",")
+
+		hostIPs := strings.Split(s.acinfo.HostIPs, ",")
+		hostNames := strings.Split(s.acinfo.HostUsernames, ",")
+
 		hosts := make([]vagrantssh.HostInfo, 2)
 
 		for i := range hostIPs {

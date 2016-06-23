@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/Sirupsen/logrus"
+	"io/ioutil"
 	"math/rand"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
-
-	"github.com/Sirupsen/logrus"
 )
 
 func (s *systemtestSuite) checkConnectionPair(containers1, containers2 []*container, port int) error {
@@ -793,4 +794,44 @@ func (s *systemtestSuite) startListenersOnProviders(containers []*container, por
 	}
 
 	return nil
+}
+
+//Helper function to convert JSON objects to string
+func toJSON(p interface{}) string {
+	bytes, err := json.Marshal(p)
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+
+	return string(bytes)
+}
+
+func (p ACInfo) toString() string {
+	return toJSON(p)
+}
+
+//Function to extract ACI Info from JSON files
+func getInfo() []ACInfo {
+	raw, err := ioutil.ReadFile("cfg.json")
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+	var c []ACInfo
+	json.Unmarshal(raw, &c)
+	return c
+}
+
+//Function to get the master node for ACI mode
+func getMaster() ACInfo {
+	infos := getInfo()
+	var mast ACInfo
+	for _, p := range infos {
+		if p.Master == 1 {
+			mast = p
+			break
+		}
+	}
+	return mast
 }
