@@ -281,7 +281,7 @@ func processBgpEvent(netPlugin *plugin.NetPlugin, opts cliOpts, hostID string, i
 	var err error
 
 	if opts.hostLabel != hostID {
-		log.Errorf("Ignoring Bgp Event on this host")
+		log.Debugf("Ignoring Bgp Event on this host")
 		return err
 	}
 	netPlugin.Lock()
@@ -448,6 +448,7 @@ func serveRequests(netPlugin *plugin.NetPlugin) {
 			http.Error(w, "Error fetching stats from driver", http.StatusInternalServerError)
 			return
 		}
+		w.Header().Set("Content-Type", "application/json")
 		w.Write(stats)
 	})
 	s.HandleFunc("/inspect/driver", func(w http.ResponseWriter, r *http.Request) {
@@ -771,7 +772,10 @@ func handleDockerEvents(event *dockerclient.Event, ec chan error, args ...interf
 		}
 		if event.ID != "" {
 			labelMap := getLabelsFromContainerInspect(&containerInfo)
-
+			if len(labelMap) == 0 {
+				//Ignore container without labels
+				return
+			}
 			containerTenant := getTenantFromContainerInspect(&containerInfo)
 			network, ipAddress := getEpNetworkInfoFromContainerInspect(&containerInfo)
 			container := getContainerFromContainerInspect(&containerInfo)
@@ -790,10 +794,7 @@ func handleDockerEvents(event *dockerclient.Event, ec chan error, args ...interf
 					providerUpdReq.Labels[k] = v
 				}
 			}
-			if len(labelMap) == 0 {
-				//Ignore container without labels
-				return
-			}
+
 			var svcProvResp master.SvcProvUpdateResponse
 
 			log.Infof("Sending Provider create request to master: {%+v}", providerUpdReq)
