@@ -807,31 +807,48 @@ func toJSON(p interface{}) string {
 	return string(bytes)
 }
 
-func (p ACInfo) toString() string {
+//Helper functions for JSON file handling
+func (p ACInfoGlob) toString() string {
+	return toJSON(p)
+}
+
+func (p ACInfoHost) toString() string {
 	return toJSON(p)
 }
 
 //Function to extract ACI Info from JSON files
-func getInfo() []ACInfo {
+func getInfo() ([]ACInfoHost, []ACInfoGlob) {
 	raw, err := ioutil.ReadFile("cfg.json")
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
 	}
-	var c []ACInfo
+	var c []ACInfoHost
 	json.Unmarshal(raw, &c)
-	return c
+
+	var d []ACInfoGlob
+	json.Unmarshal(raw, &d)
+
+	return c, d
 }
 
 //Function to get the master node for ACI mode
-func getMaster() ACInfo {
-	infos := getInfo()
-	var mast ACInfo
-	for _, p := range infos {
-		if p.Master == 1 {
-			mast = p
+func getMaster() (ACInfoHost, ACInfoGlob) {
+	infoshost, infosglob := getInfo()
+	var masthost ACInfoHost
+	for _, p := range infoshost {
+		if p.Master == true {
+			masthost = p
 			break
 		}
 	}
-	return mast
+
+	var mastglob ACInfoGlob
+	for _, p := range infosglob {
+		if p.Master == true {
+			mastglob = p
+			break
+		}
+	}
+	return masthost, mastglob
 }

@@ -78,7 +78,7 @@ func (n *node) stopNetplugin() error {
 
 func (s *systemtestSuite) copyBinary(fileName string) error {
 	logrus.Infof("Copying %s binary to %s", fileName, s.binpath)
-	hostIPs := strings.Split(s.acinfo.HostIPs, ",")
+	hostIPs := strings.Split(s.acinfoHost.HostIPs, ",")
 	srcFile := s.binpath + "/" + fileName
 	destFile := s.binpath + "/" + fileName
 	for i := 1; i < len(s.nodes); i++ {
@@ -165,6 +165,10 @@ func (n *node) restartContainers(str string) error {
 	return n.tbnode.RunCommand("docker restart `docker ps | grep " + str + " | awk '{print $1}' `")
 }
 
+func (n *node) restartACIGW() error {
+
+	return n.tbnode.RunCommand("sudo service aci-gw restart")
+}
 func (n *node) runContainer(spec containerSpec) (*container, error) {
 	var namestr, netstr, dnsStr, labelstr string
 

@@ -1,34 +1,30 @@
 [
     {
-        "IP": "10.193.246.70",
-	"HOSTIPS" : "10.193.246.70,10.193.246.71",
-	"HOSTUSERNAMES" : "admin,admin",
-	"HOSTDATA" : "eno33559296",
-	
-		
-
-	"VLAN" : "1150-1170",
-	"VXLAN" : "1-10000",
-	"SUBNET" : "20.1.1.0/24",
-	"GATEWAY" : "20.1.1.254",
- 	"NETWORK" : "aciNet",
-        "Tenant": "TestTenant",
-	"Encap" : "vlan",
-	"Master" : 1	
+        "ip": "10.193.246.70",
+	"hostips" : "10.193.246.70,10.193.246.71",
+	"hostusernames" : "admin,admin",
+	"hostdata" : "eno33559296",
+	"vlan" : "1150-1170",
+	"vxlan" : "1-10000",
+	"subnet" : "20.1.1.0/24",
+	"gateway" : "20.1.1.254",
+ 	"network" : "aciNet",
+        "tenant": "TestTenant",
+	"encap" : "vlan",
+	"master" : true
     },
     {
-        "IP": "10.193.246.71",
-        "HOSTIPS" : "10.193.246.70,10.193.246.71",
-        "HOSTUSERNAMES" : "admin,admin",
-        "HOSTDATA" : "e0247dc",
-        
-        "VLAN" : "1100-1800",
-        "VXLAN" : "1-1000",
-        "SUBNET" : "22.2.2.0/24",
-        "GATEWAY" : "22.2.2.254",
-        "NETWORK" : "aciNet",
-        "Tenant": "aciTenant",
-        "Encap" : "vlan",
-	"Master" : 0
+        "ip": "10.193.246.71",
+        "hostips" : "10.193.246.70,10.193.246.71",
+        "hostusernames" : "admin,admin",
+        "hostdata" : "e0247dc",
+        "vlan" : "1100-1800",
+        "vxlan" : "1-1000",
+        "subnet" : "22.2.2.0/24",
+        "gateway" : "22.2.2.254",
+        "network" : "aciNet",
+        "tenant": "aciTenant",
+        "encap" : "vlan",
+	"master" : false
     }
 ]

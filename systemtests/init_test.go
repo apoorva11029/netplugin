@@ -34,22 +34,28 @@ type systemtestSuite struct {
 	// user       string
 	// password   string
 	// nodes      []string
-	acinfo ACInfo
+	acinfoHost ACInfoHost
+	acinfoGlob ACInfoGlob
 }
-type ACInfo struct {
-	IP                string `json:"IP"`
-	HostIPs           string `json:"HOSTIPS"`
-	HostUsernames     string `json:"HOSTUSERNAMES"`
-	HostDataInterface string `json:"HOSTDATA"`
-	Vlan              string `json:"VLAN"`
-	Vxlan             string `json:"VXLAN"`
-	Subnet            string `json:"SUBNET"`
-	Gateway           string `json:"GATEWAY"`
-	Network           string `json:"NETWORK"`
-	Tenant            string `json:"Tenant"`
-	Encap             string `json:"Encap"`
-	Master            int    `json:"Master"`
+type ACInfoHost struct {
+	IP                string `json:"ip"`
+	HostIPs           string `json:"hostips"`
+	HostUsernames     string `json:"hostusernames"`
+	HostDataInterface string `json:"hostdata"`
+	Master            bool    `json:"master"`
 }
+
+type ACInfoGlob struct {
+	Vlan              string `json:"vlan"`
+	Vxlan             string `json:"vxlan"`
+	Subnet            string `json:"subnet"`
+	Gateway           string `json:"gateway"`
+	Network           string `json:"network"`
+	Tenant            string `json:"tenant"`
+	Encap             string `json:"encap"`
+	Master            bool    `json:"master"`
+}
+
 
 var sts = &systemtestSuite{}
 
@@ -64,9 +70,9 @@ func TestMain(m *M) {
 	// flag.StringVar(&sts.password, "password", "vagrant", "Password for SSH")
 	flag.IntVar(&sts.iterations, "iterations", 3, "Number of iterations")
 
-	mast := getMaster()
+	masthost,_ := getMaster()
 	if os.Getenv("ACI_SYS_TEST_MODE") == "ON" {
-		flag.StringVar(&sts.vlanIf, "vlan-if", mast.HostDataInterface, "Data interface in Baremetal setup node")
+		flag.StringVar(&sts.vlanIf, "vlan-if", masthost.HostDataInterface, "Data interface in Baremetal setup node")
 		flag.StringVar(&sts.binpath, "binpath", "/home/admin/bin", "netplugin/netmaster binary path")
 
 		if os.Getenv("KEY_FILE") == "" {
@@ -119,8 +125,9 @@ func TestSystem(t *T) {
 func (s *systemtestSuite) SetUpSuite(c *C) {
 	logrus.Infof("Bootstrapping system tests")
 
-	mast := getMaster()
-	s.acinfo = mast
+	masthost, mastglob := getMaster()
+	s.acinfoHost = masthost
+	s.acinfoGlob = mastglob
 	if os.Getenv("ACI_SYS_TEST_MODE") == "ON" {
 
 		logrus.Infof("ACI_SYS_TEST_MODE is ON")
@@ -134,8 +141,8 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 		// To fill the hostInfo data structure for Baremetal VMs
 		name := "aci-swarm-node"
 
-		hostIPs := strings.Split(s.acinfo.HostIPs, ",")
-		hostNames := strings.Split(s.acinfo.HostUsernames, ",")
+		hostIPs := strings.Split(s.acinfoHost.HostIPs, ",")
+		hostNames := strings.Split(s.acinfoHost.HostUsernames, ",")
 
 		hosts := make([]vagrantssh.HostInfo, 2)
 
