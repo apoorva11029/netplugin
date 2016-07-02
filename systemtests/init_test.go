@@ -42,20 +42,19 @@ type ACInfoHost struct {
 	HostIPs           string `json:"hostips"`
 	HostUsernames     string `json:"hostusernames"`
 	HostDataInterface string `json:"hostdata"`
-	Master            bool    `json:"master"`
+	Master            bool   `json:"master"`
 }
 
 type ACInfoGlob struct {
-	Vlan              string `json:"vlan"`
-	Vxlan             string `json:"vxlan"`
-	Subnet            string `json:"subnet"`
-	Gateway           string `json:"gateway"`
-	Network           string `json:"network"`
-	Tenant            string `json:"tenant"`
-	Encap             string `json:"encap"`
-	Master            bool    `json:"master"`
+	Vlan    string `json:"vlan"`
+	Vxlan   string `json:"vxlan"`
+	Subnet  string `json:"subnet"`
+	Gateway string `json:"gateway"`
+	Network string `json:"network"`
+	Tenant  string `json:"tenant"`
+	Encap   string `json:"encap"`
+	Master  bool   `json:"master"`
 }
-
 
 var sts = &systemtestSuite{}
 
@@ -70,7 +69,7 @@ func TestMain(m *M) {
 	// flag.StringVar(&sts.password, "password", "vagrant", "Password for SSH")
 	flag.IntVar(&sts.iterations, "iterations", 3, "Number of iterations")
 
-	masthost,_ := getMaster()
+	masthost, _ := getMaster()
 	if os.Getenv("ACI_SYS_TEST_MODE") == "ON" {
 		flag.StringVar(&sts.vlanIf, "vlan-if", masthost.HostDataInterface, "Data interface in Baremetal setup node")
 		flag.StringVar(&sts.binpath, "binpath", "/home/admin/bin", "netplugin/netmaster binary path")
