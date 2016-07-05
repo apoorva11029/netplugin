@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/contiv/remotessh"
 	"github.com/contiv/systemtests-utils"
-	"github.com/contiv/vagrantssh"
 )
 
 type containerSpec struct {
@@ -24,7 +24,7 @@ type containerSpec struct {
 }
 
 type node struct {
-	tbnode vagrantssh.TestbedNode
+	tbnode remotessh.TestbedNode
 	suite  *systemtestSuite
 }
 
