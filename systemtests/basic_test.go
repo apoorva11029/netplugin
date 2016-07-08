@@ -43,7 +43,14 @@ func (s *systemtestSuite) testBasicStartRemoveContainer(c *C, encap string) {
 			_, err = s.CheckBgpRouteDistribution(c, containers)
 			c.Assert(err, IsNil)
 		}
+		outChan:=make(chan string,100)
+		out,_:=s.nodes[0].runCommand("docker ps")
+		outChan<-out
+		logrus.Infof("docker ps for first node ====== %s", strings.TrimSpaces(<-outChan))
 
+		out,_=s.nodes[1].runCommand("docker ps")
+		outChan<-out
+		logrus.Infof("docker ps for second node ====== %s", strings.TrimSpaces(<-outChan))
 		c.Assert(s.pingTest(containers), IsNil)
 		c.Assert(s.removeContainers(containers), IsNil)
 	}

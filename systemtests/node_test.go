@@ -150,7 +150,7 @@ func (n *node) runCommand(cmd string) (string, error) {
 	)
 
 	for {
-		str, err = n.tbnode.RunCommandWithOutput(cmd)
+		str, err = n.tbnode.RunCommandWithOutput("DOCKER_HOST=192.168.2.10:2375 "+cmd)
 		if err == nil || !strings.Contains(err.Error(), "EOF") {
 			break
 		}
@@ -207,7 +207,7 @@ func (n *node) runContainer(spec containerSpec) (*container, error) {
 
 	logrus.Infof("Starting a container running %q on %s", spec.commandName, n.Name())
 
-	cmd := fmt.Sprintf("docker run -itd %s %s %s %s %s %s", namestr, netstr, dnsStr, labelstr, spec.imageName, spec.commandName)
+	cmd := fmt.Sprintf("DOCKER_HOST=192.168.2.10:2375 docker run -itd %s %s %s %s %s %s", namestr, netstr, dnsStr, labelstr, spec.imageName, spec.commandName)
 
 	out, err := n.tbnode.RunCommandWithOutput(cmd)
 	if err != nil {
@@ -253,7 +253,7 @@ func (n *node) checkForNetpluginErrors() error {
 
 func (n *node) runCommandUntilNoError(cmd string) error {
 	runCmd := func() (string, bool) {
-		if err := n.tbnode.RunCommand(cmd); err != nil {
+		if err := n.tbnode.RunCommand("DOCKER_HOST=192.168.2.10:2375 "+cmd); err != nil {
 			return "", false
 		}
 		return "", true
@@ -266,7 +266,7 @@ func (n *node) runCommandUntilNoError(cmd string) error {
 func (n *node) checkPingWithCount(ipaddr string, count int) error {
 	logrus.Infof("Checking ping from %s to %s", n.Name(), ipaddr)
 	cmd := fmt.Sprintf("ping -c %d %s", count, ipaddr)
-	out, err := n.tbnode.RunCommandWithOutput(cmd)
+	out, err := n.tbnode.RunCommandWithOutput("DOCKER_HOST=192.168.2.10:2375 "+cmd)
 
 	if err != nil || strings.Contains(out, "0 received, 100% packet loss") {
 		logrus.Errorf("Ping from %s to %s FAILED: %q - %v", n.Name(), ipaddr, out, err)
