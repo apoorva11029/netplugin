@@ -56,20 +56,26 @@ func (k *kubernetes) newContainer(node *node, containerID, name string, spec con
 
 func (k *kubernetes) runContainer(spec containerSpec) (*container, error) {
 	var namestr, netstr, labelstr, image string
-
-	if spec.networkName != "" {
-		netstr = spec.networkName
-		labelstr = "--labels=io.contiv.network=" + netstr
-	}
+	labels := []string{}
 	if len(spec.tenantName) != 0 && spec.tenantName != "default" {
-		labelstr = labelstr + " --labels=io.contiv.tenant=" + spec.tenantName
+		labels = append(labels, "io.contiv.tenant="+spec.tenantName)
 	}
 
 	if spec.serviceName != "" {
-		labelstr = labelstr + " --labels=io.contiv.group=" + spec.serviceName
+		labels = append(labels, "io.contiv.group="+spec.serviceName)
+	} else {
+		if spec.networkName != "" {
+			netstr = spec.networkName
+			labels = append(labels, "io.contiv.network="+netstr)
+		}
 	}
 
-	image = "--image=contiv/nc-busybox"
+	labelstr = strings.Join(labels, ",")
+
+	if len(labelstr) != 0 {
+		labelstr = "--labels=" + labelstr
+	}
+	image = "--image=alpine " //contiv/nc-busybox"
 
 	cmdStr := " --command -- sleep 900000"
 
@@ -96,18 +102,18 @@ func (k *kubernetes) runContainer(spec containerSpec) (*container, error) {
 		return nil, err
 	}
 
-	time.Sleep(120 * time.Second)
 	//find out the node where pod is deployed
-	cmd = fmt.Sprintf("kubectl get pods -o wide | grep %s", spec.name)
-	fmt.Println("PRINTING=================================")
-	////master.lock()
-	out, err = k8master.tbnode.RunCommandWithOutput(cmd)
-	//master.unlock()
-	logrus.Infof("%v", out)
-	if err != nil {
-		logrus.Infof("cmd %q failed: output below", cmd)
-		logrus.Println(out)
-		return nil, err
+
+	for i := 0; i < 50; i++ {
+		time.Sleep(5 * time.Second)
+		cmd = fmt.Sprintf("kubectl get pods -o wide | grep %s", spec.name)
+		fmt.Println("PRINTING=================================")
+		////master.lock()
+		out, err = k8master.tbnode.RunCommandWithOutput(cmd)
+		logrus.Infof("%v", out)
+		if strings.Contains(out, "Running") {
+			break
+		}
 	}
 
 	podInfoStr := strings.TrimSpace(out)
@@ -196,10 +202,10 @@ func (k *kubernetes) exec(c *container, args string) (string, error) {
 	return out, nil
 }
 
-func (k *kubernetes) execBG(c *container, args string) (string, error) {
-	////master.lock()
-	//defer master.unlock()
-	return k8master.runCommand(fmt.Sprintf("kubectl exec %s -- %s", c.containerID, args))
+func (k *kubernetes) execBG(c *container, args string) {
+	cmd := fmt.Sprintf("kubectl exec %s -- %s", c.containerID, args)
+	logrus.Infof("Running the following command %s", cmd)
+	k8master.tbnode.RunCommandBackground(cmd)
 }
 
 func (k *kubernetes) kubeCmd(c *container, arg string) error {
@@ -250,10 +256,9 @@ func (k *kubernetes) startListener(c *container, port int, protocol string) erro
 	if protocol == "udp" {
 		protoStr = "-u"
 	}
+	k.execBG(c, fmt.Sprintf("nc -lk %s -p %v -e /bin/true", protoStr, port))
+	return nil
 
-	logrus.Infof("Starting a %s listener on %v port %d", protocol, c, port)
-	_, err := k.execBG(c, fmt.Sprintf("nc -lk %s -p %v -e /bin/true", protoStr, port))
-	return err
 }
 
 func (k *kubernetes) checkConnection(c *container, ipaddr, protocol string, port int) error {
