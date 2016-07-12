@@ -13,6 +13,11 @@ import (
 )
 
 func (s *systemtestSuite) TestTriggerNetmasterSwitchover(c *C) {
+
+	if s.scheduler == "k8" {
+		return
+	}
+
 	network := &client.Network{
 		TenantName:  "default",
 		NetworkName: "private",
@@ -101,14 +106,14 @@ func (s *systemtestSuite) TestTriggerNetpluginDisconnect(c *C) {
 		c.Assert(err, IsNil)
 
 		for _, node := range s.nodes {
-			c.Assert(node.exec.stopNetplugin(), IsNil)
+			c.Assert(node.stopNetplugin(), IsNil)
 			logrus.Info("Sleeping for a while to wait for netplugin's TTLs to expire")
 			time.Sleep(50 * time.Second)
 			c.Assert(node.rotateLog("netplugin"), IsNil)
 			if s.fwdMode == "routing" {
-				c.Assert(node.exec.startNetplugin("-fwd-mode=routing"), IsNil)
+				c.Assert(node.startNetplugin("-fwd-mode=routing"), IsNil)
 			} else {
-				c.Assert(node.exec.startNetplugin(""), IsNil)
+				c.Assert(node.startNetplugin(""), IsNil)
 			}
 			c.Assert(node.exec.runCommandUntilNoNetpluginError(), IsNil)
 			time.Sleep(20 * time.Second)
@@ -178,7 +183,7 @@ func (s *systemtestSuite) TestTriggerNodeReload(c *C) {
 			time.Sleep(20 * time.Second)
 
 			// clear previous containers from reloaded node
-			node.cleanupContainers()
+			node.exec.cleanupContainers()
 
 			exContainers := []*container{}
 			for _, cont := range containers {
@@ -213,7 +218,7 @@ func (s *systemtestSuite) TestTriggerClusterStoreRestart(c *C) {
 	c.Assert(s.cli.NetworkPost(network), IsNil)
 
 	for i := 0; i < s.iterations; i++ {
-		containers, err := s.runContainers(s.containers, false, "private", nil, nil)
+		containers, err := s.runContainers(s.containers, false, "private", "default", nil, nil)
 		c.Assert(err, IsNil)
 
 		// test ping for all containers
@@ -234,81 +239,6 @@ func (s *systemtestSuite) TestTriggerClusterStoreRestart(c *C) {
 
 	// delete the network
 	c.Assert(s.cli.NetworkDelete("default", "private"), IsNil)
-}
-
-func (s *systemtestSuite) TestTriggerNodeReload(c *C) {
-	if os.Getenv("CONTIV_DOCKER_VERSION") != "1.11.1" {
-		c.Skip("Skipping node reload test on older docker version")
-	}
-	network := &client.Network{
-		TenantName:  "default",
-		NetworkName: "private",
-		Subnet:      "10.1.0.0/16",
-		Gateway:     "10.1.1.254",
-		Encap:       "vxlan",
-	}
-	c.Assert(s.cli.NetworkPost(network), IsNil)
-
-	numContainers := s.containers
-	if numContainers < (len(s.nodes) * 2) {
-		numContainers = len(s.nodes) * 2
-	}
-	cntPerNode := numContainers / len(s.nodes)
-
-	for i := 0; i < s.iterations; i++ {
-		containers := []*container{}
-
-		// start containers on all nodes
-		for _, node := range s.nodes {
-			newContainers, err := s.runContainersOnNode(cntPerNode, "private", "", node)
-			c.Assert(err, IsNil)
-			containers = append(containers, newContainers...)
-		}
-
-		// test ping for all containers
-		c.Assert(s.pingTest(containers), IsNil)
-
-		// reload VMs one at a time
-		for _, node := range s.nodes {
-			c.Assert(node.reloadNode(), IsNil)
-			c.Assert(node.rotateLog("netplugin"), IsNil)
-			c.Assert(node.rotateLog("netmaster"), IsNil)
-
-			if s.fwdMode == "routing" {
-				c.Assert(node.exec.startNetplugin("-fwd-mode=routing"), IsNil)
-			} else {
-				c.Assert(node.exec.startNetplugin(""), IsNil)
-			}
-			c.Assert(node.exec.runCommandUntilNoNetpluginError(), IsNil)
-			time.Sleep(20 * time.Second)
-			c.Assert(node.exec.startNetmaster(), IsNil)
-			time.Sleep(1 * time.Second)
-			c.Assert(node.exec.runCommandUntilNoNetmasterError(), IsNil)
-			time.Sleep(20 * time.Second)
-
-			// clear previous containers from reloaded node
-			node.exec.cleanupContainers()
-
-			exContainers := []*container{}
-			for _, cont := range containers {
-				if cont.node != node {
-					exContainers = append(exContainers, cont)
-				} else {
-					logrus.Infof("Removing container %s", cont.containerID)
-				}
-			}
-
-			// start new containers on reloaded node
-			newContainers, err := s.runContainersOnNode(cntPerNode, "private", "", node)
-			c.Assert(err, IsNil)
-			containers = append(exContainers, newContainers...)
-
-			// test ping for all containers
-			c.Assert(s.pingTest(containers), IsNil)
-		}
-
-		c.Assert(s.removeContainers(containers), IsNil)
-	}
 }
 
 func (s *systemtestSuite) TestTriggers(c *C) {

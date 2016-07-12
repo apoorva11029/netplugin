@@ -115,10 +115,16 @@ func (s *systemtestSuite) testBasicStartStopContainer(c *C, encap string) {
 }
 
 func (s *systemtestSuite) TestBasicSvcDiscoveryVXLAN(c *C) {
+	if s.scheduler == "k8" {
+		return
+	}
 	s.testBasicSvcDiscovery(c, "vxlan")
 }
 
 func (s *systemtestSuite) TestBasicSvcDiscoveryVLAN(c *C) {
+	if s.scheduler == "k8" {
+		return
+	}
 	s.testBasicSvcDiscovery(c, "vlan")
 }
 

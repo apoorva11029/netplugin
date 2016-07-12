@@ -12,10 +12,16 @@ import (
 )
 
 func (s *systemtestSuite) TestInfraNetworkAddDeleteVXLAN(c *C) {
+	if s.scheduler == "k8" {
+		return
+	}
 	s.testInfraNetworkAddDelete(c, "vxlan")
 }
 
 func (s *systemtestSuite) TestInfraNetworkAddDeleteVLAN(c *C) {
+	if s.scheduler == "k8" {
+		return
+	}
 	s.testInfraNetworkAddDelete(c, "vlan")
 }
 

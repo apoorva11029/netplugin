@@ -121,8 +121,12 @@ Vagrant.configure(2) do |config|
 	      if vm_name =="k8node-01" then
 	      	c.vm.box = "contiv/k8node01"
 	      else
-		c.vm.box = "contiv/k8node02"
-              end
+		 if vm_name == "k8node-02" then
+		    c.vm.box = "contiv/k8node02"
+                 else
+		    c.vm.box = "contiv/k8node03"
+		 end
+	      end
 	      c.vm.box_version = "0.0.0"
 	   end
 	   c.vm.synced_folder "./../../bin","/opt/gopath/bin"
@@ -133,7 +137,11 @@ Vagrant.configure(2) do |config|
 	else
 	    c.vm.box = "contiv/k8s-centos"
   	    c.vm.box_version = "0.0.6"
-         end
+            c.vm.provision "shell" do |s|
+                s.inline = provision_master
+                s.args = [ENV["http_proxy"] || "", ENV["https_proxy"] || ""]
+            end             
+	end
         # Customize VM for better performance
         config.vm.provider "virtualbox" do |v|
           customize_vm(v)

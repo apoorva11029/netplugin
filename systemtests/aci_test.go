@@ -1,5 +1,6 @@
 package systemtests
 
+/*
 import (
 	"errors"
 	log "github.com/Sirupsen/logrus"
@@ -394,3 +395,4 @@ func (s *systemtestSuite) TestACIProfile(c *C) {
 		c.Assert(s.cli.NetworkDelete("aciTenant", "aciNet"), IsNil)
 	}
 }
+*/

@@ -23,17 +23,9 @@ func (s *systemtestSuite) NewK8sExec(n *node) *kubernetes {
 	k8.node = n
 
 	if n.Name() == "k8master" {
-		fmt.Println("FOUND MASTERRRRRRRRRRRR")
 		k8master = n
 	}
 	return k8
-}
-
-type container struct {
-	node        *node
-	containerID string
-	name        string
-	eth0        string
 }
 
 func (k *kubernetes) newContainer(node *node, containerID, name string, spec containerSpec) (*container, error) {
@@ -45,11 +37,15 @@ func (k *kubernetes) newContainer(node *node, containerID, name string, spec con
 	////master.lock()
 	out, err := k8master.exec.getIPAddr(cont, "eth0")
 	//master.unlock()
-	logrus.Infof("NEW POD %v get ip out %v", containerID, out)
 	if err != nil {
 		return nil, err
 	}
-	cont.eth0 = out
+	cont.eth0.ip = out
+
+	out, err = cont.node.exec.getIPv6Addr(cont, "eth0")
+	if err == nil {
+		cont.eth0.ipv6 = out
+	}
 
 	return cont, nil
 }
@@ -62,7 +58,8 @@ func (k *kubernetes) runContainer(spec containerSpec) (*container, error) {
 	}
 
 	if spec.serviceName != "" {
-		labels = append(labels, "io.contiv.group="+spec.serviceName)
+		labels = append(labels, "io.contiv.net-group="+spec.serviceName)
+		labels = append(labels, "io.contiv.network="+spec.networkName)
 	} else {
 		if spec.networkName != "" {
 			netstr = spec.networkName
@@ -107,7 +104,6 @@ func (k *kubernetes) runContainer(spec containerSpec) (*container, error) {
 	for i := 0; i < 50; i++ {
 		time.Sleep(5 * time.Second)
 		cmd = fmt.Sprintf("kubectl get pods -o wide | grep %s", spec.name)
-		fmt.Println("PRINTING=================================")
 		////master.lock()
 		out, err = k8master.tbnode.RunCommandWithOutput(cmd)
 		logrus.Infof("%v", out)
@@ -127,8 +123,6 @@ func (k *kubernetes) runContainer(spec containerSpec) (*container, error) {
 
 	podID := podInfo[0]
 	nodeID := podInfo[len(podInfo)-1]
-
-	logrus.Infof("THE POD ID :%v NODEID %v", podID, nodeID)
 
 	podNode := k.node.suite.vagrant.GetNode(nodeID)
 
@@ -169,6 +163,28 @@ func (k *kubernetes) checkPing(c *container, ipaddr string) error {
 	return nil
 }
 
+func (k *kubernetes) checkPing6Failure(c *container, ipaddr string) error {
+	logrus.Infof("Expecting ping failure from %v to %s", c, ipaddr)
+	if err := k.checkPing6(c, ipaddr); err == nil {
+		return fmt.Errorf("Ping succeeded when expected to fail from %v to %s", c, ipaddr)
+	}
+
+	return nil
+}
+
+func (k *kubernetes) checkPing6(c *container, ipaddr string) error {
+	logrus.Infof("Checking ping6 from %v to %s", c, ipaddr)
+	out, err := k.exec(c, "ping6 -c 1 "+ipaddr)
+
+	if err != nil || strings.Contains(out, "0 received, 100% packet loss") {
+		logrus.Errorf("Ping from %v to %s FAILED: %q - %v", c, ipaddr, out, err)
+		return fmt.Errorf("Ping failed from %v to %s: %q - %v", c, ipaddr, out, err)
+	}
+
+	logrus.Infof("Ping from %v to %s SUCCEEDED", c, ipaddr)
+	return nil
+}
+
 func (k *kubernetes) getIPAddr(c *container, dev string) (string, error) {
 	////master.lock()
 	out, err := k8master.tbnode.RunCommandWithOutput(fmt.Sprintf("kubectl describe pod %s | grep IP", c.containerID))
@@ -189,11 +205,14 @@ func (k *kubernetes) getIPAddr(c *container, dev string) (string, error) {
 	return out, err
 }
 
+func (k *kubernetes) getIPv6Addr(c *container, dev string) (string, error) {
+	return "", nil
+}
+
 func (k *kubernetes) exec(c *container, args string) (string, error) {
-	////master.lock()
-	out, err := k8master.runCommand(fmt.Sprintf("kubectl exec --pod %s -- %s", c.containerID, args))
-	//master.unlock()
-	logrus.Infof("THe out for args: % is %v", args, out)
+	cmd := fmt.Sprintf("kubectl exec %s -- %s", c.containerID, args)
+	logrus.Infof("Exec: Running command %s", cmd)
+	out, err := k8master.tbnode.RunCommandWithOutput(cmd)
 	if err != nil {
 		logrus.Println(out)
 		return out, err
@@ -204,16 +223,14 @@ func (k *kubernetes) exec(c *container, args string) (string, error) {
 
 func (k *kubernetes) execBG(c *container, args string) {
 	cmd := fmt.Sprintf("kubectl exec %s -- %s", c.containerID, args)
-	logrus.Infof("Running the following command %s", cmd)
+	logrus.Infof("ExecBG:Running command %s", cmd)
 	k8master.tbnode.RunCommandBackground(cmd)
 }
 
 func (k *kubernetes) kubeCmd(c *container, arg string) error {
-	//master.lock()
-	//defer master.unlock()
 	out, err := k8master.runCommand(fmt.Sprintf("kubectl %s %s", arg, c.name))
 	if err != nil {
-		logrus.Println(out)
+		logrus.Errorf(out)
 		return err
 	}
 
@@ -221,27 +238,18 @@ func (k *kubernetes) kubeCmd(c *container, arg string) error {
 }
 
 func (k *kubernetes) start(c *container) error {
-	//logrus.Infof("Starting container %s on %s", c.containerID, c.node.Name())
-	//return runContainer(c.spec)
 	return nil
 }
 
 func (k *kubernetes) stop(c *container) error {
-	//	logrus.Infof("Stopping container %s on %s", c.containerID, c.node.Name())
-	//return k.kubeCmd(c, "delete job")
 	return nil
 }
 
 func (k *kubernetes) rm(c *container) error {
-	logrus.Infof("Removing container %s on %s", c.containerID, c.node.Name())
-	//master.lock()
+	logrus.Infof("Removing Pod: %s on %s", c.containerID, c.node.Name())
 	k8master.tbnode.RunCommand(fmt.Sprintf("kubectl delete job %s", c.name))
-	////defer master.unlock()
 	for i := 0; i < 80; i++ {
-		//master.lock()
-		out, err := k8master.tbnode.RunCommandWithOutput(fmt.Sprintf("kubectl get pod %s", c.containerID))
-		//master.unlock()
-		logrus.Infof("GOT THE OUT PUT ::: %v and error %v", out, err)
+		out,_ := k8master.tbnode.RunCommandWithOutput(fmt.Sprintf("kubectl get pod %s", c.containerID))
 		if strings.Contains(out, "not found") {
 			return nil
 		}
@@ -256,6 +264,7 @@ func (k *kubernetes) startListener(c *container, port int, protocol string) erro
 	if protocol == "udp" {
 		protoStr = "-u"
 	}
+
 	k.execBG(c, fmt.Sprintf("nc -lk %s -p %v -e /bin/true", protoStr, port))
 	return nil
 
@@ -268,13 +277,13 @@ func (k *kubernetes) checkConnection(c *container, ipaddr, protocol string, port
 		protoStr = "-u"
 	}
 
-	logrus.Infof("Checking connection from %v to ip %s on port %d", c, ipaddr, port)
+	logrus.Infof("Checking connection from %v to ip %s on port %d", *c, ipaddr, port)
 
-	_, err := k.exec(c, fmt.Sprintf("nc -z -n -v -w 1 %s %s %v", protoStr, ipaddr, port))
-	if err != nil {
-		logrus.Errorf("Connection from %v to ip %s on port %d FAILED", c, ipaddr, port)
+	out, err := k.exec(c, fmt.Sprintf("nc -z -n -v -w 1 %s %s %v", protoStr, ipaddr, port))
+	if err != nil && !strings.Contains(out, "open") {
+		logrus.Errorf("Connection from %v to ip %s on port %d FAILED", *c, ipaddr, port)
 	} else {
-		logrus.Infof("Connection from %v to ip %s on port %d SUCCEEDED", c, ipaddr, port)
+		logrus.Infof("Connection from %v to ip %s on port %d SUCCEEDED", *c, ipaddr, port)
 	}
 
 	return err
@@ -300,15 +309,12 @@ func (k *kubernetes) cleanupContainers() error {
 	if k.node.Name() == "k8master" {
 		logrus.Infof("Cleaning up containers on %s", k.node.Name())
 		cmd := "kubectl get job -o name"
-		//master.lock()
-		//defer master.unlock()
 		out, err := k8master.tbnode.RunCommandWithOutput(cmd)
 		if err != nil {
 			logrus.Infof("cmd %q failed: output below", cmd)
 			logrus.Println(out)
 			return err
 		}
-		logrus.Infof("THE OUTPUT OF CLEANUP IS %v", out)
 		k8master.tbnode.RunCommand(fmt.Sprintf("kubectl delete jobs --all "))
 	}
 	return nil
@@ -393,14 +399,44 @@ func (k *kubernetes) runCommandUntilNoNetpluginError() error {
 
 func (k *kubernetes) rotateNetmasterLog() error {
 	if k.node.Name() == "k8master" {
-		return k.node.rotateLog("netmaster")
+		return k.rotateLog("netmaster")
 	}
 	return nil
 }
 
 func (k *kubernetes) rotateNetpluginLog() error {
 	if k.node.Name() != "k8master" {
-		return k.node.rotateLog("netplugin")
+		return k.rotateLog("netplugin")
 	}
 	return nil
+}
+
+func (k *kubernetes) checkForNetpluginErrors() error {
+	if k.node.Name() == "k8master" {
+		return nil
+	}
+
+	out, _ := k.node.tbnode.RunCommandWithOutput(`for i in /tmp/net*; do grep "panic\|fatal" $i; done`)
+	if out != "" {
+		logrus.Errorf("Fatal error in logs on %s: \n", k.node.Name())
+		fmt.Printf("%s\n==========================================\n", out)
+		return fmt.Errorf("fatal error in netplugin logs")
+	}
+
+	out, _ = k.node.tbnode.RunCommandWithOutput(`for i in /tmp/net*; do grep "error" $i; done`)
+	if out != "" {
+		logrus.Errorf("error output in netplugin logs on %s: \n", k.node.Name())
+		fmt.Printf("%s==========================================\n\n", out)
+		// FIXME: We still have some tests that are failing error check
+		// return fmt.Errorf("error output in netplugin logs")
+	}
+
+	return nil
+}
+
+func (k *kubernetes) rotateLog(prefix string) error {
+	oldPrefix := fmt.Sprintf("/tmp/%s", prefix)
+	newPrefix := fmt.Sprintf("/tmp/_%s", prefix)
+	_, err := k.node.runCommand(fmt.Sprintf("mv %s.log %s-`date +%%s`.log", oldPrefix, newPrefix))
+	return err
 }

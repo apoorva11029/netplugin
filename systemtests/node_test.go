@@ -32,10 +32,12 @@ type containerSpec struct {
 }
 
 func (n *node) rotateLog(prefix string) error {
-	oldPrefix := fmt.Sprintf("/tmp/%s", prefix)
-	newPrefix := fmt.Sprintf("/tmp/_%s", prefix)
-	_, err := n.runCommand(fmt.Sprintf("mv %s.log %s-`date +%%s`.log", oldPrefix, newPrefix))
-	return err
+	if prefix == "netmaster" {
+		return n.exec.rotateNetmasterLog()
+	} else if prefix == "netplugin" {
+		return n.exec.rotateNetpluginLog()
+	}
+	return nil
 }
 
 func (n *node) getIPAddr(dev string) (string, error) {
@@ -130,22 +132,7 @@ func (n *node) runCommand(cmd string) (string, error) {
 }
 
 func (n *node) checkForNetpluginErrors() error {
-	out, _ := n.tbnode.RunCommandWithOutput(`for i in /tmp/net*; do grep "panic\|fatal" $i; done`)
-	if out != "" {
-		logrus.Errorf("Fatal error in logs on %s: \n", n.Name())
-		fmt.Printf("%s\n==========================================\n", out)
-		return fmt.Errorf("fatal error in netplugin logs")
-	}
-
-	out, _ = n.tbnode.RunCommandWithOutput(`for i in /tmp/net*; do grep "error" $i; done`)
-	if out != "" {
-		logrus.Errorf("error output in netplugin logs on %s: \n", n.Name())
-		fmt.Printf("%s==========================================\n\n", out)
-		// FIXME: We still have some tests that are failing error check
-		// return fmt.Errorf("error output in netplugin logs")
-	}
-
-	return nil
+	return n.exec.checkForNetpluginErrors()
 }
 
 func (n *node) runCommandUntilNoError(cmd string) error {

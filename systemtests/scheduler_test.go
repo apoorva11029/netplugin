@@ -15,11 +15,16 @@ type systemTestScheduler interface {
 	rm(c *container) error
 	getIPAddr(c *container, dev string) (string, error)
 	checkPing(c *container, ipaddr string) error
+	checkPing6(c *container, ipv6addr string) error
 	checkPingFailure(c *container, ipaddr string) error
+	checkPing6Failure(c *container, ipv6addr string) error
 	cleanupSlave()
 	cleanupMaster()
 	runCommandUntilNoNetpluginError() error
 	runCommandUntilNoNetmasterError() error
 	rotateNetmasterLog() error
 	rotateNetpluginLog() error
+	getIPv6Addr(c *container, dev string) (string, error)
+	checkForNetpluginErrors() error
+	rotateLog(prefix string) error
 }

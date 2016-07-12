@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/Sirupsen/logrus"
 )
@@ -39,7 +38,7 @@ func (d *docker) newContainer(node *node, containerID, name string) (*container,
 	}
 	cont.eth0.ip = out
 
-	out, err = cont.getIPv6Addr("eth0")
+	out, err = cont.node.exec.getIPv6Addr(cont, "eth0")
 	if err == nil {
 		cont.eth0.ipv6 = out
 	}
@@ -135,10 +134,49 @@ func (d *docker) checkPing(c *container, ipaddr string) error {
 	return nil
 }
 
+func (d *docker) checkPing6Failure(c *container, ipaddr string) error {
+	logrus.Infof("Expecting ping6 failure from %v to %s", c, ipaddr)
+	if err := d.checkPing6(c, ipaddr); err == nil {
+		return fmt.Errorf("Ping6 succeeded when expected to fail from %v to %s", c, ipaddr)
+	}
+
+	return nil
+}
+
+func (d *docker) checkPing6(c *container, ipaddr string) error {
+	logrus.Infof("Checking ping6 from %v to %s", c, ipaddr)
+	out, err := d.exec(c, "ping6 -c 1 "+ipaddr)
+
+	if err != nil || strings.Contains(out, "0 received, 100% packet loss") {
+		logrus.Errorf("Ping6 from %v to %s FAILED: %q - %v", c, ipaddr, out, err)
+		return fmt.Errorf("Ping6 failed from %v to %s: %q - %v", c, ipaddr, out, err)
+	}
+
+	logrus.Infof("Ping6 from %v to %s SUCCEEDED", c, ipaddr)
+	return nil
+}
+
 func (d *docker) getIPAddr(c *container, dev string) (string, error) {
 	out, err := d.exec(c, fmt.Sprintf("ip addr show dev %s | grep inet | head -1", dev))
 	if err != nil {
 		logrus.Errorf("Failed to get IP for container %q", c.containerID)
+		logrus.Println(out)
+	}
+
+	parts := regexp.MustCompile(`\s+`).Split(strings.TrimSpace(out), -1)
+	if len(parts) < 2 {
+		return "", fmt.Errorf("Invalid output from container %q: %s", c.containerID, out)
+	}
+
+	parts = strings.Split(parts[1], "/")
+	out = strings.TrimSpace(parts[0])
+	return out, err
+}
+
+func (d *docker) getIPv6Addr(c *container, dev string) (string, error) {
+	out, err := d.exec(c, fmt.Sprintf("ip addr show dev %s | grep 'inet6.*scope.*global' | head -1", dev))
+	if err != nil {
+		logrus.Errorf("Failed to get IPv6 for container %q", c.containerID)
 		logrus.Println(out)
 	}
 
@@ -296,9 +334,35 @@ func (d *docker) runCommandUntilNoNetmasterError() error {
 }
 
 func (d *docker) rotateNetmasterLog() error {
-	return d.node.rotateLog("netmaster")
+	return d.rotateLog("netmaster")
 }
 
 func (d *docker) rotateNetpluginLog() error {
-	return d.node.rotateLog("netplugin")
+	return d.rotateLog("netplugin")
+}
+
+func (d *docker) checkForNetpluginErrors() error {
+	out, _ := d.node.tbnode.RunCommandWithOutput(`for i in /tmp/net*; do grep "panic\|fatal" $i; done`)
+	if out != "" {
+		logrus.Errorf("Fatal error in logs on %s: \n", d.node.Name())
+		fmt.Printf("%s\n==========================================\n", out)
+		return fmt.Errorf("fatal error in netplugin logs")
+	}
+
+	out, _ = d.node.tbnode.RunCommandWithOutput(`for i in /tmp/net*; do grep "error" $i; done`)
+	if out != "" {
+		logrus.Errorf("error output in netplugin logs on %s: \n", d.node.Name())
+		fmt.Printf("%s==========================================\n\n", out)
+		// FIXME: We still have some tests that are failing error check
+		// return fmt.Errorf("error output in netplugin logs")
+	}
+
+	return nil
+}
+
+func (d *docker) rotateLog(prefix string) error {
+	oldPrefix := fmt.Sprintf("/tmp/%s", prefix)
+	newPrefix := fmt.Sprintf("/tmp/_%s", prefix)
+	_, err := d.node.runCommand(fmt.Sprintf("mv %s.log %s-`date +%%s`.log", oldPrefix, newPrefix))
+	return err
 }
