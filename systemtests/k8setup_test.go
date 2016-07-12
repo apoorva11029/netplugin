@@ -90,11 +90,9 @@ func (k *kubernetes) runContainer(spec containerSpec) (*container, error) {
 	cmd := fmt.Sprintf("kubectl run %s %s %s --restart=Never %s ", namestr, labelstr, image, cmdStr)
 
 	logrus.Infof("Starting Pod %s on with: %s", spec.name, cmd)
-	////master.lock()
 	out, err := k8master.tbnode.RunCommandWithOutput(cmd)
-	//master.unlock()
 	if err != nil {
-		logrus.Infof("cmd %q failed: output below", cmd)
+		logrus.Errorf("cmd %q failed: output below", cmd)
 		logrus.Println(out)
 		return nil, err
 	}
@@ -106,7 +104,6 @@ func (k *kubernetes) runContainer(spec containerSpec) (*container, error) {
 		cmd = fmt.Sprintf("kubectl get pods -o wide | grep %s", spec.name)
 		////master.lock()
 		out, err = k8master.tbnode.RunCommandWithOutput(cmd)
-		logrus.Infof("%v", out)
 		if strings.Contains(out, "Running") {
 			break
 		}
@@ -189,7 +186,6 @@ func (k *kubernetes) getIPAddr(c *container, dev string) (string, error) {
 	////master.lock()
 	out, err := k8master.tbnode.RunCommandWithOutput(fmt.Sprintf("kubectl describe pod %s | grep IP", c.containerID))
 	//master.unlock()
-	logrus.Infof("The ip address is %v", out)
 	if err != nil {
 		logrus.Errorf("Failed to get IP for container %q", c.containerID)
 		logrus.Println(out)
@@ -249,7 +245,7 @@ func (k *kubernetes) rm(c *container) error {
 	logrus.Infof("Removing Pod: %s on %s", c.containerID, c.node.Name())
 	k8master.tbnode.RunCommand(fmt.Sprintf("kubectl delete job %s", c.name))
 	for i := 0; i < 80; i++ {
-		out,_ := k8master.tbnode.RunCommandWithOutput(fmt.Sprintf("kubectl get pod %s", c.containerID))
+		out, _ := k8master.tbnode.RunCommandWithOutput(fmt.Sprintf("kubectl get pod %s", c.containerID))
 		if strings.Contains(out, "not found") {
 			return nil
 		}
