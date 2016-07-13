@@ -40,7 +40,7 @@ end
 # method to read the cluster config file
 def read_cluster_config
   if ENV['VAGRANT_CWD'] != " " then
-      defs_file = open("/home/ladmin/src/github.com/contiv/netplugin/vagrant/k8s/cluster_defs.json")
+      defs_file = open("./cluster_defs.json")
   else
      defs_file = open("cluster_defs.json")
   end
