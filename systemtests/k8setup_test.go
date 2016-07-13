@@ -152,11 +152,11 @@ func (k *kubernetes) checkPing(c *container, ipaddr string) error {
 	out, err := k.exec(c, "ping -c 1 "+ipaddr)
 
 	if err != nil || strings.Contains(out, "0 received, 100% packet loss") {
-		logrus.Errorf("Ping from %v to %s FAILED: %q - %v", c, ipaddr, out, err)
+		logrus.Errorf("Ping from %s to %s FAILED: %q - %v", c, ipaddr, out, err)
 		return fmt.Errorf("Ping failed from %v to %s: %q - %v", c, ipaddr, out, err)
 	}
 
-	logrus.Infof("Ping from %v to %s SUCCEEDED", c, ipaddr)
+	logrus.Infof("Ping from %s to %s SUCCEEDED", c, ipaddr)
 	return nil
 }
 

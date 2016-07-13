@@ -782,3 +782,7 @@ func randSeq(n int) string {
 	}
 	return string(b)
 }
+
+func (c *container) String() string {
+	return fmt.Sprintf("(container: %s (name: %q ip: %s ipv6: %s host: %s))", c.containerID, c.name, c.eth0.ip, c.eth0.ipv6, c.node.Name())
+}
