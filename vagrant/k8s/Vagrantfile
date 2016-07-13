@@ -18,7 +18,7 @@ end
 def create_etc_hosts(cluster)
   print "Creating etc hosts"
   if ENV['VAGRANT_CWD'] != " " then
-     etc_file = open("./vagrant/k8s/export/.etc_hosts", "w")
+     etc_file = open("./export/.etc_hosts", "w")
   else
      etc_file = open("./export/.etc_hosts", "w")
   end
@@ -40,7 +40,7 @@ end
 # method to read the cluster config file
 def read_cluster_config
   if ENV['VAGRANT_CWD'] != " " then
-      defs_file = open("./vagrant/k8s/cluster_defs.json")
+      defs_file = open("./cluster_defs.json")
   else
      defs_file = open("cluster_defs.json")
   end
