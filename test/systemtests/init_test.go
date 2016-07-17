@@ -42,7 +42,7 @@ type BasicInfo struct {
 	SwarmEnv   string `json:"swarm_variable"` //env variables to be set with swarm environment
 	Vagrant    bool   `json:"vagrant"`        //vagrant or baremetal
 	Product    string `json:"product"`        //for netplugin / volplugin
-	Routing    string `json:"routing"`        //for forwarding, L2, L3
+	FwdMode    string `json:"fwdMode"`        //for forwarding, L2, L3
 	AciMode    string `json:"aci_mode"`       //on/off
 	Short      bool   `json:"short"`
 	Containers int    `json:"containers"`
@@ -210,6 +210,8 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 
 				contivNodes = 4 // 3 contiv nodes + 1 k8master
 				c.Assert(s.vagrant.Setup(false, []string{"CONTIV_L3=1 VAGRANT_CWD=" + topDir + "/src/github.com/contiv/netplugin/vagrant/k8s/"}, contivNodes), IsNil)
+			case "swarm":
+				c.Assert(s.vagrant.Setup(false, []string{"CONTIV_NODES=3 CONTIV_L3=1 DOCKER_HOST=192.168.2.11:2385"}, contivNodes+contivL3Nodes), IsNil)
 			default:
 				c.Assert(s.vagrant.Setup(false, []string{"CONTIV_NODES=3 CONTIV_L3=1"}, contivNodes+contivL3Nodes), IsNil)
 
@@ -231,6 +233,8 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 
 				c.Assert(s.vagrant.Setup(false, []string{"VAGRANT_CWD=" + topDir + "/src/github.com/contiv/netplugin/vagrant/k8s/"}, contivNodes), IsNil)
 
+			case "swarm":
+				c.Assert(s.vagrant.Setup(false, []string{"DOCKER_HOST=192.168.2.11:2385"}, contivNodes), IsNil)
 			default:
 				c.Assert(s.vagrant.Setup(false, []string{}, contivNodes), IsNil)
 
@@ -245,10 +249,13 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 				node := &node{}
 				node.tbnode = nodeObj
 				node.suite = s
-
-				switch s.scheduler {
+				logrus.Infof("scheduler is %s ", s.scheduler)
+				switch s.basicInfo.Scheduler {
 				case "k8":
 					node.exec = s.NewK8sExec(node)
+				case "swarm":
+					logrus.Infof("in swarm mooooood")
+					node.exec = s.NewSwarmExec(node)
 				default:
 					logrus.Infof("in docker mooooood")
 					node.exec = s.NewDockerExec(node)
@@ -270,8 +277,8 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 func (s *systemtestSuite) SetUpTest(c *C) {
 	logrus.Infof("============================= %s starting ==========================", c.TestName())
 
-	if os.Getenv("ACI_SYS_TEST_MODE") == "ON" {
-		//s.AciTestSetup(c)
+	switch s.basicInfo.Scheduler {
+	case "on":
 		/*
 			for _, node := range s.nodes {
 				//node.cleanupContainers()
@@ -316,7 +323,7 @@ func (s *systemtestSuite) SetUpTest(c *C) {
 				c.Assert((i < 10), Equals, true)
 				time.Sleep(500 * time.Millisecond)
 			}*/
-	} else {
+	default:
 		for _, node := range s.nodes {
 			node.exec.cleanupContainers()
 			//node.cleanupDockerNetwork()
@@ -376,6 +383,7 @@ func (s *systemtestSuite) SetUpTest(c *C) {
 			time.Sleep(40 * time.Second)
 		}
 	}
+
 }
 
 func (s *systemtestSuite) TearDownTest(c *C) {
