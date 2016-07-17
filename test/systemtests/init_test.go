@@ -42,7 +42,7 @@ type BasicInfo struct {
 	SwarmEnv   string `json:"swarm_variable"` //env variables to be set with swarm environment
 	Vagrant    bool   `json:"vagrant"`        //vagrant or baremetal
 	Product    string `json:"product"`        //for netplugin / volplugin
-	Routing    string `json:"routing"`        //for forwarding, L2, L3
+	FwdMode    string `json:"fwdMode"`        //for forwarding, L2, L3
 	AciMode    string `json:"aci_mode"`       //on/off
 	Short      bool   `json:"short"`
 	Containers int    `json:"containers"`
@@ -69,7 +69,6 @@ type ACInfoGlob struct {
 	Encap   string `json:"encap"`
 	Master  bool   `json:"master"`
 }
-
 
 var sts = &systemtestSuite{}
 
@@ -135,8 +134,8 @@ func TestSystem(t *T) {
 
 func (s *systemtestSuite) SetUpSuite(c *C) {
 	logrus.Infof("Bootstrapping system tests")
-  s.basicInfo, s.acinfoHost, s.acinfoGlob = getMaster("cfg.json")
-	switch s.basicInfo.AciMode{
+	s.basicInfo, s.acinfoHost, s.acinfoGlob = getMaster("cfg.json")
+	switch s.basicInfo.AciMode {
 	case "on":
 		/*
 			logrus.Infof("ACI_SYS_TEST_MODE is ON")
@@ -217,6 +216,8 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 				contivNodes = 4 // 3 contiv nodes + 1 k8master
 				c.Assert(s.vagrant.Setup(false, []string{"CONTIV_L3=1 VAGRANT_CWD=" + topDir + "/src/github.com/contiv/netplugin/vagrant/k8s/"}, contivNodes), IsNil)
 
+			case "swarm":
+				c.Assert(s.vagrant.Setup(false, []string{"CONTIV_NODES=3 CONTIV_L3=1 DOCKER_HOST=192.168.2.11:2385"}, contivNodes+contivL3Nodes), IsNil)
 			default:
 				c.Assert(s.vagrant.Setup(false, []string{"CONTIV_NODES=3 CONTIV_L3=1"}, contivNodes+contivL3Nodes), IsNil)
 
@@ -226,7 +227,6 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 			switch s.basicInfo.Scheduler {
 			case "k8":
 				contivNodes = contivNodes + 1 //k8master
-
 				topDir := os.Getenv("GOPATH")
 				//topDir may contain the godeps path. hence purging the gopath
 				dirs := strings.Split(topDir, ":")
@@ -238,6 +238,8 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 
 				c.Assert(s.vagrant.Setup(false, []string{"VAGRANT_CWD=" + topDir + "/src/github.com/contiv/netplugin/vagrant/k8s/"}, contivNodes), IsNil)
 
+			case "swarm":
+				c.Assert(s.vagrant.Setup(false, []string{"DOCKER_HOST=192.168.2.11:2385"}, contivNodes), IsNil)
 			default:
 				c.Assert(s.vagrant.Setup(false, []string{}, contivNodes), IsNil)
 
@@ -252,10 +254,13 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 				node := &node{}
 				node.tbnode = nodeObj
 				node.suite = s
-
-				switch s.scheduler {
+				logrus.Infof("scheduler is %s ", s.scheduler)
+				switch s.basicInfo.Scheduler {
 				case "k8":
 					node.exec = s.NewK8sExec(node)
+				case "swarm":
+					logrus.Infof("in swarm mooooood")
+					node.exec = s.NewSwarmExec(node)
 				default:
 					logrus.Infof("in docker mooooood")
 					node.exec = s.NewDockerExec(node)
@@ -280,6 +285,53 @@ func (s *systemtestSuite) SetUpTest(c *C) {
 	if os.Getenv("ACI_SYS_TEST_MODE") == "ON" {
 		//s.AciTestSetup(c)
 	} else {
+	switch s.basicInfo.Scheduler {
+	case "on":
+		/*
+			for _, node := range s.nodes {
+				//node.cleanupContainers()
+				//node.cleanupDockerNetwork()
+				node.exec.stopNetplugin()
+				node.exec.cleanupSlave()
+				node.deleteFile("/etc/systemd/system/netplugin.service")
+				node.stopNetmaster()
+				node.deleteFile("/etc/systemd/system/netmaster.service")
+				node.deleteFile("/usr/bin/netctl")
+			}
+
+			for _, node := range s.nodes {
+				node.cleanupMaster()
+			}
+
+			for _, node := range s.nodes {
+				if s.fwdMode == "bridge" {
+					c.Assert(node.startNetplugin(""), IsNil)
+					c.Assert(node.runCommandUntilNoError("pgrep netplugin"), IsNil)
+				} else if s.fwdMode == "routing" {
+					c.Assert(node.startNetplugin("-fwd-mode=routing -vlan-if=eth2"), IsNil)
+					c.Assert(node.runCommandUntilNoError("pgrep netplugin"), IsNil)
+				}
+			}
+
+			time.Sleep(15 * time.Second)
+
+			for _, node := range s.nodes {
+				c.Assert(node.startNetmaster(), IsNil)
+				time.Sleep(1 * time.Second)
+				c.Assert(node.runCommandUntilNoError("pgrep netmaster"), IsNil)
+			}
+
+			time.Sleep(5 * time.Second)
+			for i := 0; i < 11; i++ {
+				_, err := s.cli.TenantGet("default")
+				if err == nil {
+					break
+				}
+				// Fail if we reached last iteration
+				c.Assert((i < 10), Equals, true)
+				time.Sleep(500 * time.Millisecond)
+			}*/
+	default:
 		for _, node := range s.nodes {
 			node.exec.cleanupContainers()
 			//node.cleanupDockerNetwork()
@@ -340,6 +392,7 @@ func (s *systemtestSuite) SetUpTest(c *C) {
 			time.Sleep(40 * time.Second)
 		}
 	}
+
 }
 
 func (s *systemtestSuite) TearDownTest(c *C) {
