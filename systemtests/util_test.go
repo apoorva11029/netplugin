@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/Sirupsen/logrus"
+	"io/ioutil"
 	"math/rand"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
-
-	"github.com/Sirupsen/logrus"
 )
 
 func (s *systemtestSuite) checkConnectionPair(containers1, containers2 []*container, port int) error {
@@ -785,4 +786,74 @@ func randSeq(n int) string {
 
 func (c *container) String() string {
 	return fmt.Sprintf("(container: %s (name: %q ip: %s ipv6: %s host: %s))", c.containerID, c.name, c.eth0.ip, c.eth0.ipv6, c.node.Name())
+}
+
+//Helper functions for JSON file handling
+func toJSON(p interface{}) string {
+	bytes, err := json.Marshal(p)
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+
+	return string(bytes)
+}
+
+func (p ACInfoGlob) toString() string {
+	return toJSON(p)
+}
+
+func (p ACInfoHost) toString() string {
+	return toJSON(p)
+}
+
+func (p BasicInfo) toString() string {
+	return toJSON(p)
+}
+
+//Function to extract ACI Info from JSON files
+func getInfo(file string) ([]BasicInfo, []ACInfoHost, []ACInfoGlob) {
+	raw, err := ioutil.ReadFile(file)
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+	var b []BasicInfo
+	json.Unmarshal(raw, &b)
+	var c []ACInfoHost
+	json.Unmarshal(raw, &c)
+	var d []ACInfoGlob
+	json.Unmarshal(raw, &d)
+
+	return b, c, d
+}
+
+//Function to get the master node for ACI mode
+func getMaster(file string) (BasicInfo, ACInfoHost, ACInfoGlob) {
+	infosbasic, infoshost, infosglob := getInfo(file)
+
+	var mastbasic BasicInfo
+	for _, p := range infosbasic {
+		if p.Master == true {
+			mastbasic = p
+			break
+		}
+	}
+
+	var masthost ACInfoHost
+	for _, p := range infoshost {
+		if p.Master == true {
+			masthost = p
+			break
+		}
+	}
+
+	var mastglob ACInfoGlob
+	for _, p := range infosglob {
+		if p.Master == true {
+			mastglob = p
+			break
+		}
+	}
+	return mastbasic, masthost, mastglob
 }
