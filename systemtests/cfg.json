@@ -1,0 +1,27 @@
+[
+    {
+      "scheduler" : "docker",
+      "swarm_variable":"DOCKER_HOST=192.168.2.11:2385",
+      "vagrant" : true,
+      "product" : "netplugin",
+      "routing" : "forward",
+      "aci_mode" : "off",
+      "short"   : false,
+      "containers" : 3,
+      "iterations" : 1,
+      "enableDNS" : false,
+
+    "ip" : "10.193.246.71",
+	"hostips" : "10.193.246.70,10.193.246.71",
+	"hostusernames" : "admin,admin",
+	"hostdata" : "eno33559296",
+	"vlan" : "1150-1170",
+	"vxlan" : "1-10000",
+	"subnet" : "20.1.1.0/24",
+	"gateway" : "20.1.1.254",
+ 	"network" : "aciNet",
+        "tenant": "TestTenant",
+	"encap" : "vlan",
+	"master" : true
+    }
+]
