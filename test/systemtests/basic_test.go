@@ -43,19 +43,20 @@ func (s *systemtestSuite) testBasicStartRemoveContainer(c *C, encap string) {
 			_, err = s.CheckBgpRouteDistribution(c, containers)
 			c.Assert(err, IsNil)
 		}
-		outChan := make(chan string, 100)
+		outChan:=make(chan string,100)
 		//logrus.Infof("env value is " + s.basicInfo.SwarmEnv)
 
-		mystr := "DOCKER_HOST=192.168.2.10:2375 " + "docker ps"
-		//mystr = "docker ps"
+		mystr := "DOCKER_HOST=192.168.2.11:2385 " + "docker ps"
+		mystr = "docker ps"
 		logrus.Infof("mystr _____________________ value is " + mystr)
-		out, _ := s.nodes[0].runCommand(mystr)
-		outChan <- out
+		out,_:=s.nodes[0].runCommand(mystr)
+		outChan<-out
 		logrus.Infof("docker ps for first node ====== %s", strings.TrimSpace(<-outChan))
 
-		out, _ = s.nodes[1].runCommand(mystr)
-		outChan <- out
+		out,_=s.nodes[1].runCommand(mystr)
+		outChan<-out
 		logrus.Infof("docker ps for second node ====== %s", strings.TrimSpace(<-outChan))
+
 
 		c.Assert(s.pingTest(containers), IsNil)
 		c.Assert(s.removeContainers(containers), IsNil)

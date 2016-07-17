@@ -1,10 +1,10 @@
 [
     {
-      "scheduler" : "docker",
+      "scheduler" : "swarm",
       "swarm_variable":"DOCKER_HOST=192.168.2.11:2385",
       "vagrant" : true,
       "product" : "netplugin",
-      "routing" : "forward",
+      "fwdMode" : "forward",
       "aci_mode" : "off",
       "short"   : false,
       "containers" : 3,
