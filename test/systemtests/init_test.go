@@ -33,7 +33,43 @@ type systemtestSuite struct {
 	// user       string
 	// password   string
 	// nodes      []string
+	basicInfo  BasicInfo
+	acinfoHost ACInfoHost
+	acinfoGlob ACInfoGlob
 }
+type BasicInfo struct {
+	Scheduler  string `json:"scheduler"`      //swarm, k8s or plain docker
+	SwarmEnv   string `json:"swarm_variable"` //env variables to be set with swarm environment
+	Vagrant    bool   `json:"vagrant"`        //vagrant or baremetal
+	Product    string `json:"product"`        //for netplugin / volplugin
+	Routing    string `json:"routing"`        //for forwarding, L2, L3
+	AciMode    string `json:"aci_mode"`       //on/off
+	Short      bool   `json:"short"`
+	Containers int    `json:"containers"`
+	Iterations int    `json:"iterations"`
+	EnableDNS  bool   `json:"enableDNS"`
+	Master     bool   `json:"master"`
+}
+
+type ACInfoHost struct {
+	IP                string `json:"ip"`
+	HostIPs           string `json:"hostips"`
+	HostUsernames     string `json:"hostusernames"`
+	HostDataInterface string `json:"hostdata"`
+	Master            bool   `json:"master"`
+}
+
+type ACInfoGlob struct {
+	Vlan    string `json:"vlan"`
+	Vxlan   string `json:"vxlan"`
+	Subnet  string `json:"subnet"`
+	Gateway string `json:"gateway"`
+	Network string `json:"network"`
+	Tenant  string `json:"tenant"`
+	Encap   string `json:"encap"`
+	Master  bool   `json:"master"`
+}
+
 
 var sts = &systemtestSuite{}
 
@@ -46,10 +82,11 @@ func TestMain(m *M) {
 	// flag.StringVar(&nodes, "nodes", "", "List of nodes to use (comma separated)")
 	// flag.StringVar(&sts.user, "user", "vagrant", "User ID for SSH")
 	// flag.StringVar(&sts.password, "password", "vagrant", "Password for SSH")
-	flag.IntVar(&sts.iterations, "iterations", 3, "Number of iterations")
+	mastbasic, masthost, _ := getMaster("cfg.json")
+	flag.IntVar(&sts.iterations, "iterations", mastbasic.Iterations, "Number of iterations")
 
 	if os.Getenv("ACI_SYS_TEST_MODE") == "ON" {
-		flag.StringVar(&sts.vlanIf, "vlan-if", os.Getenv("HOST_DATA_INTERFACE"), "Data interface in Baremetal setup node")
+		flag.StringVar(&sts.vlanIf, "vlan-if", masthost.HostDataInterface, "Data interface in Baremetal setup node")
 		flag.StringVar(&sts.binpath, "binpath", "/home/admin/bin", "netplugin/netmaster binary path")
 		if os.Getenv("KEY_FILE") == "" {
 			flag.StringVar(&sts.keyFile, "keyFile", "/home/admin/.ssh/id_rsa", "Insecure private key in ACI-systemtests")
@@ -62,9 +99,9 @@ func TestMain(m *M) {
 		flag.StringVar(&sts.vlanIf, "vlan-if", "eth2", "VLAN interface for OVS bridge")
 	}
 
-	flag.IntVar(&sts.containers, "containers", 3, "Number of containers to use")
-	flag.BoolVar(&sts.short, "short", false, "Do a quick validation run instead of the full test suite")
-	flag.BoolVar(&sts.enableDNS, "dns-enable", false, "Enable DNS service discovery")
+	flag.IntVar(&sts.containers, "containers", mastbasic.Containers, "Number of containers to use")
+	flag.BoolVar(&sts.short, "short", mastbasic.Short, "Do a quick validation run instead of the full test suite")
+	flag.BoolVar(&sts.enableDNS, "dns-enable", mastbasic.EnableDNS, "Enable DNS service discovery")
 
 	if os.Getenv("CONTIV_CLUSTER_STORE") == "" {
 		flag.StringVar(&sts.clusterStore, "cluster-store", "etcd://localhost:2379", "cluster store URL")
@@ -79,7 +116,7 @@ func TestMain(m *M) {
 	}
 
 	if os.Getenv("CONTIV_K8") != "" {
-		flag.StringVar(&sts.scheduler, "scheduler", "k8", "scheduler used for testing")
+		flag.StringVar(&sts.scheduler, "scheduler", mastbasic.Scheduler, "scheduler used for testing")
 	}
 
 	flag.Parse()
@@ -88,7 +125,6 @@ func TestMain(m *M) {
 
 	os.Exit(m.Run())
 }
-
 func TestSystem(t *T) {
 	if os.Getenv("HOST_TEST") != "" {
 		os.Exit(0)
@@ -99,8 +135,9 @@ func TestSystem(t *T) {
 
 func (s *systemtestSuite) SetUpSuite(c *C) {
 	logrus.Infof("Bootstrapping system tests")
-
-	if os.Getenv("ACI_SYS_TEST_MODE") == "ON" {
+  s.basicInfo, s.acinfoHost, s.acinfoGlob = getMaster("cfg.json")
+	switch s.basicInfo.AciMode{
+	case "on":
 		/*
 				logrus.Infof("ACI_SYS_TEST_MODE is ON")
 				logrus.Infof("Private keyFile = %s", s.keyFile)
@@ -157,7 +194,7 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 				s.copyBinary("netctl")
 				s.copyBinary("contivk8s")
 		*/
-	} else {
+	default:
 		s.vagrant = remotessh.Vagrant{}
 		nodesStr := os.Getenv("CONTIV_NODES")
 		var contivNodes int
@@ -176,18 +213,22 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 
 		if s.fwdMode == "routing" {
 			contivL3Nodes := 2
-			if s.scheduler == "k8" {
-				topDir := os.Getenv("GOPATH")
-				//topDir contains the godeps path. hence purging the gopath
-				topDir = strings.Split(topDir, ":")[1]
+			switch s.basicInfo.Scheduler{
+			case "k8":
+			topDir := os.Getenv("GOPATH")
+                                //topDir contains the godeps path. hence purging the gopath
+                                topDir = strings.Split(topDir, ":")[1]
 
-				contivNodes = 4 // 3 contiv nodes + 1 k8master
-				c.Assert(s.vagrant.Setup(false, []string{"CONTIV_L3=1 VAGRANT_CWD=" + topDir + "/src/github.com/contiv/netplugin/vagrant/k8s/"}, contivNodes), IsNil)
-			} else {
+                                contivNodes = 4 // 3 contiv nodes + 1 k8master
+                                c.Assert(s.vagrant.Setup(false, []string{"CONTIV_L3=1 VAGRANT_CWD=" + topDir + "/src/github.com/contiv/netplugin/vagrant/k8s/"}, contivNodes), IsNil)
+			default:
 				c.Assert(s.vagrant.Setup(false, []string{"CONTIV_NODES=3 CONTIV_L3=1"}, contivNodes+contivL3Nodes), IsNil)
+
 			}
+
 		} else {
-			if s.scheduler == "k8" {
+			switch s.basicInfo.Scheduler {
+			case "k8":
 				contivNodes = contivNodes + 1 //k8master
 
 				topDir := os.Getenv("GOPATH")
@@ -200,9 +241,12 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 				}
 
 				c.Assert(s.vagrant.Setup(false, []string{"VAGRANT_CWD=" + topDir + "/src/github.com/contiv/netplugin/vagrant/k8s/"}, contivNodes), IsNil)
-			} else {
+
+			default:
 				c.Assert(s.vagrant.Setup(false, []string{}, contivNodes), IsNil)
+
 			}
+
 		}
 
 		for _, nodeObj := range s.vagrant.GetNodes() {
@@ -217,6 +261,7 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 				case "k8":
 					node.exec = s.NewK8sExec(node)
 				default:
+					logrus.Infof("in docker mooooood")
 					node.exec = s.NewDockerExec(node)
 				}
 				s.nodes = append(s.nodes, node)
@@ -229,6 +274,7 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 			return node.RunCommand("docker pull alpine")
 		})
 	}
+
 	s.cli, _ = client.NewContivClient("http://localhost:9999")
 }
 
