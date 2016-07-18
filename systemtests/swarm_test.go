@@ -41,7 +41,7 @@ func (w *swarm) newContainer(node *node, containerID, name string) (*container, 
 func (w *swarm) runContainer(spec containerSpec) (*container, error) {
 	var namestr, netstr, dnsStr, labelstr string
 
-	if spec.networkName != "" || spec.tenantName != "default" {
+	if (spec.networkName != "") && (spec.tenantName != "default") {
 		netstr = spec.networkName
 		if spec.tenantName != "" {
 			netstr = netstr + "/" + spec.tenantName
