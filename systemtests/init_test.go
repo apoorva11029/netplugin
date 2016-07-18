@@ -381,9 +381,9 @@ func (s *systemtestSuite) TearDownTest(c *C) {
 }
 
 func (s *systemtestSuite) TearDownSuite(c *C) {
-	for _, node := range s.nodes {
+	/*for _, node := range s.nodes {
 		node.exec.cleanupContainers()
-	}
+	}*/
 
 	// Print all errors and fatal messages
 	for _, node := range s.nodes {
