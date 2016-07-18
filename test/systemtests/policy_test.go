@@ -85,17 +85,22 @@ func (s *systemtestSuite) testPolicyBasic(c *C, encap string) {
 		}
 
 		containers, err := s.runContainers(s.containers, true, "private", "", groupNames, nil)
+		logrus.Infof("--------CHECKPOINT 0 ------")
 		c.Assert(err, IsNil)
 		if s.fwdMode == "routing" && encap == "vlan" {
 			_, err = s.CheckBgpRouteDistribution(c, containers)
 			c.Assert(err, IsNil)
 		}
+		logrus.Infof("--------CHECKPOINT 1------")
 		time.Sleep(15 * time.Second)
 		c.Assert(s.startListeners(containers, []int{8000, 8001}), IsNil)
+		logrus.Infof("--------CHECKPOINT 2------")
 		time.Sleep(15 * time.Second)
 		c.Assert(s.checkConnections(containers, 8000), IsNil)
+		logrus.Infof("--------CHECKPOINT 3------")
 		time.Sleep(15 * time.Second)
 		c.Assert(s.checkNoConnections(containers, 8001), IsNil)
+		logrus.Infof("--------CHECKPOINT 4------")
 
 		c.Assert(s.removeContainers(containers), IsNil)
 
@@ -106,7 +111,6 @@ func (s *systemtestSuite) testPolicyBasic(c *C, encap string) {
 		for _, rule := range rules {
 			c.Assert(s.cli.RuleDelete(rule.TenantName, rule.PolicyName, rule.RuleID), IsNil)
 		}
-
 		c.Assert(s.cli.PolicyDelete("default", "policy"), IsNil)
 	}
 
