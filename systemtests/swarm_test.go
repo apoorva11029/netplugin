@@ -183,15 +183,15 @@ func (w *swarm) getIPv6Addr(c *container, dev string) (string, error) {
 }
 
 func (w *swarm) exec(c *container, args string) (string, error) {
-  logrus.Infof("container ID %s", c.containerID)
-  logrus.Infof("args are %s", args)
+	logrus.Infof("container ID %s", c.containerID)
+	logrus.Infof("args are %s", args)
 
 	out, err := c.node.runCommand(fmt.Sprintf(w.env+"docker exec %s %s", c.containerID, args))
 	if err != nil {
-    if strings.Contains(args, "nc ") && out==""{
-      logrus.Infof("heyllooooo")
-      return out, nil
-    }
+		if strings.Contains(args, "nc ") && out == "" {
+			logrus.Infof("heyllooooo")
+			return out, nil
+		}
 
 		logrus.Println(out)
 		return out, err
