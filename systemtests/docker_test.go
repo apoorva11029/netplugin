@@ -51,7 +51,7 @@ func (d *docker) runContainer(spec containerSpec) (*container, error) {
 
 	if spec.networkName != "" {
 		netstr = spec.networkName
-		if spec.tenantName != "" {
+		if spec.tenantName != "" || spec.tenantName != "default" {
 			netstr = netstr + "/" + spec.tenantName
 		}
 
