@@ -51,7 +51,7 @@ func (d *docker) runContainer(spec containerSpec) (*container, error) {
 
 	if spec.networkName != "" {
 		netstr = spec.networkName
-		if spec.tenantName != "" {
+		if (spec.tenantName != "") && (spec.tenantName != "default") {
 			netstr = netstr + "/" + spec.tenantName
 		}
 
@@ -192,6 +192,9 @@ func (d *docker) getIPv6Addr(c *container, dev string) (string, error) {
 
 func (d *docker) exec(c *container, args string) (string, error) {
 	out, err := c.node.runCommand(fmt.Sprintf("docker exec %s %s", c.containerID, args))
+	logrus.Println(out)
+	logrus.Println(err)
+	logrus.Infof("Jst printed output and err for exec")
 	if err != nil {
 		logrus.Println(out)
 		return out, err

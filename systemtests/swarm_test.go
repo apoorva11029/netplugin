@@ -41,7 +41,7 @@ func (w *swarm) newContainer(node *node, containerID, name string) (*container, 
 func (w *swarm) runContainer(spec containerSpec) (*container, error) {
 	var namestr, netstr, dnsStr, labelstr string
 
-	if spec.networkName != "" {
+	if (spec.networkName != "") && (spec.tenantName != "default") {
 		netstr = spec.networkName
 		if spec.tenantName != "" {
 			netstr = netstr + "/" + spec.tenantName
@@ -183,8 +183,16 @@ func (w *swarm) getIPv6Addr(c *container, dev string) (string, error) {
 }
 
 func (w *swarm) exec(c *container, args string) (string, error) {
+	logrus.Infof("container ID %s", c.containerID)
+	logrus.Infof("args are %s", args)
+
 	out, err := c.node.runCommand(fmt.Sprintf(w.env+"docker exec %s %s", c.containerID, args))
 	if err != nil {
+		if strings.Contains(args, "nc ") && out == "" {
+			logrus.Infof("heyllooooo")
+			return out, nil
+		}
+
 		logrus.Println(out)
 		return out, err
 	}

@@ -217,7 +217,7 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 				c.Assert(s.vagrant.Setup(false, []string{"CONTIV_L3=1 VAGRANT_CWD=" + topDir + "/src/github.com/contiv/netplugin/vagrant/k8s/"}, contivNodes), IsNil)
 
 			case "swarm":
-				c.Assert(s.vagrant.Setup(false, []string{"CONTIV_NODES=3 CONTIV_L3=1 DOCKER_HOST=192.168.2.11:2385"}, contivNodes+contivL3Nodes), IsNil)
+				c.Assert(s.vagrant.Setup(false, []string{"CONTIV_NODES=3 CONTIV_L3=1 DOCKER_HOST=192.168.2.10:2375"}, contivNodes+contivL3Nodes), IsNil)
 			default:
 				c.Assert(s.vagrant.Setup(false, []string{"CONTIV_NODES=3 CONTIV_L3=1"}, contivNodes+contivL3Nodes), IsNil)
 
@@ -239,7 +239,7 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 				c.Assert(s.vagrant.Setup(false, []string{"VAGRANT_CWD=" + topDir + "/src/github.com/contiv/netplugin/vagrant/k8s/"}, contivNodes), IsNil)
 
 			case "swarm":
-				c.Assert(s.vagrant.Setup(false, []string{"DOCKER_HOST=192.168.2.11:2385"}, contivNodes), IsNil)
+				c.Assert(s.vagrant.Setup(false, []string{"DOCKER_HOST=192.168.2.10:2375"}, contivNodes), IsNil)
 			default:
 				c.Assert(s.vagrant.Setup(false, []string{}, contivNodes), IsNil)
 
@@ -405,9 +405,9 @@ func (s *systemtestSuite) TearDownTest(c *C) {
 }
 
 func (s *systemtestSuite) TearDownSuite(c *C) {
-	for _, node := range s.nodes {
+	/*for _, node := range s.nodes {
 		node.exec.cleanupContainers()
-	}
+	}*/
 
 	// Print all errors and fatal messages
 	for _, node := range s.nodes {
