@@ -126,14 +126,14 @@ func (s *systemtestSuite) testBasicStartStopContainer(c *C, encap string) {
 	c.Assert(s.cli.NetworkDelete("default", "private"), IsNil)
 }
 
-func (s *systemtestSuite) TestBBasicSvcDiscoveryVXLAN(c *C) {
+func (s *systemtestSuite) TestBaasicSvcDiscoveryVXLAN(c *C) {
 	if s.basicInfo.Scheduler == "k8" {
 		return
 	}
 	s.testBasicSvcDiscovery(c, "vxlan")
 }
 
-func (s *systemtestSuite) TestBBasicSvcDiscoveryVLAN(c *C) {
+func (s *systemtestSuite) TestBaasicSvcDiscoveryVLAN(c *C) {
 	if s.basicInfo.Scheduler == "k8" {
 		return
 	}
