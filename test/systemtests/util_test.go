@@ -311,7 +311,7 @@ func (s *systemtestSuite) runContainersWithDNS(num int, tenantName, networkName,
 		logrus.Errorf("Error getting DNS server for network %s/%s", networkName, tenantName)
 		return nil, err
 	}
-	
+
 	docknetName := fmt.Sprintf("%s/%s", networkName, tenantName)
 	if tenantName == "default" {
 		docknetName = networkName
