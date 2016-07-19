@@ -1,7 +1,7 @@
 [
     {
       "scheduler" : "swarm",
-      "swarm_variable":"DOCKER_HOST=192.168.2.11:2385",
+      "swarm_variable":"DOCKER_HOST=192.168.2.10:2375",
       "vagrant" : true,
       "product" : "netplugin",
       "fwdMode" : "forward",
