@@ -13,7 +13,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
 )
 
 func (s *systemtestSuite) checkConnectionPair(containers1, containers2 []*container, port int) error {
@@ -333,8 +332,9 @@ func (s *systemtestSuite) runContainersWithDNS(num int, tenantName, networkName,
 				dnsServer:   dnsServer,
 				tenantName:  tenantName,
 			}
-
+			logrus.Infof("will run containers now")
 			cont, err := s.nodes[nodeNum].exec.runContainer(spec)
+			logrus.Infof("done tunnint containers ")
 			if err != nil {
 				errChan <- err
 			}
