@@ -344,6 +344,7 @@ func (s *systemtestSuite) SetUpTest(c *C) {
 		// temporarily enable DNS for service discovery tests
 		prevDNSEnabled := s.enableDNS
 		if strings.Contains(c.TestName(), "SvcDiscovery") {
+			s.basicInfo.EnableDNS=true
 			s.enableDNS = true
 		}
 		defer func() { s.enableDNS = prevDNSEnabled }()
