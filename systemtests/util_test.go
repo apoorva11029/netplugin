@@ -233,7 +233,7 @@ func (s *systemtestSuite) runContainersWithDNS(num int, tenantName, networkName,
 		logrus.Errorf("Error getting DNS server for network %s/%s", networkName, tenantName)
 		return nil, err
 	}
-
+	
 	docknetName := fmt.Sprintf("%s/%s", networkName, tenantName)
 	if tenantName == "default" {
 		docknetName = networkName
@@ -256,8 +256,9 @@ func (s *systemtestSuite) runContainersWithDNS(num int, tenantName, networkName,
 				dnsServer:   dnsServer,
 				tenantName:  tenantName,
 			}
-
+			logrus.Infof("will run containers now")
 			cont, err := s.nodes[nodeNum].exec.runContainer(spec)
+			logrus.Infof("done tunnint containers ")
 			if err != nil {
 				errChan <- err
 			}
@@ -683,7 +684,9 @@ func (s *systemtestSuite) getNetworkDNSServer(tenant, network string) (string, e
 	if err != nil {
 		return "", err
 	}
-
+	logrus.Infof("%s----------",netList)
+	logrus.Infof("tenant name is %s",tenant)
+	logrus.Infof("netwirk name is %s",network)
 	for _, net := range netList {
 		if net["tenant"].(string) == tenant && net["networkName"].(string) == network {
 			dnsServer := net["dnsServer"].(string)

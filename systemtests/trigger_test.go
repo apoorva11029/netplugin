@@ -32,8 +32,8 @@ func (s *systemtestSuite) TestTriggerNetmasterSwitchover(c *C) {
 	}
 	c.Assert(s.cli.NetworkPost(network), IsNil)
 
-	for i := 0; i < s.iterations; i++ {
-		containers, err := s.runContainers(s.containers, false, "private", "", nil, nil)
+	for i := 0; i < s.basicInfo.Iterations; i++ {
+		containers, err := s.runContainers(s.basicInfo.Containers, false, "private", "", nil, nil)
 		c.Assert(err, IsNil)
 
 		var leader, oldLeader *node
@@ -101,8 +101,8 @@ func (s *systemtestSuite) TestTriggerNetpluginDisconnect(c *C) {
 
 	c.Assert(s.cli.NetworkPost(network), IsNil)
 
-	for i := 0; i < s.iterations; i++ {
-		containers, err := s.runContainers(s.containers, false, "private", "", nil, nil)
+	for i := 0; i < s.basicInfo.Iterations; i++ {
+		containers, err := s.runContainers(s.basicInfo.Containers, false, "private", "", nil, nil)
 		c.Assert(err, IsNil)
 
 		for _, node := range s.nodes {
@@ -145,13 +145,13 @@ func (s *systemtestSuite) TestTriggerNodeReload(c *C) {
 	}
 	c.Assert(s.cli.NetworkPost(network), IsNil)
 
-	numContainers := s.containers
+	numContainers := s.basicInfo.Containers
 	if numContainers < (len(s.nodes) * 2) {
 		numContainers = len(s.nodes) * 2
 	}
 	cntPerNode := numContainers / len(s.nodes)
 
-	for i := 0; i < s.iterations; i++ {
+	for i := 0; i < s.basicInfo.Iterations; i++ {
 		containers := []*container{}
 
 		// start containers on all nodes
@@ -216,10 +216,11 @@ func (s *systemtestSuite) TestTriggerClusterStoreRestart(c *C) {
 		Encap:       "vxlan",
 	}
 	c.Assert(s.cli.NetworkPost(network), IsNil)
-
-	for i := 0; i < s.iterations; i++ {
-		//containers, err := s.runContainers(s.containers, false, "private", "",nil, nil)
-		containers, err := s.runContainers(s.containers, false, "private", "default", nil, nil)
+	logrus.Infof("number of container is %s", s.basicInfo.Containers)
+	logrus.Infof("number of iterations is %s", s.basicInfo.Iterations)
+	for i := 0; i < s.basicInfo.Iterations; i++ {
+		//containers, err := s.runContainers(s.basicInfo.Containers, false, "private", "",nil, nil)
+		containers, err := s.runContainers(s.basicInfo.Containers, false, "private", "default", nil, nil)
 		c.Assert(err, IsNil)
 
 		// test ping for all containers
@@ -337,7 +338,7 @@ func (s *systemtestSuite) TestTriggers(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(s.checkAllConnection(netMapContainers, groupMapContainers), IsNil)
 
-	for i := 0; i < (s.iterations * 6); i++ {
+	for i := 0; i < (s.basicInfo.Iterations * 6); i++ {
 		switch rand.Int() % 3 {
 		case 0:
 			logrus.Info("Triggering netplugin restart")
@@ -387,12 +388,12 @@ func (s *systemtestSuite) TestTriggers(c *C) {
 }
 
 func (s *systemtestSuite) runTriggerContainers(groupNames []string) (map[*container]string, map[*container]string, []*container, error) {
-	netContainers, err := s.runContainers(s.containers, false, "private", "", nil, nil)
+	netContainers, err := s.runContainers(s.basicInfo.Containers, false, "private", "", nil, nil)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	groupMapContainers, err := s.runContainersInGroups(s.containers, "other", "", groupNames)
+	groupMapContainers, err := s.runContainersInGroups(s.basicInfo.Containers, "other", "", groupNames)
 	if err != nil {
 		return nil, nil, nil, err
 	}
