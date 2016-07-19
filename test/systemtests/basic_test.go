@@ -141,7 +141,7 @@ func (s *systemtestSuite) TestBaasicSvcDiscoveryVLAN(c *C) {
 }
 
 func (s *systemtestSuite) testBasicSvcDiscovery(c *C, encap string) {
-	if !strings.Contains(s.clusterStore, "etcd") {
+	if !strings.Contains(s.basicInfo.ClusterStore, "etcd") {
 		c.Skip("Skipping test")
 	}
 	// HACK: "--dns" option is broken in docker 1.10.3. skip this test
