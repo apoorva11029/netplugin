@@ -21,14 +21,14 @@ type systemtestSuite struct {
 	cli       *client.ContivClient
 	//short        bool
 	//containers   int
-	binpath string
+	//binpath string
 	//iterations   int
-	vlanIf       string
-	nodes        []*node
-	fwdMode      string
-	clusterStore string
+	//vlanIf       string
+	nodes   []*node
+	fwdMode string
+	//clusterStore string
 	//enableDNS    bool
-	keyFile string
+	//keyFile string
 	//scheduler    string
 	// user       string
 	// password   string
@@ -38,17 +38,20 @@ type systemtestSuite struct {
 	acinfoGlob ACInfoGlob
 }
 type BasicInfo struct {
-	Scheduler  string `json:"scheduler"`      //swarm, k8s or plain docker
-	SwarmEnv   string `json:"swarm_variable"` //env variables to be set with swarm environment
-	Vagrant    bool   `json:"vagrant"`        //vagrant or baremetal
-	Product    string `json:"product"`        //for netplugin / volplugin
-	FwdMode    string `json:"fwdMode"`        //for forwarding, L2, L3
-	AciMode    string `json:"aci_mode"`       //on/off
-	Short      bool   `json:"short"`
-	Containers int    `json:"containers"`
-	Iterations int    `json:"iterations"`
-	EnableDNS  bool   `json:"enableDNS"`
-	Master     bool   `json:"master"`
+	Scheduler    string `json:"scheduler"`      //swarm, k8s or plain docker
+	SwarmEnv     string `json:"swarm_variable"` //env variables to be set with swarm environment otherwise blank string
+	Vagrant      bool   `json:"vagrant"`        //vagrant or baremetal
+	Product      string `json:"product"`        //for netplugin / volplugin
+	AciMode      string `json:"aci_mode"`       //on/off
+	Short        bool   `json:"short"`
+	Containers   int    `json:"containers"`
+	Iterations   int    `json:"iterations"`
+	EnableDNS    bool   `json:"enableDNS"`
+	ClusterStore string `json:"contiv_cluster_store"`
+	ContivL3     string `json:"contiv_l3"`
+	KeyFile      string `json:"key_file"`
+	BinPath      string `json:"binpath"` // /home/admin/bin or /opt/admin/bin
+	Master       bool   `json:"master"`
 }
 
 type ACInfoHost struct {
@@ -81,34 +84,39 @@ func TestMain(m *M) {
 	// flag.StringVar(&nodes, "nodes", "", "List of nodes to use (comma separated)")
 	// flag.StringVar(&sts.user, "user", "vagrant", "User ID for SSH")
 	// flag.StringVar(&sts.password, "password", "vagrant", "Password for SSH")
-	_, masthost, _ := getMaster("cfg.json")
+	mastbasic, masthost, _ := getMaster("cfg.json")
 	//flag.IntVar(&sts.iterations, "iterations", mastbasic.Iterations, "Number of iterations")
-
-	if os.Getenv("ACI_SYS_TEST_MODE") == "ON" {
-		flag.StringVar(&sts.vlanIf, "vlan-if", masthost.HostDataInterface, "Data interface in Baremetal setup node")
-		flag.StringVar(&sts.binpath, "binpath", "/home/admin/bin", "netplugin/netmaster binary path")
-		if os.Getenv("KEY_FILE") == "" {
-			flag.StringVar(&sts.keyFile, "keyFile", "/home/admin/.ssh/id_rsa", "Insecure private key in ACI-systemtests")
-		} else {
-			keyFileValue := os.Getenv("KEY_FILE")
-			flag.StringVar(&sts.keyFile, "keyFile", keyFileValue, "Insecure private key in ACI-systemtests")
-		}
+	switch mastbasic.AciMode {
+	case "on":
+	//	flag.StringVar(&sts.vlanIf, "vlan-if", masthost.HostDataInterface, "Data interface in Baremetal setup node")
+	//flag.StringVar(&sts.binpath, "binpath", "/home/admin/bin", "netplugin/netmaster binary path")
+	/*if os.Getenv("KEY_FILE") == "" {
+		flag.StringVar(&sts.keyFile, "keyFile", "/home/admin/.ssh/id_rsa", "Insecure private key in ACI-systemtests")
 	} else {
-		flag.StringVar(&sts.binpath, "binpath", "/opt/gopath/bin", "netplugin/netmaster binary path")
-		flag.StringVar(&sts.vlanIf, "vlan-if", "eth2", "VLAN interface for OVS bridge")
+		keyFileValue := os.Getenv("KEY_FILE")
+		flag.StringVar(&sts.keyFile, "keyFile", keyFileValue, "Insecure private key in ACI-systemtests")
+	}*/
+
+	default:
+		//flag.StringVar(&sts.binpath, "binpath", "/opt/gopath/bin", "netplugin/netmaster binary path")
+		//		flag.StringVar(&sts.vlanIf, "vlan-if", "eth2", "VLAN interface for OVS bridge")
+
 	}
+	logrus.Infof("keyfle value is %s", mastbasic.KeyFile)
+	logrus.Infof("binpath value is %s", mastbasic.BinPath)
+	logrus.Infof("vlanif is %s", masthost.HostDataInterface)
 
 	//flag.IntVar(&sts.containers, "containers", mastbasic.Containers, "Number of containers to use")
 	//flag.BoolVar(&sts.short, "short", mastbasic.Short, "Do a quick validation run instead of the full test suite")
 	//flag.BoolVar(&sts.enableDNS, "dns-enable", mastbasic.EnableDNS, "Enable DNS service discovery")
 
-	if os.Getenv("CONTIV_CLUSTER_STORE") == "" {
+	/*if os.Getenv("CONTIV_CLUSTER_STORE") == "" {
 		flag.StringVar(&sts.clusterStore, "cluster-store", "etcd://localhost:2379", "cluster store URL")
 	} else {
 		flag.StringVar(&sts.clusterStore, "cluster-store", os.Getenv("CONTIV_CLUSTER_STORE"), "cluster store URL")
 	}
-
-	if os.Getenv("CONTIV_L3") == "" {
+	*/
+	if mastbasic.ContivL3 == "" {
 		flag.StringVar(&sts.fwdMode, "fwd-mode", "bridge", "forwarding mode to start the test ")
 	} else {
 		flag.StringVar(&sts.fwdMode, "fwd-mode", "routing", "forwarding mode to start the test ")
@@ -139,9 +147,9 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 	case "on":
 		/*
 			logrus.Infof("ACI_SYS_TEST_MODE is ON")
-			logrus.Infof("Private keyFile = %s", s.keyFile)
-			logrus.Infof("Binary binpath = %s", s.binpath)
-			logrus.Infof("Interface vlanIf = %s", s.vlanIf)
+			logrus.Infof("Private keyFile = %s", s.basicInfo.KeyFile)
+			logrus.Infof("Binary binpath = %s", s.basicInfo.BinPath)
+			logrus.Infof("Interface vlanIf = %s", s.acinfoHost.HostDataInterface)
 
 			s.baremetal = vagrantssh.Baremetal{}
 			bm := &s.baremetal
@@ -164,7 +172,7 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 				hosts[i].User = hostNames[i]
 				logrus.Infof("User=%s", hosts[i].User)
 
-				hosts[i].PrivKeyFile = s.keyFile
+				hosts[i].PrivKeyFile = s.basicInfo.KeyFile
 				logrus.Infof("PrivKeyFile=%s", hosts[i].PrivKeyFile)
 			}
 
@@ -212,10 +220,10 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 			case "k8":
 				contivNodes = 4
 				c.Assert(s.vagrant.Setup(false, []string{"CONTIV_L3=1 VAGRANT_CWD=/home/ladmin/src/github.com/contiv/netplugin/vagrant/k8s/"}, contivNodes), IsNil)
-			case "swarm":
-				c.Assert(s.vagrant.Setup(false, append([]string{"CONTIV_NODES=3 CONTIV_L3=1"}, "DOCKER_HOST=192.168.2.10:2375"), contivNodes+contivL3Nodes), IsNil)
+			/*case "swarm":
+				c.Assert(s.vagrant.Setup(false, append([]string{"CONTIV_NODES=3 CONTIV_L3=1"}, "DOCKER_HOST=192.168.2.10:2375"), contivNodes+contivL3Nodes), IsNil)*/
 			default:
-				c.Assert(s.vagrant.Setup(false, []string{"CONTIV_NODES=3 CONTIV_L3=1"}, contivNodes+contivL3Nodes), IsNil)
+				c.Assert(s.vagrant.Setup(false, append([]string{"CONTIV_NODES=3 CONTIV_L3=1"},s.basicInfo.SwarmEnv), contivNodes+contivL3Nodes), IsNil)
 
 			}
 
@@ -224,10 +232,10 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 			case "k8":
 				contivNodes = contivNodes + 1 //k8master
 				c.Assert(s.vagrant.Setup(false, []string{"VAGRANT_CWD=/home/ladmin/src/github.com/contiv/netplugin/vagrant/k8s/"}, contivNodes), IsNil)
-			case "swarm":
-				c.Assert(s.vagrant.Setup(false, append([]string{}, "DOCKER_HOST=192.168.2.10:2375"), contivNodes), IsNil)
+			/*case "swarm":
+				c.Assert(s.vagrant.Setup(false, append([]string{}, "DOCKER_HOST=192.168.2.10:2375"), contivNodes), IsNil)*/
 			default:
-				c.Assert(s.vagrant.Setup(false, []string{}, contivNodes), IsNil)
+				c.Assert(s.vagrant.Setup(false, append([]string{},s.basicInfo.SwarmEnv), contivNodes), IsNil)
 
 			}
 
@@ -244,11 +252,11 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 				switch s.basicInfo.Scheduler {
 				case "k8":
 					node.exec = s.NewK8sExec(node)
-				case "swarm":
+				/*case "swarm":
 					logrus.Infof("in swarm mooooood")
-					node.exec = s.NewSwarmExec(node)
+					node.exec = s.NewSwarmExec(node)*/
 				default:
-					logrus.Infof("in docker mooooood")
+					logrus.Infof("in docker/swarm mooooood")
 					node.exec = s.NewDockerExec(node)
 				}
 				s.nodes = append(s.nodes, node)

@@ -21,11 +21,13 @@ type container struct {
 }
 type docker struct {
 	node *node
+	env string
 }
 
 func (s *systemtestSuite) NewDockerExec(n *node) *docker {
 	d := new(docker)
 	d.node = n
+	d.env = s.basicInfo.SwarmEnv + " "
 	return d
 }
 
@@ -89,7 +91,7 @@ func (d *docker) runContainer(spec containerSpec) (*container, error) {
 
 	cmd := fmt.Sprintf("docker run -itd %s %s %s %s %s %s", namestr, netstr, dnsStr, labelstr, spec.imageName, spec.commandName)
 
-	out, err := d.node.tbnode.RunCommandWithOutput(cmd)
+	out, err := d.node.tbnode.RunCommandWithOutput(d.env + cmd)
 	if err != nil {
 		logrus.Infof("cmd %q failed: output below", cmd)
 		logrus.Println(out)
@@ -191,7 +193,7 @@ func (d *docker) getIPv6Addr(c *container, dev string) (string, error) {
 }
 
 func (d *docker) exec(c *container, args string) (string, error) {
-	out, err := c.node.runCommand(fmt.Sprintf("docker exec %s %s", c.containerID, args))
+	out, err := c.node.runCommand(fmt.Sprintf(d.env+"docker exec %s %s", c.containerID, args))
 	logrus.Println(out)
 	logrus.Println(err)
 	logrus.Infof("Jst printed output and err for exec")
@@ -204,11 +206,11 @@ func (d *docker) exec(c *container, args string) (string, error) {
 }
 
 func (d *docker) execBG(c *container, args string) (string, error) {
-	return c.node.runCommand(fmt.Sprintf("docker exec -d %s %s", c.containerID, args))
+	return c.node.runCommand(fmt.Sprintf(d.env+"docker exec -d %s %s", c.containerID, args))
 }
 
 func (d *docker) dockerCmd(c *container, arg string) error {
-	out, err := c.node.runCommand(fmt.Sprintf("docker %s %s", arg, c.containerID))
+	out, err := c.node.runCommand(fmt.Sprintf(d.env+"docker %s %s", arg, c.containerID))
 	if err != nil {
 		logrus.Println(out)
 		return err
@@ -241,7 +243,7 @@ func (d *docker) startListener(c *container, port int, protocol string) error {
 	}
 
 	logrus.Infof("Starting a %s listener on %v port %d", protocol, c, port)
-	_, err := d.execBG(c, fmt.Sprintf("nc -lk %s -p %v -e /bin/true", protoStr, port))
+	_, err := d.execBG(c, fmt.Sprintf(d.env+"nc -lk %s -p %v -e /bin/true", protoStr, port))
 	return err
 }
 
@@ -286,7 +288,7 @@ func (d *docker) cleanupContainers() error {
 
 func (d *docker) startNetplugin(args string) error {
 	logrus.Infof("Starting netplugin on %s", d.node.Name())
-	return d.node.tbnode.RunCommandBackground("sudo " + d.node.suite.binpath + "/netplugin -plugin-mode docker -vlan-if " + d.node.suite.vlanIf + " --cluster-store " + d.node.suite.clusterStore + " " + args + "&> /tmp/netplugin.log")
+	return d.node.tbnode.RunCommandBackground("sudo " + d.node.suite.basicInfo.BinPath + "/netplugin -plugin-mode docker -vlan-if " + d.node.suite.acinfoHost.HostDataInterface + " --cluster-store " + d.node.suite.basicInfo.ClusterStore + " " + args + "&> /tmp/netplugin.log")
 }
 
 func (d *docker) stopNetplugin() error {
@@ -305,7 +307,7 @@ func (d *docker) startNetmaster() error {
 	if d.node.suite.basicInfo.EnableDNS {
 		dnsOpt = " --dns-enable=true "
 	}
-	return d.node.tbnode.RunCommandBackground(d.node.suite.binpath + "/netmaster" + dnsOpt + " --cluster-store " + d.node.suite.clusterStore + " &> /tmp/netmaster.log")
+	return d.node.tbnode.RunCommandBackground(d.node.suite.basicInfo.BinPath + "/netmaster" + dnsOpt + " --cluster-store " + d.node.suite.basicInfo.ClusterStore + " &> /tmp/netmaster.log")
 }
 func (d *docker) cleanupMaster() {
 	logrus.Infof("Cleaning up master on %s", d.node.Name())
