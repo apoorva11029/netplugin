@@ -16,19 +16,19 @@ import (
 )
 
 type systemtestSuite struct {
-	vagrant      vagrantssh.Vagrant
-	baremetal    vagrantssh.Baremetal
-	cli          *client.ContivClient
+	vagrant   vagrantssh.Vagrant
+	baremetal vagrantssh.Baremetal
+	cli       *client.ContivClient
 	//short        bool
 	//containers   int
-	binpath      string
+	binpath string
 	//iterations   int
 	vlanIf       string
 	nodes        []*node
 	fwdMode      string
 	clusterStore string
 	//enableDNS    bool
-	keyFile      string
+	keyFile string
 	//scheduler    string
 	// user       string
 	// password   string
@@ -115,7 +115,7 @@ func TestMain(m *M) {
 	}
 
 	//if os.Getenv("CONTIV_K8") != "" {
-		//flag.StringVar(&sts.scheduler, "scheduler", mastbasic.Scheduler, "scheduler used for testing")
+	//flag.StringVar(&sts.scheduler, "scheduler", mastbasic.Scheduler, "scheduler used for testing")
 	//}
 
 	flag.Parse()
