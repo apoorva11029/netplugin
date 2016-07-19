@@ -286,7 +286,7 @@ func (w *swarm) cleanupContainers() error {
 
 func (w *swarm) startNetplugin(args string) error {
 	logrus.Infof("Starting netplugin on %s", w.node.Name())
-	return w.node.tbnode.RunCommandBackground("sudo " + w.node.suite.binpath + "/netplugin -plugin-mode docker -vlan-if " + w.node.suite.vlanIf + " --cluster-store " + w.node.suite.clusterStore + " " + args + "&> /tmp/netplugin.log")
+	return w.node.tbnode.RunCommandBackground("sudo " + w.node.suite.basicInfo.BinPath + "/netplugin -plugin-mode docker -vlan-if " + w.node.suite.acinfoHost.HostDataInterface + " --cluster-store " + w.node.suite.basicInfo.ClusterStore + " " + args + "&> /tmp/netplugin.log")
 }
 
 func (w *swarm) stopNetplugin() error {
@@ -305,7 +305,7 @@ func (w *swarm) startNetmaster() error {
 	if w.node.suite.basicInfo.EnableDNS {
 		dnsOpt = " --dns-enable=true "
 	}
-	return w.node.tbnode.RunCommandBackground(w.node.suite.binpath + "/netmaster" + dnsOpt + " --cluster-store " + w.node.suite.clusterStore + " &> /tmp/netmaster.log")
+	return w.node.tbnode.RunCommandBackground(w.node.suite.basicInfo.BinPath + "/netmaster" + dnsOpt + " --cluster-store " + w.node.suite.basicInfo.ClusterStore + " &> /tmp/netmaster.log")
 }
 func (w *swarm) cleanupMaster() {
 	logrus.Infof("Cleaning up master on %s", w.node.Name())
