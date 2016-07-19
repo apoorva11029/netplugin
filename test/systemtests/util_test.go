@@ -784,7 +784,6 @@ func (s *systemtestSuite) getNetworkDNSServer(tenant, network string) (string, e
 	if err != nil {
 		return "", err
 	}
-
 	return netInspect.Oper.DnsServerIP, nil
 }
 
