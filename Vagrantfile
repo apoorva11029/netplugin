@@ -201,7 +201,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         end
         config.vm.define node_name do |node|
            # create an interface for etcd cluster
-            node.vm.network :private_network, ip: node_addr, virtualbox__intnet: "true", auto_config: false
+           node.vm.network :private_network, ip: node_addr, virtualbox__intnet: "true", auto_config: false
             # create an interface for bridged network
             if ENV['CONTIV_L3'] then
               # create an interface for bridged network

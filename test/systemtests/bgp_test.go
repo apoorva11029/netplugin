@@ -701,13 +701,13 @@ func (s *systemtestSuite) TestBgpSequencePeerAddLinkDown(c *C) {
 	}
 	for _, node := range s.nodes {
 		logrus.Infof("Bringing down uplink")
-		node.tbnode.RunCommandWithOutput(fmt.Sprintf("sudo ip link set %s down", s.vlanIf))
+		node.tbnode.RunCommandWithOutput(fmt.Sprintf("sudo ip link set %s down", s.acinfoHost.HostDataInterface))
 	}
 	s.SetupBgp(c, false)
 
 	for _, node := range s.nodes {
 		logrus.Infof("Bringing up uplink")
-		node.tbnode.RunCommandWithOutput(fmt.Sprintf("sudo ip link set %s up", s.vlanIf))
+		node.tbnode.RunCommandWithOutput(fmt.Sprintf("sudo ip link set %s up", s.acinfoHost.HostDataInterface))
 	}
 	s.CheckBgpConnection(c)
 

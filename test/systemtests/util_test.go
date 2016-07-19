@@ -726,11 +726,11 @@ func (s *systemtestSuite) getJSON(url string, target interface{}) error {
 }
 
 func (s *systemtestSuite) clusterStoreGet(path string) (string, error) {
-	if strings.Contains(s.clusterStore, "etcd://") {
+	if strings.Contains(s.basicInfo.ClusterStore, "etcd://") {
 		var etcdKv map[string]interface{}
 
 		// Get from etcd
-		etcdURL := strings.Replace(s.clusterStore, "etcd://", "http://", 1)
+		etcdURL := strings.Replace(s.basicInfo.ClusterStore, "etcd://", "http://", 1)
 		etcdURL = etcdURL + "/v2/keys" + path
 
 		// get json from etcd
@@ -752,11 +752,11 @@ func (s *systemtestSuite) clusterStoreGet(path string) (string, error) {
 		}
 
 		return value.(string), nil
-	} else if strings.Contains(s.clusterStore, "consul://") {
+	} else if strings.Contains(s.basicInfo.ClusterStore, "consul://") {
 		var consulKv []map[string]interface{}
 
 		// Get from consul
-		consulURL := strings.Replace(s.clusterStore, "consul://", "http://", 1)
+		consulURL := strings.Replace(s.basicInfo.ClusterStore, "consul://", "http://", 1)
 		consulURL = consulURL + "/v1/kv" + path
 
 		// get kv json from consul
