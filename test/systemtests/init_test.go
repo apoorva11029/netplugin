@@ -16,24 +16,11 @@ import (
 )
 
 type systemtestSuite struct {
-	vagrant      remotessh.Vagrant
-	baremetal    remotessh.Baremetal
-	cli          *client.ContivClient
-	short        bool
-	containers   int
-	binpath      string
-	iterations   int
-	vlanIf       string
-	nodes        []*node
-	fwdMode      string
-	clusterStore string
-
-	//enableDNS    bool
-	//keyFile string
-	//scheduler    string
-	// user       string
-	// password   string
-	// nodes      []string
+	vagrant    remotessh.Vagrant
+	baremetal  remotessh.Baremetal
+	cli        *client.ContivClient
+	nodes      []*node
+	fwdMode    string
 	basicInfo  BasicInfo
 	acinfoHost ACInfoHost
 	acinfoGlob ACInfoGlob
@@ -146,53 +133,57 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 	s.basicInfo, s.acinfoHost, s.acinfoGlob = getMaster("cfg.json")
 	switch s.basicInfo.AciMode {
 	case "on":
-		/*
+		logrus.Infof("ACI_SYS_TEST_MODE is ON")
+		logrus.Infof("Private keyFile = %s", s.basicInfo.KeyFile)
+		logrus.Infof("Binary binpath = %s", s.basicInfo.BinPath)
+		logrus.Infof("Interface vlanIf = %s", s.acinfoHost.HostDataInterface)
 
-			logrus.Infof("ACI_SYS_TEST_MODE is ON")
-			logrus.Infof("Private keyFile = %s", s.basicInfo.KeyFile)
-			logrus.Infof("Binary binpath = %s", s.basicInfo.BinPath)
-			logrus.Infof("Interface vlanIf = %s", s.acinfoHost.HostDataInterface)
+		s.baremetal = vagrantssh.Baremetal{}
+		bm := &s.baremetal
 
+		// To fill the hostInfo data structure for Baremetal VMs
+		name := "aci-swarm-node"
+		hostIPs := strings.Split(s.acinfoHost.HostIPs, ",")
+		hostNames := strings.Split(s.acinfoHost.HostUsernames, ",")
+		hosts := make([]vagrantssh.HostInfo, 2)
 
-			s.baremetal = remotessh.Baremetal{}
-			bm := &s.baremetal
+		for i := range hostIPs {
+			hosts[i].Name = name + strconv.Itoa(i+1)
+			logrus.Infof("Name=%s", hosts[i].Name)
 
+			hosts[i].SSHAddr = hostIPs[i]
+			logrus.Infof("SHAddr=%s", hosts[i].SSHAddr)
 
-				for i := range hostIPs {
-					hosts[i].Name = name + strconv.Itoa(i+1)
-					logrus.Infof("Name=%s", hosts[i].Name)
+			hosts[i].SSHPort = "22"
 
-					hosts[i].SSHAddr = hostIPs[i]
-					logrus.Infof("SHAddr=%s", hosts[i].SSHAddr)
+			hosts[i].User = hostNames[i]
+			logrus.Infof("User=%s", hosts[i].User)
 
-					hosts[i].SSHPort = "22"
+			hosts[i].PrivKeyFile = s.basicInfo.KeyFile
+			logrus.Infof("PrivKeyFile=%s", hosts[i].PrivKeyFile)
+		}
 
-					hosts[i].User = hostNames[i]
-					logrus.Infof("User=%s", hosts[i].User)
-				hosts[i].PrivKeyFile = s.basicInfo.KeyFile
-				logrus.Infof("PrivKeyFile=%s", hosts[i].PrivKeyFile)
-			}
+		c.Assert(bm.Setup(hosts), IsNil)
 
+		s.nodes = []*node{}
 
-				c.Assert(bm.Setup(hosts), IsNil)
+		for _, nodeObj := range s.baremetal.GetNodes() {
+			s.nodes = append(s.nodes, &node{tbnode: nodeObj, suite: s})
+		}
 
-				s.nodes = []*node{}
+		logrus.Info("Pulling alpine on all nodes")
 
-				for _, nodeObj := range s.baremetal.GetNodes() {
-					s.nodes = append(s.nodes, &node{tbnode: nodeObj, suite: s})
-				}
+		s.baremetal.IterateNodes(func(node vagrantssh.TestbedNode) error {
+			node.RunCommand("sudo rm /tmp/*net*")
+			return node.RunCommand("docker pull alpine")
+		})
 
-			s.baremetal.IterateNodes(func(node remotessh.TestbedNode) error {
-				node.RunCommand("sudo rm /tmp/*net*")
-				return node.RunCommand("docker pull alpine")
-			})
+		//Copying binaries
+		s.copyBinary("netmaster")
+		s.copyBinary("netplugin")
+		s.copyBinary("netctl")
+		s.copyBinary("contivk8s")
 
-				//Copying binaries
-				s.copyBinary("netmaster")
-				s.copyBinary("netplugin")
-				s.copyBinary("netctl")
-				s.copyBinary("contivk8s")
-		*/
 	default:
 		s.vagrant = remotessh.Vagrant{}
 		nodesStr := os.Getenv("CONTIV_NODES")
@@ -289,50 +280,50 @@ func (s *systemtestSuite) SetUpTest(c *C) {
 
 	switch s.basicInfo.Scheduler {
 	case "on":
-		/*
-			for _, node := range s.nodes {
-				//node.cleanupContainers()
-				//node.cleanupDockerNetwork()
-				node.exec.stopNetplugin()
-				node.exec.cleanupSlave()
-				node.deleteFile("/etc/systemd/system/netplugin.service")
-				node.stopNetmaster()
-				node.deleteFile("/etc/systemd/system/netmaster.service")
-				node.deleteFile("/usr/bin/netctl")
+
+		for _, node := range s.nodes {
+			//node.cleanupContainers()
+			//node.cleanupDockerNetwork()
+			node.exec.stopNetplugin()
+			node.exec.cleanupSlave()
+			node.deleteFile("/etc/systemd/system/netplugin.service")
+			node.exec.stopNetmaster()
+			node.deleteFile("/etc/systemd/system/netmaster.service")
+			node.deleteFile("/usr/bin/netctl")
+		}
+
+		for _, node := range s.nodes {
+			node.exec.cleanupMaster()
+		}
+
+		for _, node := range s.nodes {
+			if s.fwdMode == "bridge" {
+				c.Assert(node.exec.startNetplugin(""), IsNil)
+				c.Assert(node.exec.runCommandUntilNoNetpluginError(), IsNil)
+			} else if s.fwdMode == "routing" {
+				c.Assert(node.exec.startNetplugin("-fwd-mode=routing -vlan-if=eth2"), IsNil)
+				c.Assert(node.exec.runCommandUntilNoNetpluginError(), IsNil)
 			}
+		}
 
-			for _, node := range s.nodes {
-				node.cleanupMaster()
+		time.Sleep(15 * time.Second)
+
+		for _, node := range s.nodes {
+			c.Assert(node.exec.startNetmaster(), IsNil)
+			time.Sleep(1 * time.Second)
+			c.Assert(node.exec.runCommandUntilNoNetmasterError(), IsNil)
+		}
+
+		time.Sleep(5 * time.Second)
+		for i := 0; i < 11; i++ {
+			_, err := s.cli.TenantGet("default")
+			if err == nil {
+				break
 			}
-
-			for _, node := range s.nodes {
-				if s.fwdMode == "bridge" {
-					c.Assert(node.startNetplugin(""), IsNil)
-					c.Assert(node.runCommandUntilNoError("pgrep netplugin"), IsNil)
-				} else if s.fwdMode == "routing" {
-					c.Assert(node.startNetplugin("-fwd-mode=routing -vlan-if=eth2"), IsNil)
-					c.Assert(node.runCommandUntilNoError("pgrep netplugin"), IsNil)
-				}
-			}
-
-			time.Sleep(15 * time.Second)
-
-			for _, node := range s.nodes {
-				c.Assert(node.startNetmaster(), IsNil)
-				time.Sleep(1 * time.Second)
-				c.Assert(node.runCommandUntilNoError("pgrep netmaster"), IsNil)
-			}
-
-			time.Sleep(5 * time.Second)
-			for i := 0; i < 11; i++ {
-				_, err := s.cli.TenantGet("default")
-				if err == nil {
-					break
-				}
-				// Fail if we reached last iteration
-				c.Assert((i < 10), Equals, true)
-				time.Sleep(500 * time.Millisecond)
-			}*/
+			// Fail if we reached last iteration
+			c.Assert((i < 10), Equals, true)
+			time.Sleep(500 * time.Millisecond)
+		}
 	default:
 		for _, node := range s.nodes {
 			node.exec.cleanupContainers()

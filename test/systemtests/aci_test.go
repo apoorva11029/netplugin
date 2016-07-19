@@ -1,6 +1,5 @@
 package systemtests
 
-/*
 import (
 	//"errors"
 	log "github.com/Sirupsen/logrus"
@@ -53,32 +52,24 @@ func (s *systemtestSuite) TestACIMode(c *C) {
 	err = s.nodes[0].checkSchedulerNetworkCreated("epgb", true)
 	c.Assert(err, IsNil)
 
-	containersA, err := s.runContainersOnNode(2, "aciNet", "", "epga", s.nodes[0])
+	cA1, err := s.nodes[0].exec.runContainer(containerSpec{networkName: "epgA"})
 	c.Assert(err, IsNil)
-	containersB, err := s.runContainersOnNode(2, "aciNet", "", "epgb", s.nodes[0])
+
+	cA2, err := s.nodes[0].exec.runContainer(containerSpec{networkName: "epgA"})
+	c.Assert(err, IsNil)
+
+	cB1, err := s.nodes[0].exec.runContainer(containerSpec{networkName: "epgB"})
+	c.Assert(err, IsNil)
+
+	cB2, err := s.nodes[0].exec.runContainer(containerSpec{networkName: "epgB"})
 	c.Assert(err, IsNil)
 
 	// Verify cA1 can ping cA2
-	c.Assert(s.pingTest(containersA), IsNil)
+	c.Assert(cA1.node.exec.checkPing(cA1, cA2.eth0.ip), IsNil)
 	// Verify cB1 can ping cB2
-	c.Assert(s.pingTest(containersB), IsNil)
+	c.Assert(cB1.node.exec.checkPing(cB1, cB2.eth0.ip), IsNil)
 	// Verify cA1 cannot ping cB1
-	c.Assert(s.pingFailureTest(containersA, containersB), IsNil)
-
-	log.Infof("Triggering netplugin restart")
-	node1 := s.nodes[0]
-	c.Assert(node1.stopNetplugin(), IsNil)
-	c.Assert(node1.rotateLog("netplugin"), IsNil)
-	c.Assert(node1.startNetplugin(""), IsNil)
-	c.Assert(node1.runCommandUntilNoError("pgrep netplugin"), IsNil)
-	time.Sleep(20 * time.Second)
-
-	// Verify cA1 can ping cA2
-	c.Assert(s.pingTest(containersA), IsNil)
-	// Verify cB1 can ping cB2
-	c.Assert(s.pingTest(containersB), IsNil)
-	// Verify cA1 cannot ping cB1
-	c.Assert(s.pingFailureTest(containersA, containersB), IsNil)
+	c.Assert(cA1.node.exec.checkPing(cA1, cB1.eth0.ip), IsNil)
 
 	c.Assert(s.removeContainers(containersA), IsNil)
 	c.Assert(s.removeContainers(containersB), IsNil)
@@ -86,8 +77,7 @@ func (s *systemtestSuite) TestACIMode(c *C) {
 	c.Assert(s.cli.EndpointGroupDelete("default", "epgb"), IsNil)
 	c.Assert(s.cli.NetworkDelete("default", "aciNet"), IsNil)
 }
-*/
-/*
+
 func (s *systemtestSuite) TestACIPingGateway(c *C) {
 	if s.fwdMode == "routing" {
 		return
@@ -133,7 +123,6 @@ func (s *systemtestSuite) TestACIPingGateway(c *C) {
 	c.Assert(s.cli.EndpointGroupDelete("aciTenant", "epga"), IsNil)
 	c.Assert(s.cli.NetworkDelete("aciTenant", "aciNet"), IsNil)
 }
-
 
 func (s *systemtestSuite) TestACIProfile(c *C) {
 	if s.fwdMode == "routing" {
@@ -419,6 +408,7 @@ func (s *systemtestSuite) TestACIProfile(c *C) {
 	}
 }
 
+/*
 func (s *systemtestSuite) AciTestSetup(c *C) {
 
 	log.Infof("ACI_SYS_TEST_MODE is ON")

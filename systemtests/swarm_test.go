@@ -16,10 +16,7 @@ type swarm struct {
 func (s *systemtestSuite) NewSwarmExec(n *node) *swarm {
 	w := new(swarm)
 	w.node = n
-	logrus.Infof("Running in swarm mode---------")
 	w.env = s.basicInfo.SwarmEnv + " "
-	logrus.Infof("rw.env is %s", w.env)
-	//time.Sleep(10*time.Second)
 	return w
 }
 
@@ -42,11 +39,9 @@ func (w *swarm) newContainer(node *node, containerID, name string) (*container, 
 
 func (w *swarm) runContainer(spec containerSpec) (*container, error) {
 	var namestr, netstr, dnsStr, labelstr string
-	logrus.Infof("_------i come here ")
 	if spec.networkName != "" {
 		netstr = spec.networkName
 		if (spec.tenantName != "") && (spec.tenantName != "default") {
-			logrus.Infof("_-------why did i come here ")
 			netstr = netstr + "/" + spec.tenantName
 		}
 
@@ -186,13 +181,9 @@ func (w *swarm) getIPv6Addr(c *container, dev string) (string, error) {
 }
 
 func (w *swarm) exec(c *container, args string) (string, error) {
-	logrus.Infof("container ID %s", c.containerID)
-	logrus.Infof("args are %s", args)
-
 	out, err := c.node.runCommand(fmt.Sprintf(w.env+"docker exec %s %s", c.containerID, args))
 	if err != nil {
 		if strings.Contains(args, "nc ") && out == "" {
-			logrus.Infof("heyllooooo")
 			return out, nil
 		}
 
