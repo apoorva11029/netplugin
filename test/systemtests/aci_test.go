@@ -1,16 +1,15 @@
 package systemtests
 
-/*
 import (
 	//"errors"
-	log "github.com/Sirupsen/logrus"
+	//log "github.com/Sirupsen/logrus"
 	"github.com/contiv/contivmodel/client"
 	//	"github.com/contiv/vagrantssh"
 	. "gopkg.in/check.v1"
 	//	"os"
 	//	"strconv"
 	//	"strings"
-	"time"
+	//"time"
 )
 
 func (s *systemtestSuite) TestACIMode(c *C) {
@@ -79,7 +78,6 @@ func (s *systemtestSuite) TestACIMode(c *C) {
 	c.Assert(s.pingTest(containersB), IsNil)
 	// Verify cA1 cannot ping cB1
 	c.Assert(s.pingFailureTest(containersA, containersB), IsNil)
-
 	c.Assert(s.removeContainers(containersA), IsNil)
 	c.Assert(s.removeContainers(containersB), IsNil)
 	c.Assert(s.cli.EndpointGroupDelete("default", "epga"), IsNil)
@@ -418,4 +416,4 @@ func (s *systemtestSuite) TestACIProfile(c *C) {
 		c.Assert(s.cli.NetworkDelete("aciTenant", "aciNet"), IsNil)
 	}
 }
-
+*/
