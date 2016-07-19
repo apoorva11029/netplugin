@@ -302,7 +302,7 @@ func (d *docker) stopNetmaster() error {
 func (d *docker) startNetmaster() error {
 	logrus.Infof("Starting netmaster on %s", d.node.Name())
 	dnsOpt := " --dns-enable=false "
-	if d.node.suite.enableDNS {
+	if d.node.suite.basicInfo.EnableDNS {
 		dnsOpt = " --dns-enable=true "
 	}
 	return d.node.tbnode.RunCommandBackground(d.node.suite.binpath + "/netmaster" + dnsOpt + " --cluster-store " + d.node.suite.clusterStore + " &> /tmp/netmaster.log")

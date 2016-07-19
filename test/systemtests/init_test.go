@@ -27,9 +27,9 @@ type systemtestSuite struct {
 	nodes        []*node
 	fwdMode      string
 	clusterStore string
-	enableDNS    bool
-	keyFile      string
-	scheduler    string
+	//enableDNS    bool
+	keyFile string
+	//scheduler    string
 	// user       string
 	// password   string
 	// nodes      []string
@@ -81,8 +81,8 @@ func TestMain(m *M) {
 	// flag.StringVar(&nodes, "nodes", "", "List of nodes to use (comma separated)")
 	// flag.StringVar(&sts.user, "user", "vagrant", "User ID for SSH")
 	// flag.StringVar(&sts.password, "password", "vagrant", "Password for SSH")
-	mastbasic, masthost, _ := getMaster("cfg.json")
-	flag.IntVar(&sts.iterations, "iterations", mastbasic.Iterations, "Number of iterations")
+	_, masthost, _ := getMaster("cfg.json")
+	//flag.IntVar(&sts.iterations, "iterations", mastbasic.Iterations, "Number of iterations")
 
 	if os.Getenv("ACI_SYS_TEST_MODE") == "ON" {
 		flag.StringVar(&sts.vlanIf, "vlan-if", masthost.HostDataInterface, "Data interface in Baremetal setup node")
@@ -98,9 +98,9 @@ func TestMain(m *M) {
 		flag.StringVar(&sts.vlanIf, "vlan-if", "eth2", "VLAN interface for OVS bridge")
 	}
 
-	flag.IntVar(&sts.containers, "containers", mastbasic.Containers, "Number of containers to use")
-	flag.BoolVar(&sts.short, "short", mastbasic.Short, "Do a quick validation run instead of the full test suite")
-	flag.BoolVar(&sts.enableDNS, "dns-enable", mastbasic.EnableDNS, "Enable DNS service discovery")
+	//flag.IntVar(&sts.containers, "containers", mastbasic.Containers, "Number of containers to use")
+	//flag.BoolVar(&sts.short, "short", mastbasic.Short, "Do a quick validation run instead of the full test suite")
+	//flag.BoolVar(&sts.enableDNS, "dns-enable", mastbasic.EnableDNS, "Enable DNS service discovery")
 
 	if os.Getenv("CONTIV_CLUSTER_STORE") == "" {
 		flag.StringVar(&sts.clusterStore, "cluster-store", "etcd://localhost:2379", "cluster store URL")
@@ -114,9 +114,9 @@ func TestMain(m *M) {
 		flag.StringVar(&sts.fwdMode, "fwd-mode", "routing", "forwarding mode to start the test ")
 	}
 
-	if os.Getenv("CONTIV_K8") != "" {
-		flag.StringVar(&sts.scheduler, "scheduler", mastbasic.Scheduler, "scheduler used for testing")
-	}
+	//if os.Getenv("CONTIV_K8") != "" {
+	//flag.StringVar(&sts.scheduler, "scheduler", mastbasic.Scheduler, "scheduler used for testing")
+	//}
 
 	flag.Parse()
 
@@ -254,7 +254,7 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 				node := &node{}
 				node.tbnode = nodeObj
 				node.suite = s
-				logrus.Infof("scheduler is %s ", s.scheduler)
+				logrus.Infof("scheduler is %s ", s.basicInfo.Scheduler)
 				switch s.basicInfo.Scheduler {
 				case "k8":
 					node.exec = s.NewK8sExec(node)
@@ -356,12 +356,12 @@ func (s *systemtestSuite) SetUpTest(c *C) {
 		time.Sleep(15 * time.Second)
 
 		// temporarily enable DNS for service discovery tests
-		prevDNSEnabled := s.enableDNS
+		prevDNSEnabled := s.basicInfo.EnableDNS
 		if strings.Contains(c.TestName(), "SvcDiscovery") {
 			s.basicInfo.EnableDNS = true
-			s.enableDNS = true
+			//s.enableDNS = true
 		}
-		defer func() { s.enableDNS = prevDNSEnabled }()
+		defer func() { s.basicInfo.EnableDNS = prevDNSEnabled }()
 
 		for _, node := range s.nodes {
 			c.Assert(node.exec.startNetmaster(), IsNil)
@@ -370,7 +370,7 @@ func (s *systemtestSuite) SetUpTest(c *C) {
 		}
 
 		time.Sleep(5 * time.Second)
-		if s.scheduler != "k8" {
+		if s.basicInfo.Scheduler != "k8" {
 			for i := 0; i < 11; i++ {
 
 				_, err := s.cli.TenantGet("default")
