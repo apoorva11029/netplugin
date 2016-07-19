@@ -302,7 +302,7 @@ func (w *swarm) stopNetmaster() error {
 func (w *swarm) startNetmaster() error {
 	logrus.Infof("Starting netmaster on %s", w.node.Name())
 	dnsOpt := " --dns-enable=false "
-	if w.node.suite.enableDNS {
+	if w.node.suite.basicInfo.EnableDNS {
 		dnsOpt = " --dns-enable=true "
 	}
 	return w.node.tbnode.RunCommandBackground(w.node.suite.binpath + "/netmaster" + dnsOpt + " --cluster-store " + w.node.suite.clusterStore + " &> /tmp/netmaster.log")
