@@ -34,8 +34,8 @@ func (s *systemtestSuite) testBasicStartRemoveContainer(c *C, encap string) {
 		TenantName:  "default",
 	}), IsNil)
 
-	for i := 0; i < s.iterations; i++ {
-		containers, err := s.runContainers(s.containers, false, "private", "", nil, nil)
+	for i := 0; i < s.basicInfo.Iterations; i++ {
+		containers, err := s.runContainers(s.basicInfo.Containers, false, "private", "", nil, nil)
 		c.Assert(err, IsNil)
 
 		if s.fwdMode == "routing" && encap == "vlan" {
@@ -46,7 +46,7 @@ func (s *systemtestSuite) testBasicStartRemoveContainer(c *C, encap string) {
 		outChan := make(chan string, 100)
 		//logrus.Infof("env value is " + s.basicInfo.SwarmEnv)
 
-		mystr := "DOCKER_HOST=192.168.2.1:2375 " + "docker ps"
+		mystr := "DOCKER_HOST=192.168.2.10:2375 " + "docker ps"
 		mystr = "docker ps"
 		logrus.Infof("mystr _____________________ value is " + mystr)
 		out, _ := s.nodes[0].runCommand(mystr)
@@ -86,7 +86,7 @@ func (s *systemtestSuite) testBasicStartStopContainer(c *C, encap string) {
 		TenantName:  "default",
 	}), IsNil)
 
-	containers, err := s.runContainers(s.containers, false, "private", "", nil, nil)
+	containers, err := s.runContainers(s.basicInfo.Containers, false, "private", "", nil, nil)
 	c.Assert(err, IsNil)
 	if s.fwdMode == "routing" && encap == "vlan" {
 		var err error
@@ -94,7 +94,7 @@ func (s *systemtestSuite) testBasicStartStopContainer(c *C, encap string) {
 		c.Assert(err, IsNil)
 	}
 
-	for i := 0; i < s.iterations; i++ {
+	for i := 0; i < s.basicInfo.Iterations; i++ {
 		c.Assert(s.pingTest(containers), IsNil)
 
 		errChan := make(chan error)
@@ -162,7 +162,7 @@ func (s *systemtestSuite) testBasicSvcDiscovery(c *C, encap string) {
 		TenantName:  "default",
 	}), IsNil)
 
-	for i := 0; i < s.iterations; i++ {
+	for i := 0; i < s.basicInfo.Iterations; i++ {
 		group1 := &client.EndpointGroup{
 			GroupName:   fmt.Sprintf("svc1%d", i),
 			NetworkName: "private",
@@ -179,10 +179,10 @@ func (s *systemtestSuite) testBasicSvcDiscovery(c *C, encap string) {
 		c.Assert(s.cli.EndpointGroupPost(group1), IsNil)
 		logrus.Infof("Creating epg: %s", group2.GroupName)
 		c.Assert(s.cli.EndpointGroupPost(group2), IsNil)
-
-		containers1, err := s.runContainersWithDNS(s.containers, "default", "private", fmt.Sprintf("svc1%d", i))
+		logrus.Infof("Runnong DNS cntainers ")
+		containers1, err := s.runContainersWithDNS(s.basicInfo.Containers, "default", "private", fmt.Sprintf("svc1%d", i))
 		c.Assert(err, IsNil)
-		containers2, err := s.runContainersWithDNS(s.containers, "default", "private", fmt.Sprintf("svc2%d", i))
+		containers2, err := s.runContainersWithDNS(s.basicInfo.Containers, "default", "private", fmt.Sprintf("svc2%d", i))
 		c.Assert(err, IsNil)
 
 		containers := append(containers1, containers2...)

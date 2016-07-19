@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-
+	//"time"
 	"github.com/Sirupsen/logrus"
 )
 
@@ -17,7 +17,9 @@ func (s *systemtestSuite) NewSwarmExec(n *node) *swarm {
 	w := new(swarm)
 	w.node = n
 	logrus.Infof("Running in swarm mode---------")
-	w.env = "DOCKER_HOST=192.168.2.11:2385 "
+	w.env = s.basicInfo.SwarmEnv + " "
+	logrus.Infof("rw.env is %s", w.env)
+	//time.Sleep(10*time.Second)
 	return w
 }
 
@@ -40,10 +42,11 @@ func (w *swarm) newContainer(node *node, containerID, name string) (*container, 
 
 func (w *swarm) runContainer(spec containerSpec) (*container, error) {
 	var namestr, netstr, dnsStr, labelstr string
-
-	if (spec.networkName != "") && (spec.tenantName != "default") {
+	logrus.Infof("_------i come here ")
+	if spec.networkName != "" {
 		netstr = spec.networkName
-		if spec.tenantName != "" {
+		if (spec.tenantName != "") && (spec.tenantName != "default") {
+			logrus.Infof("_-------why did i come here ")
 			netstr = netstr + "/" + spec.tenantName
 		}
 
