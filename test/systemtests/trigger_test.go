@@ -14,7 +14,7 @@ import (
 
 func (s *systemtestSuite) TestTriggerNetmasterSwitchover(c *C) {
 
-	if s.scheduler == "k8" {
+	if s.basicInfo.Scheduler == "k8" {
 		return
 	}
 
