@@ -3,9 +3,10 @@ package systemtests
 import (
 	"errors"
 	"fmt"
-	"github.com/Sirupsen/logrus"
 	"regexp"
 	"strings"
+
+	"github.com/Sirupsen/logrus"
 	//"sync"
 	"time"
 )
@@ -48,6 +49,12 @@ func (k *kubernetes) newContainer(node *node, containerID, name string, spec con
 	}
 
 	return cont, nil
+}
+
+func (k *kubernetes) cleanupDockerNetwork() error {
+	logrus.Infof("Cleaning up networks on %s", k.node.Name())
+	_, err := k8master.tbnode.RunCommandWithOutput("true")
+	return err
 }
 
 func (k *kubernetes) runContainer(spec containerSpec) (*container, error) {
@@ -321,7 +328,7 @@ func (k *kubernetes) startNetplugin(args string) error {
 		return nil
 	}
 	logrus.Infof("Starting netplugin on %s", k.node.Name())
-	return k.node.tbnode.RunCommandBackground("sudo " + k.node.suite.basicInfo.BinPath + "/netplugin -plugin-mode kubernetes -vlan-if " + k.node.suite.acinfoHost.HostDataInterface + " --cluster-store " + k.node.suite.basicInfo.ClusterStore + " " + args + "&> /tmp/netplugin.log")
+	return k.node.tbnode.RunCommandBackground("sudo " + k.node.suite.basicInfo.BinPath + "/netplugin -plugin-mode kubernetes -vlan-if " + k.node.suite.basicInfo.VlanIf + " --cluster-store " + k.node.suite.basicInfo.ClusterStore + " " + args + "&> /tmp/netplugin.log")
 }
 
 func (k *kubernetes) stopNetplugin() error {

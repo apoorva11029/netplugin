@@ -3,12 +3,13 @@ package systemtests
 import (
 	"errors"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/contiv/contivmodel/client"
 	"github.com/contiv/remotessh"
 	. "gopkg.in/check.v1"
-	"strings"
-	"time"
 )
 
 /*TestBgpContainerToContainerPing tests the following:
@@ -701,13 +702,13 @@ func (s *systemtestSuite) TestBgpSequencePeerAddLinkDown(c *C) {
 	}
 	for _, node := range s.nodes {
 		logrus.Infof("Bringing down uplink")
-		node.tbnode.RunCommandWithOutput(fmt.Sprintf("sudo ip link set %s down", s.acinfoHost.HostDataInterface))
+		node.tbnode.RunCommandWithOutput(fmt.Sprintf("sudo ip link set %s down", s.basicInfo.VlanIf))
 	}
 	s.SetupBgp(c, false)
 
 	for _, node := range s.nodes {
 		logrus.Infof("Bringing up uplink")
-		node.tbnode.RunCommandWithOutput(fmt.Sprintf("sudo ip link set %s up", s.acinfoHost.HostDataInterface))
+		node.tbnode.RunCommandWithOutput(fmt.Sprintf("sudo ip link set %s up", s.basicInfo.VlanIf))
 	}
 	s.CheckBgpConnection(c)
 
