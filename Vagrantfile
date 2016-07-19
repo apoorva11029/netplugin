@@ -187,7 +187,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
            end
         end
         config.vm.define node_name do |node|
-            node.vm.box_version = "0.5.1"
+            node.vm.box_version = "0.3.1"
 
             # node.vm.hostname = node_name
             # create an interface for etcd cluster
