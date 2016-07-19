@@ -39,6 +39,7 @@ type BasicInfo struct {
 	ContivL3     string `json:"contiv_l3"`
 	KeyFile      string `json:"key_file"`
 	BinPath      string `json:"binpath"` // /home/admin/bin or /opt/admin/bin
+	VlanIf	string `json:"vlanIf"`
 	Master       bool   `json:"master"`
 }
 
@@ -72,7 +73,7 @@ func TestMain(m *M) {
 	// flag.StringVar(&nodes, "nodes", "", "List of nodes to use (comma separated)")
 	// flag.StringVar(&sts.user, "user", "vagrant", "User ID for SSH")
 	// flag.StringVar(&sts.password, "password", "vagrant", "Password for SSH")
-	mastbasic, masthost, _ := getMaster("cfg.json")
+	mastbasic, _, _ := getMaster("cfg.json")
 	//flag.IntVar(&sts.iterations, "iterations", mastbasic.Iterations, "Number of iterations")
 	switch mastbasic.AciMode {
 	case "on":
@@ -92,7 +93,7 @@ func TestMain(m *M) {
 	}
 	logrus.Infof("keyfle value is %s", mastbasic.KeyFile)
 	logrus.Infof("binpath value is %s", mastbasic.BinPath)
-	logrus.Infof("vlanif is %s", masthost.HostDataInterface)
+	logrus.Infof("vlanif is %s", mastbasic.VlanIf)
 
 	//flag.IntVar(&sts.containers, "containers", mastbasic.Containers, "Number of containers to use")
 	//flag.BoolVar(&sts.short, "short", mastbasic.Short, "Do a quick validation run instead of the full test suite")
@@ -137,7 +138,7 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 		logrus.Infof("ACI_SYS_TEST_MODE is ON")
 		logrus.Infof("Private keyFile = %s", s.basicInfo.KeyFile)
 		logrus.Infof("Binary binpath = %s", s.basicInfo.BinPath)
-		logrus.Infof("Interface vlanIf = %s", s.acinfoHost.HostDataInterface)
+		logrus.Infof("Interface vlanIf = %s", s.basicInfo.VlanIf)
 
 		s.baremetal = vagrantssh.Baremetal{}
 		bm := &s.baremetal
