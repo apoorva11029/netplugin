@@ -79,7 +79,6 @@ func (s *systemtestSuite) TestACIMode(c *C) {
 	c.Assert(s.pingTest(containersB), IsNil)
 	// Verify cA1 cannot ping cB1
 	c.Assert(s.pingFailureTest(containersA, containersB), IsNil)
-
 	c.Assert(s.removeContainers(containersA), IsNil)
 	c.Assert(s.removeContainers(containersB), IsNil)
 	c.Assert(s.cli.EndpointGroupDelete("default", "epga"), IsNil)

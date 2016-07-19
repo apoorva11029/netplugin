@@ -145,57 +145,58 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 	s.basicInfo, s.acinfoHost, s.acinfoGlob = getMaster("cfg.json")
 	switch s.basicInfo.AciMode {
 	case "on":
-		/*
-			logrus.Infof("ACI_SYS_TEST_MODE is ON")
-			logrus.Infof("Private keyFile = %s", s.basicInfo.KeyFile)
-			logrus.Infof("Binary binpath = %s", s.basicInfo.BinPath)
-			logrus.Infof("Interface vlanIf = %s", s.acinfoHost.HostDataInterface)
-
 
 		s.baremetal = remotessh.Baremetal{}
 		bm := &s.baremetal
 
+		logrus.Infof("ACI_SYS_TEST_MODE is ON")
+		logrus.Infof("Private keyFile = %s", s.basicInfo.KeyFile)
+		logrus.Infof("Binary binpath = %s", s.basicInfo.BinPath)
+		logrus.Infof("Interface vlanIf = %s", s.acinfoHost.HostDataInterface)
+
 		// To fill the hostInfo data structure for Baremetal VMs
 		name := "aci-swarm-node"
-		hostIPs := strings.Split(os.Getenv("HOST_IPS"), ",")
-		hostNames := strings.Split(os.Getenv("HOST_USER_NAMES"), ",")
-		hosts := make([]remotessh.HostInfo, 2)
+		hostIPs := strings.Split(s.acinfoHost.HostIPs, ",")
+		hostNames := strings.Split(s.acinfoHost.HostUsernames, ",")
+		hosts := make([]vagrantssh.HostInfo, 2)
 
-			for i := range hostIPs {
-				hosts[i].Name = name + strconv.Itoa(i+1)
-				logrus.Infof("Name=%s", hosts[i].Name)
+		for i := range hostIPs {
+			hosts[i].Name = name + strconv.Itoa(i+1)
+			logrus.Infof("Name=%s", hosts[i].Name)
 
-				hosts[i].SSHAddr = hostIPs[i]
-				logrus.Infof("SHAddr=%s", hosts[i].SSHAddr)
+			hosts[i].SSHAddr = hostIPs[i]
+			logrus.Infof("SHAddr=%s", hosts[i].SSHAddr)
 
-				hosts[i].SSHPort = "22"
+			hosts[i].SSHPort = "22"
 
-				hosts[i].User = hostNames[i]
-				logrus.Infof("User=%s", hosts[i].User)
+			hosts[i].User = hostNames[i]
+			logrus.Infof("User=%s", hosts[i].User)
 
-				hosts[i].PrivKeyFile = s.basicInfo.KeyFile
-				logrus.Infof("PrivKeyFile=%s", hosts[i].PrivKeyFile)
-			}
+			hosts[i].PrivKeyFile = s.basicInfo.KeyFile
+			logrus.Infof("PrivKeyFile=%s", hosts[i].PrivKeyFile)
+		}
 
-			c.Assert(bm.Setup(hosts), IsNil)
+		c.Assert(bm.Setup(hosts), IsNil)
 
-			s.nodes = []*node{}
+		s.nodes = []*node{}
 
-			for _, nodeObj := range s.baremetal.GetNodes() {
-				s.nodes = append(s.nodes, &node{tbnode: nodeObj, suite: s})
-			}
+		for _, nodeObj := range s.baremetal.GetNodes() {
+			s.nodes = append(s.nodes, &node{tbnode: nodeObj, suite: s})
+		}
 
-			s.baremetal.IterateNodes(func(node vagrantssh.TestbedNode) error {
-				node.RunCommand("sudo rm /tmp/*net*")
-				return node.RunCommand("docker pull alpine")
-			})
+		logrus.Info("Pulling alpine on all nodes")
 
-			//Copying binaries
-			s.copyBinary("netmaster")
-			s.copyBinary("netplugin")
-			s.copyBinary("netctl")
-			s.copyBinary("contivk8s")
-		*/
+		s.baremetal.IterateNodes(func(node remotessh.TestbedNode) error {
+			node.RunCommand("sudo rm /tmp/*net*")
+			return node.RunCommand("docker pull alpine")
+		})
+
+		//Copying binaries
+		s.copyBinary("netmaster")
+		s.copyBinary("netplugin")
+		s.copyBinary("netctl")
+		s.copyBinary("contivk8s")
+
 	default:
 		s.vagrant = remotessh.Vagrant{}
 		nodesStr := os.Getenv("CONTIV_NODES")
@@ -215,8 +216,8 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 
 		if s.fwdMode == "routing" {
 			contivL3Nodes := 2
-			switch s.basicInfo.Scheduler{
-                        case "k8":
+			switch s.basicInfo.Scheduler {
+			case "k8":
 				topDir := os.Getenv("GOPATH")
 				//topDir contains the godeps path. hence purging the gopath
 				topDir = strings.Split(topDir, ":")[1]
@@ -290,55 +291,52 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 func (s *systemtestSuite) SetUpTest(c *C) {
 	logrus.Infof("============================= %s starting ==========================", c.TestName())
 
-	if os.Getenv("ACI_SYS_TEST_MODE") == "ON" {
-		//s.AciTestSetup(c)
-	} else {
 	switch s.basicInfo.Scheduler {
 	case "on":
-		/*
-			for _, node := range s.nodes {
-				//node.cleanupContainers()
-				//node.cleanupDockerNetwork()
-				node.exec.stopNetplugin()
-				node.exec.cleanupSlave()
-				node.deleteFile("/etc/systemd/system/netplugin.service")
-				node.stopNetmaster()
-				node.deleteFile("/etc/systemd/system/netmaster.service")
-				node.deleteFile("/usr/bin/netctl")
+
+		for _, node := range s.nodes {
+			//node.cleanupContainers()
+			//node.cleanupDockerNetwork()
+			node.exec.stopNetplugin()
+			node.exec.cleanupSlave()
+			node.deleteFile("/etc/systemd/system/netplugin.service")
+			node.exec.stopNetmaster()
+			node.deleteFile("/etc/systemd/system/netmaster.service")
+			node.deleteFile("/usr/bin/netctl")
+		}
+
+		for _, node := range s.nodes {
+			node.exec.cleanupMaster()
+		}
+
+		for _, node := range s.nodes {
+			if s.fwdMode == "bridge" {
+				c.Assert(node.exec.startNetplugin(""), IsNil)
+				c.Assert(node.exec.runCommandUntilNoNetpluginError(), IsNil)
+			} else if s.fwdMode == "routing" {
+				c.Assert(node.exec.startNetplugin("-fwd-mode=routing -vlan-if=eth2"), IsNil)
+				c.Assert(node.exec.runCommandUntilNoNetpluginError(), IsNil)
 			}
+		}
 
-			for _, node := range s.nodes {
-				node.cleanupMaster()
+		time.Sleep(15 * time.Second)
+
+		for _, node := range s.nodes {
+			c.Assert(node.exec.startNetmaster(), IsNil)
+			time.Sleep(1 * time.Second)
+			c.Assert(node.exec.runCommandUntilNoNetmasterError(), IsNil)
+		}
+
+		time.Sleep(5 * time.Second)
+		for i := 0; i < 11; i++ {
+			_, err := s.cli.TenantGet("default")
+			if err == nil {
+				break
 			}
-
-			for _, node := range s.nodes {
-				if s.fwdMode == "bridge" {
-					c.Assert(node.startNetplugin(""), IsNil)
-					c.Assert(node.runCommandUntilNoError("pgrep netplugin"), IsNil)
-				} else if s.fwdMode == "routing" {
-					c.Assert(node.startNetplugin("-fwd-mode=routing -vlan-if=eth2"), IsNil)
-					c.Assert(node.runCommandUntilNoError("pgrep netplugin"), IsNil)
-				}
-			}
-
-			time.Sleep(15 * time.Second)
-
-			for _, node := range s.nodes {
-				c.Assert(node.startNetmaster(), IsNil)
-				time.Sleep(1 * time.Second)
-				c.Assert(node.runCommandUntilNoError("pgrep netmaster"), IsNil)
-			}
-
-			time.Sleep(5 * time.Second)
-			for i := 0; i < 11; i++ {
-				_, err := s.cli.TenantGet("default")
-				if err == nil {
-					break
-				}
-				// Fail if we reached last iteration
-				c.Assert((i < 10), Equals, true)
-				time.Sleep(500 * time.Millisecond)
-			}*/
+			// Fail if we reached last iteration
+			c.Assert((i < 10), Equals, true)
+			time.Sleep(500 * time.Millisecond)
+		}
 	default:
 		for _, node := range s.nodes {
 			node.exec.cleanupContainers()
