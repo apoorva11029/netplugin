@@ -31,6 +31,7 @@ type systemtestSuite struct {
 	enableDNS    bool
 	keyFile      string
 	scheduler    string
+	vagrant	bool
 	// user       string
 	// password   string
 	// nodes      []string
@@ -81,6 +82,10 @@ func TestMain(m *M) {
 
 	if os.Getenv("CONTIV_K8") != "" {
 		flag.StringVar(&sts.scheduler, "scheduler", "k8", "scheduler used for testing")
+	}
+
+	if os.Getenv("CONTIV_baremetal") != ""{
+		flag.BoolVar(&sts.vagrant, "baremetal", false, "vagrant/baremetal")
 	}
 
 	flag.Parse()
