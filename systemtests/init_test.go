@@ -264,7 +264,7 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 
 func (s *systemtestSuite) SetUpTest(c *C) {
 	logrus.Infof("============================= %s starting ==========================", c.TestName())
-	switch s.basicInfo.Scheduler {
+	switch s.basicInfo.AciMode {
 	case "on":
 
 		for _, node := range s.nodes {
