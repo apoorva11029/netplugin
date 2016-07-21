@@ -31,10 +31,47 @@ type systemtestSuite struct {
 	enableDNS    bool
 	keyFile      string
 	scheduler    string
-	vagrant	bool
+	env          string
 	// user       string
 	// password   string
 	// nodes      []string
+}
+
+type BasicInfo struct {
+	Scheduler    string `json:"scheduler"`      //swarm, k8s or plain docker
+	SwarmEnv     string `json:"swarm_variable"` //env variables to be set with swarm environment
+	Env          string `json:"env"`            //vagrant or baremetal
+	Product      string `json:"product"`        //for netplugin / volplugin
+	AciMode      string `json:"aci_mode"`       //on/off
+	Short        bool   `json:"short"`
+	Containers   int    `json:"containers"`
+	Iterations   int    `json:"iterations"`
+	EnableDNS    bool   `json:"enableDNS"`
+	ClusterStore string `json:"contiv_cluster_store"`
+	ContivL3     string `json:"contiv_l3"`
+	KeyFile      string `json:"key_file"`
+	BinPath      string `json:"binpath"` // /home/admin/bin or /opt/admin/bin
+	VlanIf       string `json:"vlanIf"`
+	Master       bool   `json:"master"`
+}
+
+type ACInfoHost struct {
+	IP                string `json:"ip"`
+	HostIPs           string `json:"hostips"`
+	HostUsernames     string `json:"hostusernames"`
+	HostDataInterface string `json:"hostdatainterface"`
+	Master            bool   `json:"master"`
+}
+
+type ACInfoGlob struct {
+	Vlan    string `json:"vlan"`
+	Vxlan   string `json:"vxlan"`
+	Subnet  string `json:"subnet"`
+	Gateway string `json:"gateway"`
+	Network string `json:"network"`
+	Tenant  string `json:"tenant"`
+	Encap   string `json:"encap"`
+	Master  bool   `json:"master"`
 }
 
 var sts = &systemtestSuite{}
@@ -48,46 +85,26 @@ func TestMain(m *M) {
 	// flag.StringVar(&nodes, "nodes", "", "List of nodes to use (comma separated)")
 	// flag.StringVar(&sts.user, "user", "vagrant", "User ID for SSH")
 	// flag.StringVar(&sts.password, "password", "vagrant", "Password for SSH")
-	flag.IntVar(&sts.iterations, "iterations", 3, "Number of iterations")
+	mastbasic, _, _:= getMaster("cfg.json")
+	flag.IntVar(&sts.iterations, "iterations", mastbasic.Iterations, "Number of iterations")
 
-	if os.Getenv("ACI_SYS_TEST_MODE") == "ON" {
-		flag.StringVar(&sts.vlanIf, "vlan-if", os.Getenv("HOST_DATA_INTERFACE"), "Data interface in Baremetal setup node")
-		flag.StringVar(&sts.binpath, "binpath", "/home/admin/bin", "netplugin/netmaster binary path")
-		if os.Getenv("KEY_FILE") == "" {
-			flag.StringVar(&sts.keyFile, "keyFile", "/home/admin/.ssh/id_rsa", "Insecure private key in ACI-systemtests")
-		} else {
-			keyFileValue := os.Getenv("KEY_FILE")
-			flag.StringVar(&sts.keyFile, "keyFile", keyFileValue, "Insecure private key in ACI-systemtests")
-		}
-	} else {
-		flag.StringVar(&sts.binpath, "binpath", "/opt/gopath/bin", "netplugin/netmaster binary path")
-		flag.StringVar(&sts.vlanIf, "vlan-if", "eth2", "VLAN interface for OVS bridge")
-	}
+	flag.StringVar(&sts.vlanIf, "vlan-if", mastbasic.VlanIf, "Data interface in Baremetal setup node")
+	flag.StringVar(&sts.binpath, "binpath", mastbasic.BinPath, "netplugin/netmaster binary path")
 
-	flag.IntVar(&sts.containers, "containers", 3, "Number of containers to use")
-	flag.BoolVar(&sts.short, "short", false, "Do a quick validation run instead of the full test suite")
-	flag.BoolVar(&sts.enableDNS, "dns-enable", false, "Enable DNS service discovery")
+	flag.StringVar(&sts.keyFile, "keyFile", mastbasic.KeyFile, "Insecure private key in ACI-systemtests")
+	flag.IntVar(&sts.containers, "containers", mastbasic.Containers, "Number of containers to use")
+	flag.BoolVar(&sts.short, "short", mastbasic.Short, "Do a quick validation run instead of the full test suite")
+	flag.BoolVar(&sts.enableDNS, "dns-enable", mastbasic.EnableDNS, "Enable DNS service discovery")
 
-	if os.Getenv("CONTIV_CLUSTER_STORE") == "" {
-		flag.StringVar(&sts.clusterStore, "cluster-store", "etcd://localhost:2379", "cluster store URL")
-	} else {
-		flag.StringVar(&sts.clusterStore, "cluster-store", os.Getenv("CONTIV_CLUSTER_STORE"), "cluster store URL")
-	}
-
-	if os.Getenv("CONTIV_L3") == "" {
+	flag.StringVar(&sts.clusterStore, "cluster-store", mastbasic.ClusterStore, "cluster store URL")
+	if mastbasic.ContivL3 == "" {
 		flag.StringVar(&sts.fwdMode, "fwd-mode", "bridge", "forwarding mode to start the test ")
 	} else {
 		flag.StringVar(&sts.fwdMode, "fwd-mode", "routing", "forwarding mode to start the test ")
 	}
 
-	if os.Getenv("CONTIV_K8") != "" {
-		flag.StringVar(&sts.scheduler, "scheduler", "k8", "scheduler used for testing")
-	}
-
-	if os.Getenv("CONTIV_baremetal") != ""{
-		flag.BoolVar(&sts.vagrant, "baremetal", false, "vagrant/baremetal")
-	}
-
+	flag.StringVar(&sts.scheduler, "scheduler", mastbasic.Scheduler, "scheduler used for testing")
+	flag.StringVar(&sts.env, "environemtn", mastbasic.Env, "environemtn used for testing")
 	flag.Parse()
 
 	logrus.Infof("Running system test with params: %+v", sts)
@@ -106,7 +123,7 @@ func TestSystem(t *T) {
 func (s *systemtestSuite) SetUpSuite(c *C) {
 	logrus.Infof("Bootstrapping system tests")
 
-	if s.vagrant == false{
+	if s.env == "Baremetal" {
 
 		logrus.Infof("ACI_SYS_TEST_MODE is ON")
 		logrus.Infof("Private keyFile = %s", s.keyFile)
@@ -205,8 +222,8 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 func (s *systemtestSuite) SetUpTest(c *C) {
 	logrus.Infof("============================= %s starting ==========================", c.TestName())
 
-	if s.vagrant==false {
-
+	if s.env == "Baremetal" {
+		logrus.Infof("in baremetal")
 		for _, node := range s.nodes {
 			//node.cleanupContainers()
 			node.cleanupDockerNetwork()
