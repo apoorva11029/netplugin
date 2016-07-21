@@ -141,7 +141,7 @@ func (n *node) checkDockerNetworkCreated(nwName string, expectedOp bool) error {
 
 func (n *node) cleanupContainers() error {
 	logrus.Infof("Cleaning up containers on %s", n.Name())
-	if os.Getenv("ACI_SYS_TEST_MODE") == "ON" {
+	if n.suite.basicInfo.AciMode {
 		logrus.Infof("HERE-------")
 		return n.tbnode.RunCommand("docker ps | grep alpine | awk '{print $s}' $(docker kill -s 9 `docker ps -aq`; docker rm -f `docker ps -aq`)")
 	}
@@ -155,7 +155,7 @@ func (n *node) cleanupSlave() {
 	vNode.RunCommand("sudo ovs-vsctl del-br contivVlanBridge")
 	vNode.RunCommand("for p in `ifconfig  | grep vport | awk '{print $1}'`; do sudo ip link delete $p type veth; done")
 	vNode.RunCommand("sudo rm /var/run/docker/plugins/netplugin.sock")
-	if os.Getenv("ACI_SYS_TEST_MODE") != "ON" {
+	if n.suite.basicInfo.AciMode {
 		vNode.RunCommand("sudo service docker restart")
 	}
 }
