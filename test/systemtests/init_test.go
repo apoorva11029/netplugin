@@ -3,7 +3,12 @@ package systemtests
 import (
 	"flag"
 	"fmt"
+	"github.com/Sirupsen/logrus"
+	"github.com/contiv/contivmodel/client"
+	"github.com/contiv/vagrantssh"
+	. "gopkg.in/check.v1"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 	. "testing"
@@ -50,8 +55,7 @@ type BasicInfo struct {
 	ClusterStore string `json:"contiv_cluster_store"`
 	ContivL3     string `json:"contiv_l3"`
 	KeyFile      string `json:"key_file"`
-	BinPath      string `json:"binpath"` // /home/admin/bin or /opt/admin/bin
-	VlanIf	string `json:"vlanIf"`
+	BinPath      string `json:"binpath"` // /home/admin/bin or /opt/gopath/bin
 	Master       bool   `json:"master"`
 }
 
@@ -59,7 +63,8 @@ type ACInfoHost struct {
 	IP                string `json:"ip"`
 	HostIPs           string `json:"hostips"`
 	HostUsernames     string `json:"hostusernames"`
-	HostDataInterface string `json:"hostdata"`
+	HostDataInterface string `json:"dataInterface"`
+	HostMgmtInterface string `json:"mgmtInterface"`
 	Master            bool   `json:"master"`
 }
 
@@ -79,60 +84,27 @@ var sts = &systemtestSuite{}
 var _ = Suite(sts)
 
 func TestMain(m *M) {
-	// FIXME when we support non-vagrant environments, we will incorporate these changes
-	// var nodes string
-	//
-	// flag.StringVar(&nodes, "nodes", "", "List of nodes to use (comma separated)")
-	// flag.StringVar(&sts.user, "user", "vagrant", "User ID for SSH")
-	// flag.StringVar(&sts.password, "password", "vagrant", "Password for SSH")
+
 	mastbasic, _, _ := getMaster("cfg.json")
-	//flag.IntVar(&sts.iterations, "iterations", mastbasic.Iterations, "Number of iterations")
-	switch mastbasic.AciMode {
-	case "on":
-	//	flag.StringVar(&sts.vlanIf, "vlan-if", masthost.HostDataInterface, "Data interface in Baremetal setup node")
-	//flag.StringVar(&sts.binpath, "binpath", "/home/admin/bin", "netplugin/netmaster binary path")
-	/*if os.Getenv("KEY_FILE") == "" {
-		flag.StringVar(&sts.keyFile, "keyFile", "/home/admin/.ssh/id_rsa", "Insecure private key in ACI-systemtests")
-	} else {
-		keyFileValue := os.Getenv("KEY_FILE")
-		flag.StringVar(&sts.keyFile, "keyFile", keyFileValue, "Insecure private key in ACI-systemtests")
-	}*/
 
-	default:
-		//flag.StringVar(&sts.binpath, "binpath", "/opt/gopath/bin", "netplugin/netmaster binary path")
-		//		flag.StringVar(&sts.vlanIf, "vlan-if", "eth2", "VLAN interface for OVS bridge")
-
-	}
 	logrus.Infof("keyfle value is %s", mastbasic.KeyFile)
 	logrus.Infof("binpath value is %s", mastbasic.BinPath)
-	logrus.Infof("vlanif is %s", mastbasic.VlanIf)
+	//logrus.Infof("vlanif is %s", mastbasic.VlanIf)
 
-	//flag.IntVar(&sts.containers, "containers", mastbasic.Containers, "Number of containers to use")
-	//flag.BoolVar(&sts.short, "short", mastbasic.Short, "Do a quick validation run instead of the full test suite")
-	//flag.BoolVar(&sts.enableDNS, "dns-enable", mastbasic.EnableDNS, "Enable DNS service discovery")
-
-	/*if os.Getenv("CONTIV_CLUSTER_STORE") == "" {
-		flag.StringVar(&sts.clusterStore, "cluster-store", "etcd://localhost:2379", "cluster store URL")
-	} else {
-		flag.StringVar(&sts.clusterStore, "cluster-store", os.Getenv("CONTIV_CLUSTER_STORE"), "cluster store URL")
-	}
-	*/
 	if mastbasic.ContivL3 == "" {
 		flag.StringVar(&sts.fwdMode, "fwd-mode", "bridge", "forwarding mode to start the test ")
 	} else {
 		flag.StringVar(&sts.fwdMode, "fwd-mode", "routing", "forwarding mode to start the test ")
 	}
-
-	//if os.Getenv("CONTIV_K8") != "" {
-	//flag.StringVar(&sts.scheduler, "scheduler", mastbasic.Scheduler, "scheduler used for testing")
-	//}
-
+	if mastbasic.Vagrant == false {
+		logrus.Infof("cmae here")
+		//sts.BaremetalSetup()
+	}
 	flag.Parse()
-
-	logrus.Infof("Running system test with params: %+v", sts)
-
+	//logrus.Infof("Running system test with params: %+v", sts)
 	os.Exit(m.Run())
 }
+
 func TestSystem(t *T) {
 	if os.Getenv("HOST_TEST") != "" {
 		os.Exit(0)
@@ -144,10 +116,10 @@ func TestSystem(t *T) {
 func (s *systemtestSuite) SetUpSuite(c *C) {
 	logrus.Infof("Bootstrapping system tests")
 	s.basicInfo, s.acinfoHost, s.acinfoGlob = getMaster("cfg.json")
+
 	switch s.basicInfo.AciMode {
 	case "on":
-
-		logrus.Infof("ACI_SYS_TEST_MODE is ON")
+		logrus.Infof("ACI_SYS_TEST_MODE is on")
 		logrus.Infof("Private keyFile = %s", s.basicInfo.KeyFile)
 		logrus.Infof("Binary binpath = %s", s.basicInfo.BinPath)
 		logrus.Infof("Interface vlanIf = %s", s.basicInfo.VlanIf)
@@ -176,22 +148,44 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 			hosts[i].PrivKeyFile = s.basicInfo.KeyFile
 			logrus.Infof("PrivKeyFile=%s", hosts[i].PrivKeyFile)
 		}
-
+		logrus.Infof("hosts are %s", hosts)
 		c.Assert(bm.Setup(hosts), IsNil)
 
 		s.nodes = []*node{}
 
 		for _, nodeObj := range s.baremetal.GetNodes() {
-			s.nodes = append(s.nodes, &node{tbnode: nodeObj, suite: s})
+			logrus.Infof("node name is %s", nodeObj.GetName())
+			nodeName := nodeObj.GetName()
+			if strings.Contains(nodeName, "aci") ||
+				strings.Contains(nodeName, "swarm") {
+				node := &node{}
+				node.tbnode = nodeObj
+				node.suite = s
+
+				switch s.basicInfo.Scheduler {
+				case "k8":
+					node.exec = s.NewK8sExec(node)
+				case "swarm":
+					logrus.Infof("#############in swarm")
+					node.exec = s.NewSwarmExec(node)
+				default:
+					logrus.Infof("in docker MOOOOOD")
+					node.exec = s.NewDockerExec(node)
+				}
+				s.nodes = append(s.nodes, node)
+			}
+			//s.nodes = append(s.nodes, &node{tbnode: nodeObj, suite: s})
 		}
 
 		logrus.Info("Pulling alpine on all nodes")
 
 		s.baremetal.IterateNodes(func(node vagrantssh.TestbedNode) error {
+			//fmt.Printf("\n\t Node Name is %s", node.nodeName)
 			node.RunCommand("sudo rm /tmp/*net*")
+			node.RunCommand("touch /home/admin/GAURAV.txt")
 			return node.RunCommand("docker pull alpine")
 		})
-
+		s.BaremetalTestInstall(c)
 		//Copying binaries
 		s.copyBinary("netmaster")
 		s.copyBinary("netplugin")
@@ -215,6 +209,15 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 
 		s.nodes = []*node{}
 
+		outChan := make(chan string, 100)
+		//logrus.Infof("env value is " + s.basicInfo.SwarmEnv)
+
+		mystr := "DOCKER_HOST=10.193.246.70:2375 docker info"
+		logrus.Infof("mystr _____________________ value is " + mystr)
+		out, _ := s.nodes[0].runCommand(mystr)
+		outChan <- out
+		logrus.Infof("docker ps for first node ====== %s", strings.TrimSpace(<-outChan))
+
 		if s.fwdMode == "routing" {
 			contivL3Nodes := 2
 			switch s.basicInfo.Scheduler {
@@ -226,7 +229,7 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 				contivNodes = 4 // 3 contiv nodes + 1 k8master
 				c.Assert(s.vagrant.Setup(false, []string{"CONTIV_L3=1 VAGRANT_CWD=" + topDir + "/src/github.com/contiv/netplugin/vagrant/k8s/"}, contivNodes), IsNil)
 			case "swarm":
-				c.Assert(s.vagrant.Setup(false, append([]string{"CONTIV_NODES=3 CONTIV_L3=1"}, "DOCKER_HOST=192.168.2.10:2375"), contivNodes+contivL3Nodes), IsNil)
+				c.Assert(s.vagrant.Setup(false, append([]string{"CONTIV_NODES=3 CONTIV_L3=1"}, s.basicInfo.SwarmEnv), contivNodes+contivL3Nodes), IsNil)
 			default:
 				c.Assert(s.vagrant.Setup(false, []string{"CONTIV_NODES=3 CONTIV_L3=1"}, contivNodes+contivL3Nodes), IsNil)
 
@@ -249,14 +252,14 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 				c.Assert(s.vagrant.Setup(false, []string{"VAGRANT_CWD=" + topDir + "/src/github.com/contiv/netplugin/vagrant/k8s/"}, contivNodes), IsNil)
 
 			case "swarm":
-				c.Assert(s.vagrant.Setup(false, append([]string{}, "DOCKER_HOST=192.168.2.10:2375"), contivNodes), IsNil)
+				c.Assert(s.vagrant.Setup(false, append([]string{}, s.basicInfo.SwarmEnv), contivNodes), IsNil)
 			default:
 				c.Assert(s.vagrant.Setup(false, []string{}, contivNodes), IsNil)
 
 			}
 
 		}
-
+		logrus.Infof("Checkpoint 1-----")
 		for _, nodeObj := range s.vagrant.GetNodes() {
 			nodeName := nodeObj.GetName()
 			if strings.Contains(nodeName, "netplugin-node") ||
@@ -278,13 +281,13 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 				s.nodes = append(s.nodes, node)
 			}
 		}
-
+		logrus.Infof("Checkpoint 2-----")
 		logrus.Info("Pulling alpine on all nodes")
 		s.vagrant.IterateNodes(func(node remotessh.TestbedNode) error {
 			node.RunCommand("sudo rm /tmp/net*")
 			return node.RunCommand("docker pull alpine")
 		})
-	}
+	} // end of switch case
 
 	s.cli, _ = client.NewContivClient("http://localhost:9999")
 }
@@ -293,29 +296,34 @@ func (s *systemtestSuite) SetUpTest(c *C) {
 	logrus.Infof("============================= %s starting ==========================", c.TestName())
 
 	switch s.basicInfo.AciMode {
-	case "on":
 
+	case "on":
+		logrus.Infof("-----Inside  switch case ------")
 		for _, node := range s.nodes {
-			//node.cleanupContainers()
-			//node.cleanupDockerNetwork()
-			node.exec.stopNetplugin()
-			node.exec.cleanupSlave()
+			//node.exec.cleanupContainers()
+			//node.exec.cleanupDockerNetwork()
+
+			node.stopNetplugin()
+			//node.cleanupSlave()
 			node.deleteFile("/etc/systemd/system/netplugin.service")
-			node.exec.stopNetmaster()
+			node.stopNetmaster()
 			node.deleteFile("/etc/systemd/system/netmaster.service")
+			//node.deleteFile("/usr/bin/netplugin")
+			//node.deleteFile("/usr/bin/netmaster")
 			node.deleteFile("/usr/bin/netctl")
 		}
 
 		for _, node := range s.nodes {
-			node.exec.cleanupMaster()
+			node.cleanupMaster()
 		}
 
 		for _, node := range s.nodes {
 			if s.fwdMode == "bridge" {
-				c.Assert(node.exec.startNetplugin(""), IsNil)
+				c.Assert(node.startNetplugin(""), IsNil)
+				time.Sleep(15 * time.Second)
 				c.Assert(node.exec.runCommandUntilNoNetpluginError(), IsNil)
 			} else if s.fwdMode == "routing" {
-				c.Assert(node.exec.startNetplugin("-fwd-mode=routing -vlan-if=eth2"), IsNil)
+				c.Assert(node.startNetplugin("-fwd-mode=routing -vlan-if=eth2"), IsNil)
 				c.Assert(node.exec.runCommandUntilNoNetpluginError(), IsNil)
 			}
 		}
@@ -323,7 +331,7 @@ func (s *systemtestSuite) SetUpTest(c *C) {
 		time.Sleep(15 * time.Second)
 
 		for _, node := range s.nodes {
-			c.Assert(node.exec.startNetmaster(), IsNil)
+			c.Assert(node.startNetmaster(), IsNil)
 			time.Sleep(1 * time.Second)
 			c.Assert(node.exec.runCommandUntilNoNetmasterError(), IsNil)
 		}
@@ -347,12 +355,20 @@ func (s *systemtestSuite) SetUpTest(c *C) {
 		}
 
 		for _, node := range s.nodes {
-			node.exec.stopNetmaster()
+			node.stopNetmaster()
 
 		}
 		for _, node := range s.nodes {
 			node.cleanupMaster()
 		}
+		outChan := make(chan string, 100)
+		//logrus.Infof("env value is " + s.basicInfo.SwarmEnv)
+
+		mystr := " docker info"
+		logrus.Infof("mystr _____________________ value is " + mystr)
+		out, _ := s.nodes[0].runCommand(mystr)
+		outChan <- out
+		logrus.Infof("docker info for first node ====== %s", strings.TrimSpace(<-outChan))
 
 		for _, node := range s.nodes {
 			c.Assert(node.startNetplugin(""), IsNil)
@@ -365,12 +381,12 @@ func (s *systemtestSuite) SetUpTest(c *C) {
 		prevDNSEnabled := s.basicInfo.EnableDNS
 		if strings.Contains(c.TestName(), "SvcDiscovery") {
 			s.basicInfo.EnableDNS = true
-			//s.enableDNS = true
 		}
+
 		defer func() { s.basicInfo.EnableDNS = prevDNSEnabled }()
 
 		for _, node := range s.nodes {
-			c.Assert(node.exec.startNetmaster(), IsNil)
+			c.Assert(node.startNetmaster(), IsNil)
 			time.Sleep(1 * time.Second)
 			c.Assert(node.exec.runCommandUntilNoNetmasterError(), IsNil)
 		}
@@ -412,9 +428,10 @@ func (s *systemtestSuite) TearDownTest(c *C) {
 }
 
 func (s *systemtestSuite) TearDownSuite(c *C) {
-	for _, node := range s.nodes {
-		node.exec.cleanupContainers()
-	}
+
+	// for _, node := range s.nodes {
+	// 	node.exec.cleanupContainers()
+	// }
 
 	// Print all errors and fatal messages
 	for _, node := range s.nodes {
@@ -429,6 +446,60 @@ func (s *systemtestSuite) TearDownSuite(c *C) {
 
 func (s *systemtestSuite) Test00SSH(c *C) {
 	c.Assert(s.vagrant.IterateNodes(func(node remotessh.TestbedNode) error {
+		logrus.Infof("-----in test00SSH-------")
 		return node.RunCommand("true")
 	}), IsNil)
+}
+
+func (s *systemtestSuite) BaremetalSetup() {
+	cmd := exec.Command("chmod +x", "net_demo_installer")
+	cmd.Run()
+	cmd = exec.Command("./net_demo_installer", "-ar")
+	// setup log file
+	file, err := os.Create("server.log")
+	if err != nil {
+		logrus.Infof("no err here")
+	}
+	cmd.Stdout = file
+
+	cmd.Run()
+	logrus.Infof("Done running net demo ------------------")
+}
+
+func (s *systemtestSuite) BaremetalTestInstall(c *C) {
+	outChan := make(chan string, 100)
+	mystr := "docker info | grep Nodes"
+	out := ""
+	i := 1
+	out1 := ""
+
+	err := ""
+
+	for _, node := range s.nodes {
+
+		if i == 1 {
+			out1, _ = node.runCommand(mystr)
+			outChan <- out1
+			logrus.Infof("for first node docker info | grep nodes ====== %s", strings.TrimSpace(<-outChan))
+
+			if out1 == "" {
+				logrus.Infof("Nothing found on the first node ")
+				err = "net_demo didnt run"
+				break
+			}
+		} else {
+			out, _ = node.runCommand(mystr)
+
+			outChan <- out
+			logrus.Infof("docker info | grep nodes ====== %s", strings.TrimSpace(<-outChan))
+			if out != out1 {
+				logrus.Infof("Nodes not in sync")
+				err = "net_demo didnt run"
+				break
+			}
+		}
+	}
+	cmd := exec.Command("sudo rm -rf", "ansible genInventoryFile.py server.log")
+	cmd.Run()
+	c.Assert(err, Equals, "")
 }

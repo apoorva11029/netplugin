@@ -9,6 +9,7 @@ type systemTestScheduler interface {
 	stopNetplugin() error
 	startNetplugin(args string) error
 	cleanupContainers() error
+	cleanupDockerNetwork() error
 	checkNoConnection(c *container, ipaddr, protocol string, port int) error
 	checkConnection(c *container, ipaddr, protocol string, port int) error
 	startListener(c *container, port int, protocol string) error
