@@ -275,8 +275,8 @@ func (d *docker) checkNoConnection(c *container, ipaddr, protocol string, port i
 }
 
 func (d *docker) cleanupDockerNetwork() error {
-	logrus.Infof("Cleaning up networks on %s", d.node.Name())
-	return d.node.tbnode.RunCommand("docker network ls | grep netplugin | awk '{print $2}'")
+	logrus.Infof("###Cleaning up networks on %s", d.node.Name())
+	return d.node.tbnode.RunCommand("docker network rm $(docker network ls | grep netplugin | awk '{print $2}')")
 }
 
 func (d *docker) cleanupContainers() error {
