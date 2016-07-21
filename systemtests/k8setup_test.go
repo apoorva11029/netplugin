@@ -3,9 +3,10 @@ package systemtests
 import (
 	"errors"
 	"fmt"
-	"github.com/Sirupsen/logrus"
 	"regexp"
 	"strings"
+
+	"github.com/Sirupsen/logrus"
 	//"sync"
 	"time"
 )
@@ -48,6 +49,12 @@ func (k *kubernetes) newContainer(node *node, containerID, name string, spec con
 	}
 
 	return cont, nil
+}
+
+func (k *kubernetes) cleanupDockerNetwork() error {
+	logrus.Infof("Cleaning up networks on %s", k.node.Name())
+	_, err := k8master.tbnode.RunCommandWithOutput("true")
+	return err
 }
 
 func (k *kubernetes) runContainer(spec containerSpec) (*container, error) {

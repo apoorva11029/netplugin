@@ -1,10 +1,10 @@
 [
     {
-      "scheduler" : "swarmm",
-      "swarm_variable":"DOCKER_HOST=192.168.2.10:2375",
-      "vagrant" : true,
+      "scheduler" : "swarm",
+      "swarm_variable":"DOCKER_HOST=10.193.246.2:2375",
+      "vagrant" : false,
       "product" : "netplugin",
-      "aci_mode" : "off",
+      "aci_mode" : "on",
       "short"   : false,
       "containers" : 3,
       "iterations" : 2,
@@ -12,23 +12,20 @@
       "contiv_cluster_store" : "etcd://localhost:2379",
       "contiv_l3" : "",
       "key_file" : "/home/admin/.ssh/id_rsa",
-      "vlanIf" : "eth2",
-      "binpath" : "/opt/gopath/bin",
+      "vlanIf" : "eno33559296",
+      "binpath" : "/home/admin/bin",
 
-
-
-    "ip" : "10.193.246.71",
-	"hostips" : "10.193.246.70,10.193.246.71",
-	"hostusernames" : "admin,admin",
-  "hostdata" : "eno33559296",
-
-	"vlan" : "1150-1170",
-	"vxlan" : "1-10000",
-	"subnet" : "20.1.1.0/24",
-	"gateway" : "20.1.1.254",
- 	"network" : "aciNet",
-  "tenant": "TestTenant",
-	"encap" : "vlan",
-	"master" : true
-    }
+      "ip" : "10.193.246.2",
+      "hostips" : "10.193.246.2,10.193.246.4",
+      "hostusernames" : "admin,admin",
+      "hostdata" : "eno33559296",
+      "vlan" : "1120-1150",
+      "vxlan" : "1-10000",
+      "subnet" : "10.1.1.0/24",
+      "gateway" : "10.1.1.254",
+      "network" : "aciNet",
+      "tenant": "TestTenant",
+      "encap" : "vlan",
+      "master" : true
+      }
 ]
