@@ -36,7 +36,7 @@ func (s *systemtestSuite) testPolicyBasic(c *C, encap string) {
 
 	c.Assert(s.cli.NetworkPost(network), IsNil)
 
-	for i := 0; i < s.iterations; i++ {
+	for i := 0; i < s.basicInfo.Iterations; i++ {
 		c.Assert(s.cli.PolicyPost(&client.Policy{
 			PolicyName: "policy",
 			TenantName: "default",
@@ -69,8 +69,8 @@ func (s *systemtestSuite) testPolicyBasic(c *C, encap string) {
 
 		groups := []*client.EndpointGroup{}
 		groupNames := []string{}
-		for x := 0; x < s.containers; x++ {
-			nodeNum := s.containers % len(s.nodes)
+		for x := 0; x < s.basicInfo.Containers; x++ {
+			nodeNum := s.basicInfo.Containers % len(s.nodes)
 			epgName := fmt.Sprintf("%s-srv%d-%d", network.NetworkName, nodeNum, x)
 			group := &client.EndpointGroup{
 				GroupName:   epgName,
@@ -84,7 +84,7 @@ func (s *systemtestSuite) testPolicyBasic(c *C, encap string) {
 			groupNames = append(groupNames, epgName)
 		}
 
-		containers, err := s.runContainers(s.containers, true, "private", groupNames, nil)
+		containers, err := s.runContainers(s.basicInfo.Containers, true, "private", groupNames, nil)
 		c.Assert(err, IsNil)
 		if s.fwdMode == "routing" && encap == "vlan" {
 			_, err = s.CheckBgpRouteDistribution(c, containers)
@@ -168,8 +168,8 @@ func (s *systemtestSuite) testPolicyAddDeleteRule(c *C, encap string) {
 
 	groups := []*client.EndpointGroup{}
 	groupNames := []string{}
-	for x := 0; x < s.containers; x++ {
-		nodeNum := s.containers % len(s.nodes)
+	for x := 0; x < s.basicInfo.Containers; x++ {
+		nodeNum := s.basicInfo.Containers % len(s.nodes)
 		epgName := fmt.Sprintf("%s-srv%d-%d", network.NetworkName, nodeNum, x)
 		group := &client.EndpointGroup{
 			GroupName:   epgName,
@@ -183,7 +183,7 @@ func (s *systemtestSuite) testPolicyAddDeleteRule(c *C, encap string) {
 		groupNames = append(groupNames, epgName)
 	}
 
-	containers, err := s.runContainers(s.containers, true, "private", groupNames, nil)
+	containers, err := s.runContainers(s.basicInfo.Containers, true, "private", groupNames, nil)
 	c.Assert(err, IsNil)
 	if s.fwdMode == "routing" && encap == "vlan" {
 		_, err = s.CheckBgpRouteDistribution(c, containers)
@@ -193,7 +193,7 @@ func (s *systemtestSuite) testPolicyAddDeleteRule(c *C, encap string) {
 	c.Assert(s.checkConnections(containers, 8000), IsNil)
 	c.Assert(s.checkNoConnections(containers, 8001), IsNil)
 
-	for i := 0; i < s.iterations; i++ {
+	for i := 0; i < s.basicInfo.Iterations; i++ {
 		rule := &client.Rule{
 			RuleID:     "3",
 			PolicyName: "policy",
@@ -259,11 +259,11 @@ func (s *systemtestSuite) testPolicyFromEPG(c *C, encap string) {
 	}
 	c.Assert(s.cli.EndpointGroupPost(group), IsNil)
 
-	for i := 0; i < s.iterations; i++ {
+	for i := 0; i < s.basicInfo.Iterations; i++ {
 		policies := []*client.Policy{}
 		policyNames := []string{}
 
-		for nodeNum := 0; nodeNum < s.containers; nodeNum++ {
+		for nodeNum := 0; nodeNum < s.basicInfo.Containers; nodeNum++ {
 			policyName := fmt.Sprintf("srv%d-%d", i, nodeNum)
 			policy := &client.Policy{
 				TenantName: "default",
@@ -321,7 +321,7 @@ func (s *systemtestSuite) testPolicyFromEPG(c *C, encap string) {
 			policyNames = append(policyNames, policyName)
 		}
 
-		containers, err := s.runContainers(s.containers, true, "private", policyNames, nil)
+		containers, err := s.runContainers(s.basicInfo.Containers, true, "private", policyNames, nil)
 		c.Assert(err, IsNil)
 		if s.fwdMode == "routing" && encap == "vlan" {
 			_, err = s.CheckBgpRouteDistribution(c, containers)
@@ -333,7 +333,7 @@ func (s *systemtestSuite) testPolicyFromEPG(c *C, encap string) {
 			commonNames = append(commonNames, fmt.Sprintf("common-%s", name))
 		}
 
-		cmnContainers, err := s.runContainersInService(s.containers, "common", "private", commonNames)
+		cmnContainers, err := s.runContainersInService(s.basicInfo.Containers, "common", "private", commonNames)
 		c.Assert(err, IsNil)
 
 		if s.fwdMode == "routing" && encap == "vlan" {

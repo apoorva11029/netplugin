@@ -32,7 +32,7 @@ func (s *systemtestSuite) TestServiceAddDeleteService(c *C) {
 
 	mutex := sync.Mutex{}
 
-	for i := 0; i < s.iterations; i++ {
+	for i := 0; i < s.basicInfo.Iterations; i++ {
 		var (
 			netNames          = []string{}
 			containers        = map[string][]*container{}
@@ -44,7 +44,7 @@ func (s *systemtestSuite) TestServiceAddDeleteService(c *C) {
 			servicesPerTenant = map[string]map[string][]*container{}
 		)
 
-		numContainer := s.containers
+		numContainer := s.basicInfo.Containers
 		if numContainer < 4 {
 			numContainer = 4
 		}
@@ -184,7 +184,7 @@ func (s *systemtestSuite) TestServiceAddDeleteProviders(c *C) {
 
 	mutex := sync.Mutex{}
 
-	for i := 0; i < s.iterations; i++ {
+	for i := 0; i < s.basicInfo.Iterations; i++ {
 		var (
 			netNames          = []string{}
 			containers        = map[string][]*container{}
@@ -196,7 +196,7 @@ func (s *systemtestSuite) TestServiceAddDeleteProviders(c *C) {
 			servicesPerTenant = map[string]map[string][]*container{}
 		)
 
-		numContainer := s.containers
+		numContainer := s.basicInfo.Containers
 		if numContainer < 4 {
 			numContainer = 4
 		}
@@ -278,7 +278,7 @@ func (s *systemtestSuite) TestServiceAddDeleteProviders(c *C) {
 		for tenant, service := range services {
 			for _, svc := range service {
 				endChan := make(chan error)
-				for iter := 0; iter < s.iterations; iter++ {
+				for iter := 0; iter < s.basicInfo.Iterations; iter++ {
 					for tenantNetwork, conts := range containers {
 						contTenant := "default"
 						if strings.Contains(tenantNetwork, ":") {
@@ -375,7 +375,7 @@ func (s *systemtestSuite) TestServiceSequenceProviderAddServiceAdd(c *C) {
 		providers       = map[string][]*container{}
 	)
 
-	numContainer := s.containers
+	numContainer := s.basicInfo.Containers
 	if numContainer < 4 {
 		numContainer = 4
 	}
@@ -439,7 +439,7 @@ func (s *systemtestSuite) TestServiceSequenceProviderAddServiceAdd(c *C) {
 		s.startListenersOnProviders(providers[tenant], []string{"80:8080", "90:7070"})
 	}
 
-	for i := 0; i < s.iterations; i++ {
+	for i := 0; i < s.basicInfo.Iterations; i++ {
 		for tenant, networks := range serviceNetworks {
 			ips := []string{}
 			sv := []*client.ServiceLB{}
@@ -514,7 +514,7 @@ func (s systemtestSuite) TestServiceTriggerNetmasterSwitchover(c *C) {
 
 	mutex := sync.Mutex{}
 
-	for i := 0; i < s.iterations; i++ {
+	for i := 0; i < s.basicInfo.Iterations; i++ {
 		var (
 			netNames          = []string{}
 			containers        = map[string][]*container{}
@@ -528,7 +528,7 @@ func (s systemtestSuite) TestServiceTriggerNetmasterSwitchover(c *C) {
 
 		var leader, oldLeader *node
 
-		numContainer := s.containers
+		numContainer := s.basicInfo.Containers
 		if numContainer < 4 {
 			numContainer = 4
 		}
@@ -582,7 +582,7 @@ func (s systemtestSuite) TestServiceTriggerNetmasterSwitchover(c *C) {
 				}(network, tenant, containers)
 			}
 		}
-		for x := 0; x < s.iterations; x++ {
+		for x := 0; x < s.basicInfo.Iterations; x++ {
 
 			for tenant, networks := range serviceNetworks {
 				ips := []string{}
@@ -711,7 +711,7 @@ func (s systemtestSuite) TestServiceTriggerNetpluginRestart(c *C) {
 
 	mutex := sync.Mutex{}
 
-	for i := 0; i < s.iterations; i++ {
+	for i := 0; i < s.basicInfo.Iterations; i++ {
 		var (
 			netNames          = []string{}
 			containers        = map[string][]*container{}
@@ -724,7 +724,7 @@ func (s systemtestSuite) TestServiceTriggerNetpluginRestart(c *C) {
 			pktTag            = 0
 		)
 
-		numContainer := s.containers
+		numContainer := s.basicInfo.Containers
 		if numContainer < 4 {
 			numContainer = 4
 		}

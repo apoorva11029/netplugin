@@ -70,7 +70,7 @@ func (s *systemtestSuite) getNodeByName(name string) *node {
 
 func (n *node) startNetplugin(args string) error {
 	logrus.Infof("Starting netplugin on %s", n.Name())
-	return n.tbnode.RunCommandBackground("sudo " + n.suite.binpath + "/netplugin -plugin-mode docker -vlan-if " + n.suite.vlanIf + " --cluster-store " + n.suite.clusterStore + " " + args + "&> /tmp/netplugin.log")
+	return n.tbnode.RunCommandBackground("sudo " + n.suite.basicInfo.BinPath + "/netplugin -plugin-mode docker -vlan-if " + n.suite.basicInfo.VlanIf + " --cluster-store " + n.suite.basicInfo.ClusterStore + " " + args + "&> /tmp/netplugin.log")
 }
 
 func (n *node) stopNetplugin() error {
@@ -79,13 +79,13 @@ func (n *node) stopNetplugin() error {
 }
 
 func (s *systemtestSuite) copyBinary(fileName string) error {
-	logrus.Infof("Copying %s binary to %s", fileName, s.binpath)
-	hostIPs := strings.Split(os.Getenv("HOST_IPS"), ",")
-	srcFile := s.binpath + "/" + fileName
-	destFile := s.binpath + "/" + fileName
+	logrus.Infof("Copying %s binary to %s", fileName, s.basicInfo.BinPath)
+	hostIPs := strings.Split(s.hostInfo.HostIPs, ",")
+	srcFile := s.basicInfo.BinPath + "/" + fileName
+	destFile := s.basicInfo.BinPath + "/" + fileName
 	for i := 1; i < len(s.nodes); i++ {
 		logrus.Infof("Copying %s binary to IP= %s and Directory = %s", srcFile, hostIPs[i], destFile)
-		s.nodes[0].tbnode.RunCommand("scp -i " + s.keyFile + " " + srcFile + " " + hostIPs[i] + ":" + destFile)
+		s.nodes[0].tbnode.RunCommand("scp -i " + s.basicInfo.KeyFile + " " + srcFile + " " + hostIPs[i] + ":" + destFile)
 	}
 	return nil
 }
@@ -106,7 +106,7 @@ func (n *node) startNetmaster() error {
 	if n.suite.enableDNS {
 		dnsOpt = " --dns-enable=true "
 	}
-	return n.tbnode.RunCommandBackground("sudo " + n.suite.binpath + "/netmaster" + dnsOpt + " --cluster-store " + n.suite.clusterStore + " &> /tmp/netmaster.log")
+	return n.tbnode.RunCommandBackground("sudo " + n.suite.basicInfo.BinPath + "/netmaster" + dnsOpt + " --cluster-store " + n.suite.basicInfo.ClusterStore + " &> /tmp/netmaster.log")
 }
 
 func (n *node) cleanupDockerNetwork() error {
@@ -142,6 +142,7 @@ func (n *node) checkDockerNetworkCreated(nwName string, expectedOp bool) error {
 func (n *node) cleanupContainers() error {
 	logrus.Infof("Cleaning up containers on %s", n.Name())
 	if os.Getenv("ACI_SYS_TEST_MODE") == "ON" {
+		logrus.Infof("HERE-------")
 		return n.tbnode.RunCommand("docker ps | grep alpine | awk '{print $s}' $(docker kill -s 9 `docker ps -aq`; docker rm -f `docker ps -aq`)")
 	}
 	return n.tbnode.RunCommand("docker kill -s 9 `docker ps -aq`; docker rm -f `docker ps -aq`")

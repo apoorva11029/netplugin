@@ -26,7 +26,7 @@ func (s *systemtestSuite) testInfraNetworkAddDelete(c *C, encap string) {
 		s.CheckBgpConnection(c)
 	}
 
-	for i := 0; i < s.iterations; i++ {
+	for i := 0; i < s.basicInfo.Iterations; i++ {
 		var (
 			netNames = []string{}
 		)
@@ -93,13 +93,13 @@ func (s *systemtestSuite) testNetworkAddDelete(c *C, encap string) {
 		s.CheckBgpConnection(c)
 	}
 
-	for i := 0; i < s.iterations; i++ {
+	for i := 0; i < s.basicInfo.Iterations; i++ {
 		var (
 			netNames   = []string{}
 			containers = map[string][]*container{}
 		)
 
-		numContainer := s.containers
+		numContainer := s.basicInfo.Containers
 		if numContainer < 4 {
 			numContainer = 4
 		}
@@ -201,13 +201,13 @@ func (s *systemtestSuite) testNetworkAddDeleteNoGateway(c *C, encap string) {
 		s.CheckBgpConnection(c)
 	}
 
-	for i := 0; i < s.iterations; i++ {
+	for i := 0; i < s.basicInfo.Iterations; i++ {
 		var (
 			netNames   = []string{}
 			containers = map[string][]*container{}
 		)
 
-		numContainer := s.containers
+		numContainer := s.basicInfo.Containers
 		if numContainer < 4 {
 			numContainer = 4
 		}
@@ -283,7 +283,7 @@ func (s *systemtestSuite) testNetworkAddDeleteTenant(c *C, encap string) {
 		s.CheckBgpConnection(c)
 	}
 
-	for i := 0; i < s.iterations; i++ {
+	for i := 0; i < s.basicInfo.Iterations; i++ {
 		var (
 			tenantNames = map[string][]string{}
 			netNames    = []string{}
@@ -291,12 +291,12 @@ func (s *systemtestSuite) testNetworkAddDeleteTenant(c *C, encap string) {
 			pktTag      = 0
 		)
 
-		numContainer := s.containers
+		numContainer := s.basicInfo.Containers
 		if numContainer < 4 {
 			numContainer = 4
 		}
 
-		for tenantNum := 0; tenantNum < (s.containers / 2); tenantNum++ {
+		for tenantNum := 0; tenantNum < (s.basicInfo.Containers / 2); tenantNum++ {
 			tenantName := fmt.Sprintf("tenant%d", tenantNum)
 			c.Assert(s.cli.TenantPost(&client.Tenant{TenantName: tenantName}), IsNil)
 			tenantNames[tenantName] = []string{}

@@ -671,11 +671,11 @@ func (s *systemtestSuite) getJSON(url string, target interface{}) error {
 }
 
 func (s *systemtestSuite) clusterStoreGet(path string) (string, error) {
-	if strings.Contains(s.clusterStore, "etcd://") {
+	if strings.Contains(s.basicInfo.ClusterStore, "etcd://") {
 		var etcdKv map[string]interface{}
 
 		// Get from etcd
-		etcdURL := strings.Replace(s.clusterStore, "etcd://", "http://", 1)
+		etcdURL := strings.Replace(s.basicInfo.ClusterStore, "etcd://", "http://", 1)
 		etcdURL = etcdURL + "/v2/keys" + path
 
 		// get json from etcd
@@ -697,11 +697,11 @@ func (s *systemtestSuite) clusterStoreGet(path string) (string, error) {
 		}
 
 		return value.(string), nil
-	} else if strings.Contains(s.clusterStore, "consul://") {
+	} else if strings.Contains(s.basicInfo.ClusterStore, "consul://") {
 		var consulKv []map[string]interface{}
 
 		// Get from consul
-		consulURL := strings.Replace(s.clusterStore, "consul://", "http://", 1)
+		consulURL := strings.Replace(s.basicInfo.ClusterStore, "consul://", "http://", 1)
 		consulURL = consulURL + "/v1/kv" + path
 
 		// get kv json from consul
@@ -877,11 +877,11 @@ func toJSON(p interface{}) string {
 	return string(bytes)
 }
 
-func (p ACInfoGlob) toString() string {
+func (p InfoGlob) toString() string {
 	return toJSON(p)
 }
 
-func (p ACInfoHost) toString() string {
+func (p InfoHost) toString() string {
 	return toJSON(p)
 }
 
@@ -890,7 +890,7 @@ func (p BasicInfo) toString() string {
 }
 
 //Function to extract ACI Info from JSON files
-func getInfo(file string) ([]BasicInfo, []ACInfoHost, []ACInfoGlob) {
+func getInfo(file string) ([]BasicInfo, []InfoHost, []InfoGlob) {
 	raw, err := ioutil.ReadFile(file)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -898,16 +898,16 @@ func getInfo(file string) ([]BasicInfo, []ACInfoHost, []ACInfoGlob) {
 	}
 	var b []BasicInfo
 	json.Unmarshal(raw, &b)
-	var c []ACInfoHost
+	var c []InfoHost
 	json.Unmarshal(raw, &c)
-	var d []ACInfoGlob
+	var d []InfoGlob
 	json.Unmarshal(raw, &d)
 
 	return b, c, d
 }
 
 //Function to get the master node for ACI mode
-func getMaster(file string) (BasicInfo, ACInfoHost, ACInfoGlob) {
+func getMaster(file string) (BasicInfo, InfoHost, InfoGlob) {
 	infosbasic, infoshost, infosglob := getInfo(file)
 
 	var mastbasic BasicInfo
@@ -918,7 +918,7 @@ func getMaster(file string) (BasicInfo, ACInfoHost, ACInfoGlob) {
 		}
 	}
 
-	var masthost ACInfoHost
+	var masthost InfoHost
 	for _, p := range infoshost {
 		if p.Master == true {
 			masthost = p
@@ -926,7 +926,7 @@ func getMaster(file string) (BasicInfo, ACInfoHost, ACInfoGlob) {
 		}
 	}
 
-	var mastglob ACInfoGlob
+	var mastglob InfoGlob
 	for _, p := range infosglob {
 		if p.Master == true {
 			mastglob = p

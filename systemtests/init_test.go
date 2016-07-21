@@ -35,6 +35,9 @@ type systemtestSuite struct {
 	// user       string
 	// password   string
 	// nodes      []string
+	basicInfo BasicInfo
+	hostInfo  InfoHost
+	globInfo  InfoGlob
 }
 
 type BasicInfo struct {
@@ -55,7 +58,7 @@ type BasicInfo struct {
 	Master       bool   `json:"master"`
 }
 
-type ACInfoHost struct {
+type InfoHost struct {
 	IP                string `json:"ip"`
 	HostIPs           string `json:"hostips"`
 	HostUsernames     string `json:"hostusernames"`
@@ -63,7 +66,7 @@ type ACInfoHost struct {
 	Master            bool   `json:"master"`
 }
 
-type ACInfoGlob struct {
+type InfoGlob struct {
 	Vlan    string `json:"vlan"`
 	Vxlan   string `json:"vxlan"`
 	Subnet  string `json:"subnet"`
@@ -85,26 +88,14 @@ func TestMain(m *M) {
 	// flag.StringVar(&nodes, "nodes", "", "List of nodes to use (comma separated)")
 	// flag.StringVar(&sts.user, "user", "vagrant", "User ID for SSH")
 	// flag.StringVar(&sts.password, "password", "vagrant", "Password for SSH")
-	mastbasic, _, _:= getMaster("cfg.json")
-	flag.IntVar(&sts.iterations, "iterations", mastbasic.Iterations, "Number of iterations")
+	mastbasic, _, _ := getMaster("cfg.json")
 
-	flag.StringVar(&sts.vlanIf, "vlan-if", mastbasic.VlanIf, "Data interface in Baremetal setup node")
-	flag.StringVar(&sts.binpath, "binpath", mastbasic.BinPath, "netplugin/netmaster binary path")
-
-	flag.StringVar(&sts.keyFile, "keyFile", mastbasic.KeyFile, "Insecure private key in ACI-systemtests")
-	flag.IntVar(&sts.containers, "containers", mastbasic.Containers, "Number of containers to use")
-	flag.BoolVar(&sts.short, "short", mastbasic.Short, "Do a quick validation run instead of the full test suite")
-	flag.BoolVar(&sts.enableDNS, "dns-enable", mastbasic.EnableDNS, "Enable DNS service discovery")
-
-	flag.StringVar(&sts.clusterStore, "cluster-store", mastbasic.ClusterStore, "cluster store URL")
 	if mastbasic.ContivL3 == "" {
 		flag.StringVar(&sts.fwdMode, "fwd-mode", "bridge", "forwarding mode to start the test ")
 	} else {
 		flag.StringVar(&sts.fwdMode, "fwd-mode", "routing", "forwarding mode to start the test ")
 	}
 
-	flag.StringVar(&sts.scheduler, "scheduler", mastbasic.Scheduler, "scheduler used for testing")
-	flag.StringVar(&sts.env, "environemtn", mastbasic.Env, "environemtn used for testing")
 	flag.Parse()
 
 	logrus.Infof("Running system test with params: %+v", sts)
@@ -122,21 +113,25 @@ func TestSystem(t *T) {
 
 func (s *systemtestSuite) SetUpSuite(c *C) {
 	logrus.Infof("Bootstrapping system tests")
+	s.basicInfo, s.hostInfo, s.globInfo = getMaster("cfg.json")
 
-	if s.env == "Baremetal" {
+	logrus.Infof("Running wiuth paramyers %s", s.basicInfo)
+	logrus.Infof("Running wiuth paramyers %s", s.hostInfo)
+	logrus.Infof("Running wiuth paramyers %s", s.globInfo)
+	if s.basicInfo.Env == "Baremetal" {
 
 		logrus.Infof("ACI_SYS_TEST_MODE is ON")
-		logrus.Infof("Private keyFile = %s", s.keyFile)
-		logrus.Infof("Binary binpath = %s", s.binpath)
-		logrus.Infof("Interface vlanIf = %s", s.vlanIf)
+		logrus.Infof("Private keyFile = %s", s.basicInfo.KeyFile)
+		logrus.Infof("Binary binpath = %s", s.basicInfo.BinPath)
+		logrus.Infof("Interface vlanIf = %s", s.basicInfo.VlanIf)
 
 		s.baremetal = vagrantssh.Baremetal{}
 		bm := &s.baremetal
 
 		// To fill the hostInfo data structure for Baremetal VMs
 		name := "aci-swarm-node"
-		hostIPs := strings.Split(os.Getenv("HOST_IPS"), ",")
-		hostNames := strings.Split(os.Getenv("HOST_USER_NAMES"), ",")
+		hostIPs := strings.Split(s.hostInfo.HostIPs, ",")
+		hostNames := strings.Split(s.hostInfo.HostUsernames, ",")
 		hosts := make([]vagrantssh.HostInfo, 2)
 
 		for i := range hostIPs {
@@ -151,7 +146,7 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 			hosts[i].User = hostNames[i]
 			logrus.Infof("User=%s", hosts[i].User)
 
-			hosts[i].PrivKeyFile = s.keyFile
+			hosts[i].PrivKeyFile = s.basicInfo.KeyFile
 			logrus.Infof("PrivKeyFile=%s", hosts[i].PrivKeyFile)
 		}
 
@@ -193,7 +188,7 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 
 		s.nodes = []*node{}
 
-		if s.scheduler == "k8" {
+		if s.basicInfo.Scheduler == "k8" {
 			s.KubeNodeSetup(c)
 		}
 
@@ -222,7 +217,7 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 func (s *systemtestSuite) SetUpTest(c *C) {
 	logrus.Infof("============================= %s starting ==========================", c.TestName())
 
-	if s.env == "Baremetal" {
+	if s.basicInfo.Env == "Baremetal" {
 		logrus.Infof("in baremetal")
 		for _, node := range s.nodes {
 			//node.cleanupContainers()
@@ -296,11 +291,11 @@ func (s *systemtestSuite) SetUpTest(c *C) {
 		time.Sleep(15 * time.Second)
 
 		// temporarily enable DNS for service discovery tests
-		prevDNSEnabled := s.enableDNS
+		prevDNSEnabled := s.basicInfo.EnableDNS
 		if strings.Contains(c.TestName(), "SvcDiscovery") {
-			s.enableDNS = true
+			s.basicInfo.EnableDNS = true
 		}
-		defer func() { s.enableDNS = prevDNSEnabled }()
+		defer func() { s.basicInfo.EnableDNS = prevDNSEnabled }()
 
 		for _, node := range s.nodes {
 			c.Assert(node.startNetmaster(), IsNil)
