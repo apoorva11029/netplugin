@@ -106,7 +106,7 @@ func TestSystem(t *T) {
 func (s *systemtestSuite) SetUpSuite(c *C) {
 	logrus.Infof("Bootstrapping system tests")
 
-	if os.Getenv("ACI_SYS_TEST_MODE") == "ON" {
+	if s.vagrant == false{
 
 		logrus.Infof("ACI_SYS_TEST_MODE is ON")
 		logrus.Infof("Private keyFile = %s", s.keyFile)
@@ -205,7 +205,7 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 func (s *systemtestSuite) SetUpTest(c *C) {
 	logrus.Infof("============================= %s starting ==========================", c.TestName())
 
-	if os.Getenv("ACI_SYS_TEST_MODE") == "ON" {
+	if s.vagrant==false {
 
 		for _, node := range s.nodes {
 			//node.cleanupContainers()
