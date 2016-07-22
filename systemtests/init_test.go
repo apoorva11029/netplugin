@@ -16,19 +16,19 @@ import (
 )
 
 type systemtestSuite struct {
-	vagrant    vagrantssh.Vagrant
-	baremetal  vagrantssh.Baremetal
-	cli        *client.ContivClient
-	nodes      []*node
-	fwdMode    string
-	basicInfo  BasicInfo
-  infoHost InfoHost
-	infoGlob InfoGlob
+	vagrant   vagrantssh.Vagrant
+	baremetal vagrantssh.Baremetal
+	cli       *client.ContivClient
+	nodes     []*node
+	fwdMode   string
+	basicInfo BasicInfo
+	infoHost  InfoHost
+	infoGlob  InfoGlob
 }
 type BasicInfo struct {
 	Scheduler    string `json:"scheduler"`      //swarm, k8s or plain docker
 	SwarmEnv     string `json:"swarm_variable"` //env variables to be set with swarm environment
-	Platform     string   `json:"platform"`        //vagrant or baremetal
+	Platform     string `json:"platform"`       //vagrant or baremetal
 	Product      string `json:"product"`        //for netplugin / volplugin
 	AciMode      string `json:"aci_mode"`       //on/off
 	Short        bool   `json:"short"`
@@ -329,14 +329,6 @@ func (s *systemtestSuite) SetUpTest(c *C) {
 		for _, node := range s.nodes {
 			node.cleanupMaster()
 		}
-		outChan := make(chan string, 100)
-		//logrus.Infof("env value is " + s.basicInfo.SwarmEnv)
-
-		mystr := " docker info"
-		logrus.Infof("mystr _____________________ value is " + mystr)
-		out, _ := s.nodes[0].runCommand(mystr)
-		outChan <- out
-		logrus.Infof("docker info for first node ====== %s", strings.TrimSpace(<-outChan))
 
 		for _, node := range s.nodes {
 			if s.fwdMode == "bridge" {
@@ -394,9 +386,9 @@ func (s *systemtestSuite) TearDownTest(c *C) {
 
 func (s *systemtestSuite) TearDownSuite(c *C) {
 
-	// for _, node := range s.nodes {
-	// 	node.exec.cleanupContainers()
-	// }
+	for _, node := range s.nodes {
+		node.exec.cleanupContainers()
+	}
 
 	// Print all errors and fatal messages
 	for _, node := range s.nodes {
@@ -447,7 +439,7 @@ func (s *systemtestSuite) BaremetalTestInstall(c *C) {
 			outChan <- out1
 			logrus.Infof("for first node docker info | grep nodes ====== %s", strings.TrimSpace(<-outChan))
 
-		if out1 == "" {
+			if out1 == "" {
 				logrus.Infof("Nothing found on the first node ")
 				err = "net_demo didnt run"
 				break
@@ -464,7 +456,7 @@ func (s *systemtestSuite) BaremetalTestInstall(c *C) {
 			}
 		}
 	}
-	cmd := exec.Command("sudo rm -rf","ansible genInventoryFile.py server.log")
+	cmd := exec.Command("sudo rm -rf", "ansible genInventoryFile.py server.log")
 	cmd.Run()
 	c.Assert(err, Equals, "")
 }
