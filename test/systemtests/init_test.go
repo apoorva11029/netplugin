@@ -45,7 +45,7 @@ type systemtestSuite struct {
 type BasicInfo struct {
 	Scheduler    string `json:"scheduler"`      //swarm, k8s or plain docker
 	SwarmEnv     string `json:"swarm_variable"` //env variables to be set with swarm environment
-	Vagrant      bool   `json:"vagrant"`        //vagrant or baremetal
+	Platform     string `json:"platform"`       //vagrant or baremetal
 	Product      string `json:"product"`        //for netplugin / volplugin
 	AciMode      string `json:"aci_mode"`       //on/off
 	Short        bool   `json:"short"`
@@ -96,7 +96,7 @@ func TestMain(m *M) {
 	} else {
 		flag.StringVar(&sts.fwdMode, "fwd-mode", "routing", "forwarding mode to start the test ")
 	}
-	if mastbasic.Vagrant == false {
+	if mastbasic.Platform == "Baremetal" {
 		logrus.Infof("cmae here")
 		//sts.BaremetalSetup()
 	}
@@ -117,8 +117,8 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 	logrus.Infof("Bootstrapping system tests")
 	s.basicInfo, s.infoHost, s.infoGlob = getMaster("cfg.json")
 
-	switch s.basicInfo.AciMode {
-	case "on":
+	switch s.basicInfo.Platform {
+	case "Baremetal":
 		logrus.Infof("ACI_SYS_TEST_MODE is on")
 		logrus.Infof("Private keyFile = %s", s.basicInfo.KeyFile)
 		logrus.Infof("Binary binpath = %s", s.basicInfo.BinPath)
@@ -192,7 +192,7 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 		s.copyBinary("netctl")
 		s.copyBinary("contivk8s")
 
-	default:
+	case "Vagrant":
 		s.vagrant = remotessh.Vagrant{}
 		nodesStr := os.Getenv("CONTIV_NODES")
 		var contivNodes int
@@ -295,9 +295,9 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 func (s *systemtestSuite) SetUpTest(c *C) {
 	logrus.Infof("============================= %s starting ==========================", c.TestName())
 
-	switch s.basicInfo.AciMode {
+	switch s.basicInfo.Platform {
 
-	case "on":
+	case "Baremetal":
 		logrus.Infof("-----Inside  switch case ------")
 		for _, node := range s.nodes {
 			//node.exec.cleanupContainers()
@@ -346,7 +346,7 @@ func (s *systemtestSuite) SetUpTest(c *C) {
 			c.Assert((i < 10), Equals, true)
 			time.Sleep(500 * time.Millisecond)
 		}
-	default:
+	case "Vagrant":
 		for _, node := range s.nodes {
 			node.exec.cleanupContainers()
 			//node.cleanupDockerNetwork()
