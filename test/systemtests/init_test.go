@@ -43,7 +43,6 @@ type BasicInfo struct {
 }
 
 type InfoHost struct {
-	IP                string `json:"ip"`
 	HostIPs           string `json:"hostips"`
 	HostUsernames     string `json:"hostusernames"`
 	HostDataInterface string `json:"dataInterface"`
@@ -70,18 +69,14 @@ func TestMain(m *M) {
 
 	mastbasic, _, _ := getMaster("cfg.json")
 
-	logrus.Infof("keyfle value is %s", mastbasic.KeyFile)
-	logrus.Infof("binpath value is %s", mastbasic.BinPath)
-	//logrus.Infof("vlanif is %s", mastbasic.VlanIf)
-
 	if mastbasic.ContivL3 == "" {
 		flag.StringVar(&sts.fwdMode, "fwd-mode", "bridge", "forwarding mode to start the test ")
 	} else {
 		flag.StringVar(&sts.fwdMode, "fwd-mode", "routing", "forwarding mode to start the test ")
 	}
-	if mastbasic.Platform == "Baremetal" {
-		logrus.Infof("cmae here")
-		//sts.BaremetalSetup()
+	if mastbasic.Platform == "baremetal" {
+		logrus.Infof("Starting net_demo_installer")
+		sts.BaremetalSetup()
 	}
 	flag.Parse()
 	//logrus.Infof("Running system test with params: %+v", sts)
@@ -101,10 +96,10 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 	s.basicInfo, s.infoHost, s.infoGlob = getMaster("cfg.json")
 
 	switch s.basicInfo.Platform {
-	case "Baremetal":
+	case "baremetal":
 		s.SetUpSuiteBaremetal(c)
 
-	case "Vagrant":
+	case "vagrant":
 		s.SetUpSuiteVagrant(c)
 	} // end of switch case
 
@@ -116,19 +111,19 @@ func (s *systemtestSuite) SetUpTest(c *C) {
 
 	switch s.basicInfo.Platform {
 
-	case "Baremetal":
+	case "baremetal":
 		logrus.Infof("-----Inside  switch case ------")
 		for _, node := range s.nodes {
-			//node.exec.cleanupContainers()
-			//node.exec.cleanupDockerNetwork()
+			node.exec.cleanupContainers()
+			node.exec.cleanupDockerNetwork()
 
 			node.stopNetplugin()
-			//node.cleanupSlave()
+			node.cleanupSlave()
 			node.deleteFile("/etc/systemd/system/netplugin.service")
 			node.stopNetmaster()
 			node.deleteFile("/etc/systemd/system/netmaster.service")
-			//node.deleteFile("/usr/bin/netplugin")
-			//node.deleteFile("/usr/bin/netmaster")
+			node.deleteFile("/usr/bin/netplugin")
+			node.deleteFile("/usr/bin/netmaster")
 			node.deleteFile("/usr/bin/netctl")
 		}
 
@@ -165,10 +160,10 @@ func (s *systemtestSuite) SetUpTest(c *C) {
 			c.Assert((i < 10), Equals, true)
 			time.Sleep(500 * time.Millisecond)
 		}
-	case "Vagrant":
+	case "vagrant":
 		for _, node := range s.nodes {
 			node.exec.cleanupContainers()
-			//node.cleanupDockerNetwork()
+			node.exec.cleanupDockerNetwork()
 			node.stopNetplugin()
 			node.cleanupSlave()
 		}
