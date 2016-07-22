@@ -6,9 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Sirupsen/logrus"
+	"github.com/contiv/vagrantssh"
+	. "gopkg.in/check.v1"
 	"io/ioutil"
 	"math/rand"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 	"sync"
@@ -972,4 +975,212 @@ func getMaster(file string) (BasicInfo, InfoHost, InfoGlob) {
 		}
 	}
 	return mastbasic, masthost, mastglob
+}
+
+func (s *systemtestSuite) SetUpSuiteBaremetal(c *C) {
+
+	logrus.Infof("ACI_SYS_TEST_MODE is on")
+	logrus.Infof("Private keyFile = %s", s.basicInfo.KeyFile)
+	logrus.Infof("Binary binpath = %s", s.basicInfo.BinPath)
+	logrus.Infof("Interface vlanIf = %s", s.infoHost.HostDataInterface)
+
+	s.baremetal = vagrantssh.Baremetal{}
+	bm := &s.baremetal
+
+	// To fill the hostInfo data structure for Baremetal VMs
+	name := "aci-swarm-node"
+	hostIPs := strings.Split(s.infoHost.HostIPs, ",")
+	hostNames := strings.Split(s.infoHost.HostUsernames, ",")
+	hosts := make([]vagrantssh.HostInfo, 2)
+
+	for i := range hostIPs {
+		hosts[i].Name = name + strconv.Itoa(i+1)
+		logrus.Infof("Name=%s", hosts[i].Name)
+
+		hosts[i].SSHAddr = hostIPs[i]
+		logrus.Infof("SHAddr=%s", hosts[i].SSHAddr)
+
+		hosts[i].SSHPort = "22"
+
+		hosts[i].User = hostNames[i]
+		logrus.Infof("User=%s", hosts[i].User)
+
+		hosts[i].PrivKeyFile = s.basicInfo.KeyFile
+		logrus.Infof("PrivKeyFile=%s", hosts[i].PrivKeyFile)
+	}
+	logrus.Infof("hosts are %s", hosts)
+	c.Assert(bm.Setup(hosts), IsNil)
+
+	s.nodes = []*node{}
+
+	for _, nodeObj := range s.baremetal.GetNodes() {
+		logrus.Infof("node name is %s", nodeObj.GetName())
+		nodeName := nodeObj.GetName()
+		if strings.Contains(nodeName, "aci") ||
+			strings.Contains(nodeName, "swarm") {
+			node := &node{}
+			node.tbnode = nodeObj
+			node.suite = s
+
+			switch s.basicInfo.Scheduler {
+			case "k8":
+				node.exec = s.NewK8sExec(node)
+			case "swarm":
+				logrus.Infof("#############in swarm")
+				node.exec = s.NewSwarmExec(node)
+			default:
+				logrus.Infof("in docker MOOOOOD")
+				node.exec = s.NewDockerExec(node)
+			}
+			s.nodes = append(s.nodes, node)
+		}
+		//s.nodes = append(s.nodes, &node{tbnode: nodeObj, suite: s})
+	}
+
+	logrus.Info("Pulling alpine on all nodes")
+
+	s.baremetal.IterateNodes(func(node vagrantssh.TestbedNode) error {
+		//fmt.Printf("\n\t Node Name is %s", node.nodeName)
+		node.RunCommand("sudo rm /tmp/*net*")
+		node.RunCommand("touch /home/admin/GAURAV.txt")
+		return node.RunCommand("docker pull alpine")
+	})
+	s.BaremetalTestInstall(c)
+	//Copying binaries
+	s.copyBinary("netmaster")
+	s.copyBinary("netplugin")
+	s.copyBinary("netctl")
+	s.copyBinary("contivk8s")
+}
+
+func (s *systemtestSuite) SetUpSuiteVagrant(c *C) {
+	s.vagrant = vagrantssh.Vagrant{}
+	nodesStr := os.Getenv("CONTIV_NODES")
+	var contivNodes int
+
+	if nodesStr == "" {
+		contivNodes = 2
+	} else {
+		var err error
+		contivNodes, err = strconv.Atoi(nodesStr)
+		if err != nil {
+			c.Fatal(err)
+		}
+	}
+
+	s.nodes = []*node{}
+
+	outChan := make(chan string, 100)
+	//logrus.Infof("env value is " + s.basicInfo.SwarmEnv)
+
+	mystr := "DOCKER_HOST=10.193.246.70:2375 docker info"
+	logrus.Infof("mystr _____________________ value is " + mystr)
+	out, _ := s.nodes[0].runCommand(mystr)
+	outChan <- out
+	logrus.Infof("docker ps for first node ====== %s", strings.TrimSpace(<-outChan))
+
+	if s.fwdMode == "routing" {
+		contivL3Nodes := 2
+		switch s.basicInfo.Scheduler {
+		case "k8":
+			contivNodes = 4
+			c.Assert(s.vagrant.Setup(false, []string{"CONTIV_L3=1 VAGRANT_CWD=/home/ladmin/src/github.com/contiv/netplugin/vagrant/k8s/"}, contivNodes), IsNil)
+		case "swarm":
+			c.Assert(s.vagrant.Setup(false, append([]string{"CONTIV_NODES=3 CONTIV_L3=1"}, s.basicInfo.SwarmEnv), contivNodes+contivL3Nodes), IsNil)
+		default:
+			c.Assert(s.vagrant.Setup(false, []string{"CONTIV_NODES=3 CONTIV_L3=1"}, contivNodes+contivL3Nodes), IsNil)
+
+		}
+
+	} else {
+		switch s.basicInfo.Scheduler {
+		case "k8":
+			contivNodes = contivNodes + 1 //k8master
+			c.Assert(s.vagrant.Setup(false, []string{"VAGRANT_CWD=/home/ladmin/src/github.com/contiv/netplugin/vagrant/k8s/"}, contivNodes), IsNil)
+		case "swarm":
+			c.Assert(s.vagrant.Setup(false, append([]string{}, s.basicInfo.SwarmEnv), contivNodes), IsNil)
+		default:
+			c.Assert(s.vagrant.Setup(false, []string{}, contivNodes), IsNil)
+
+		}
+
+	}
+	logrus.Infof("Checkpoint 1-----")
+	for _, nodeObj := range s.vagrant.GetNodes() {
+		nodeName := nodeObj.GetName()
+		if strings.Contains(nodeName, "netplugin-node") ||
+			strings.Contains(nodeName, "k8") {
+			node := &node{}
+			node.tbnode = nodeObj
+			node.suite = s
+			logrus.Infof("scheduler is %s ", s.basicInfo.Scheduler)
+			switch s.basicInfo.Scheduler {
+			case "k8":
+				node.exec = s.NewK8sExec(node)
+			case "swarm":
+				logrus.Infof("in swarm mooooood")
+				node.exec = s.NewSwarmExec(node)
+			default:
+				logrus.Infof("in docker mooooood")
+				node.exec = s.NewDockerExec(node)
+			}
+			s.nodes = append(s.nodes, node)
+		}
+	}
+	logrus.Infof("Checkpoint 2-----")
+	logrus.Info("Pulling alpine on all nodes")
+	s.vagrant.IterateNodes(func(node vagrantssh.TestbedNode) error {
+		node.RunCommand("sudo rm /tmp/net*")
+		return node.RunCommand("docker pull alpine")
+	})
+}
+
+func (s *systemtestSuite) BaremetalSetup() {
+	cmd := exec.Command("chmod +x", "net_demo_installer")
+	cmd.Run()
+	if s.basicInfo.AciMode=="on" {
+	cmd = exec.Command("./net_demo_installer", "-ars")
+	} else {
+	cmd = exec.Command("./net_demo_installer", "-rs")
+	}
+	// setup log file
+	file, err := os.Create("server.log")
+	if err != nil {
+		logrus.Infof("no err here")
+	}
+	cmd.Stdout = file
+
+	cmd.Run()
+	logrus.Infof("Done running net demo ------------------")
+}
+
+func (s *systemtestSuite) BaremetalTestInstall(c *C) {
+	outChan := make(chan string, 100)
+	mystr := "docker info | grep Nodes"
+
+	i := 1
+	var err, out, out1 string
+	for _, node := range s.nodes {
+
+		if i == 1 {
+			out1, _ = node.runCommand(mystr)
+			outChan <- out1
+			if out1 == "" {
+				err = "The script net_demo_installer didnt run properly."
+				break
+			}
+		} else {
+			out, _ = node.runCommand(mystr)
+			outChan <- out
+			if out != out1 {
+				err = "The script net_demo_installer didnt run properly."
+				break
+			}
+		}
+	}
+	logrus.Infof("Deleting files created by net_demo_installer")
+	os.Remove("genInventoryFile.py")
+	os.RemoveAll("./ansible")
+	//os.Remove("server.log")
+	c.Assert(err, Equals, "")
 }

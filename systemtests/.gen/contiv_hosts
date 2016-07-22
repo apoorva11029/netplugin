@@ -1,11 +1,3 @@
 [netplugin-node]
-node1 ansible_ssh_host=10.193.246.70 contiv_network_mode=aci control_interface=eno16780032 netplugin_if=eno33559296 fwd_mode=bridge
-node2 ansible_ssh_host=10.193.246.71 contiv_network_mode=aci control_interface=eno16780032 netplugin_if=eno33559296 fwd_mode=bridge
-[netplugin-node:vars]
-apic_url=https://10.193.231.33:443
-apic_username=admin
-apic_password=ins3965!
-apic_phys_domain=TEST-Phys-Dom
-apic_epg_bridge_domain=not_specified
-apic_contracts_unrestricted_mode=no
-apic_leaf_nodes=topology/pod-1/node-101,topology/pod-1/node-102
+node1 ansible_ssh_host=10.193.246.70 contiv_network_mode=standalone control_interface=eno16780032 netplugin_if=eno33559296 fwd_mode=bridge
+node2 ansible_ssh_host=10.193.246.71 contiv_network_mode=standalone control_interface=eno16780032 netplugin_if=eno33559296 fwd_mode=bridge

@@ -273,10 +273,10 @@ func (w *swarm) cleanupDockerNetwork() error {
 
 func (w *swarm) cleanupContainers() error {
 	logrus.Infof("Cleaning up containers on %s", w.node.Name())
-	// if os.Getenv("ACI_SYS_TEST_MODE") == "ON" {
-	// 	logrus.Infof("-----clearning containers on swarm----------")
-	// 	return w.node.tbnode.RunCommand("docker ps | grep alpine | awk '{print $s}' $(docker kill -s 9 `docker ps -aq`; docker rm -f `docker ps -aq`)")
-	// }
+	if w.node.suite.basicInfo.Platform == "Baremetal" {
+		logrus.Infof("-----clearning containers on swarm----------")
+		return w.node.tbnode.RunCommand("docker rm -f  `docker ps -a| grep alpine | awk '{print $1}' `")
+	}
 
 	return w.node.tbnode.RunCommand("docker ps | grep alpine | awk '{print $2}' $(docker kill -s 9 `docker ps -aq`; docker rm -f `docker ps -aq`)")
 
