@@ -2,7 +2,7 @@ package systemtests
 
 import (
 	"fmt"
-	"os"
+
 	"os/exec"
 	"regexp"
 	"strings"
@@ -46,7 +46,7 @@ func (n *node) getIPAddr(dev string) (string, error) {
 		logrus.Errorf("Failed to get IP for node %v", n.tbnode)
 		logrus.Println(out)
 	}
-
+	logrus.Infof("in get IPAddrs %s", out)
 	parts := regexp.MustCompile(`\s+`).Split(strings.TrimSpace(out), -1)
 	if len(parts) < 2 {
 		return "", fmt.Errorf("Invalid output from node %v: %s", n.tbnode, out)
@@ -82,7 +82,7 @@ func (n *node) stopNetplugin() error {
 
 func (s *systemtestSuite) copyBinary(fileName string) error {
 	logrus.Infof("Copying %s binary to %s", fileName, s.basicInfo.BinPath)
-	hostIPs := strings.Split(os.Getenv("HOST_IPS"), ",")
+	hostIPs := strings.Split(s.acinfoHost.HostIPs, ",")
 	srcFile := s.basicInfo.BinPath + "/" + fileName
 	destFile := s.basicInfo.BinPath + "/" + fileName
 	for i := 1; i < len(s.nodes); i++ {

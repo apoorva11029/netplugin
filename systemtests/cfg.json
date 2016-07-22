@@ -1,7 +1,7 @@
 [
     {
       "scheduler" : "swarm",
-      "swarm_variable":"DOCKER_HOST=10.193.246.2:2375",
+      "swarm_variable":"DOCKER_HOST=10.193.246.70:2375",
       "vagrant" : false,
       "product" : "netplugin",
       "aci_mode" : "on",
@@ -12,13 +12,13 @@
       "contiv_cluster_store" : "etcd://localhost:2379",
       "contiv_l3" : "",
       "key_file" : "/home/admin/.ssh/id_rsa",
-      "vlanIf" : "eno33559296",
       "binpath" : "/home/admin/bin",
 
-      "ip" : "10.193.246.2",
-      "hostips" : "10.193.246.2,10.193.246.4",
+      "ip" : "10.193.246.70",
+      "hostips" : "10.193.246.70,10.193.246.71",
       "hostusernames" : "admin,admin",
-      "hostdata" : "eno33559296",
+      "dataInterface" : "eno33559296",
+	"mgmtInterface" : "eno16780032",
       "vlan" : "1120-1150",
       "vxlan" : "1-10000",
       "subnet" : "10.1.1.0/24",

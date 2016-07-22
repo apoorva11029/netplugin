@@ -3,16 +3,16 @@ package systemtests
 import (
 	"flag"
 	"fmt"
-	"os"
-	"strconv"
-	"strings"
-	. "testing"
-	"time"
-
 	"github.com/Sirupsen/logrus"
 	"github.com/contiv/contivmodel/client"
 	"github.com/contiv/vagrantssh"
 	. "gopkg.in/check.v1"
+	"os"
+	"os/exec"
+	"strconv"
+	"strings"
+	. "testing"
+	"time"
 )
 
 type systemtestSuite struct {
@@ -39,7 +39,6 @@ type BasicInfo struct {
 	ContivL3     string `json:"contiv_l3"`
 	KeyFile      string `json:"key_file"`
 	BinPath      string `json:"binpath"` // /home/admin/bin or /opt/gopath/bin
-	VlanIf       string `json:"vlanIf"`
 	Master       bool   `json:"master"`
 }
 
@@ -47,7 +46,8 @@ type ACInfoHost struct {
 	IP                string `json:"ip"`
 	HostIPs           string `json:"hostips"`
 	HostUsernames     string `json:"hostusernames"`
-	HostDataInterface string `json:"hostdata"`
+	HostDataInterface string `json:"dataInterface"`
+	HostMgmtInterface string `json:"mgmtInterface"`
 	Master            bool   `json:"master"`
 }
 
@@ -72,14 +72,17 @@ func TestMain(m *M) {
 
 	logrus.Infof("keyfle value is %s", mastbasic.KeyFile)
 	logrus.Infof("binpath value is %s", mastbasic.BinPath)
-	logrus.Infof("vlanif is %s", mastbasic.VlanIf)
+	//logrus.Infof("vlanif is %s", mastbasic.VlanIf)
 
 	if mastbasic.ContivL3 == "" {
 		flag.StringVar(&sts.fwdMode, "fwd-mode", "bridge", "forwarding mode to start the test ")
 	} else {
 		flag.StringVar(&sts.fwdMode, "fwd-mode", "routing", "forwarding mode to start the test ")
 	}
-
+	if mastbasic.Vagrant == false {
+		logrus.Infof("cmae here")
+		//sts.BaremetalSetup()
+	}
 	flag.Parse()
 	//logrus.Infof("Running system test with params: %+v", sts)
 	os.Exit(m.Run())
@@ -165,7 +168,7 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 			node.RunCommand("touch /home/admin/GAURAV.txt")
 			return node.RunCommand("docker pull alpine")
 		})
-
+		s.BaremetalTestInstall(c)
 		//Copying binaries
 		s.copyBinary("netmaster")
 		s.copyBinary("netplugin")
@@ -413,15 +416,55 @@ func (s *systemtestSuite) Test00SSH(c *C) {
 	}), IsNil)
 }
 
-// func (s *systemtestSuite) BaremetalSetup(c *C) {
-// 	cmd := exec.Command("./net_demo_installer", "-r")
-// 	// setup log file
-// 	file, err := os.Create("server.log")
-// 	if err != nil {
-// 		logrus.Infof("no err here")
-// 	}
-// 	cmd.Stdout = file
-//
-// 	logrus.Infof("Done running net demo ------------------")
-// 	c.Assert(cmd.Run(), IsNil)
-// }
+func (s *systemtestSuite) BaremetalSetup() {
+	cmd := exec.Command("chmod +x", "net_demo_installer")
+	cmd.Run()
+	cmd = exec.Command("./net_demo_installer", "-ar")
+	// setup log file
+	file, err := os.Create("server.log")
+	if err != nil {
+		logrus.Infof("no err here")
+	}
+	cmd.Stdout = file
+
+	cmd.Run()
+	logrus.Infof("Done running net demo ------------------")
+}
+
+func (s *systemtestSuite) BaremetalTestInstall(c *C) {
+	outChan := make(chan string, 100)
+	mystr := "docker info | grep Nodes"
+	out := ""
+	i := 1
+	out1 := ""
+
+	err := ""
+
+	for _, node := range s.nodes {
+		
+		if i == 1 {
+			out1, _ = node.runCommand(mystr)
+			outChan <- out1
+			logrus.Infof("for first node docker info | grep nodes ====== %s", strings.TrimSpace(<-outChan))
+			
+		if out1 == "" {
+				logrus.Infof("Nothing found on the first node ")
+				err = "net_demo didnt run"
+				break
+			}
+		} else {
+			out, _ = node.runCommand(mystr)
+			
+			outChan <- out
+			logrus.Infof("docker info | grep nodes ====== %s", strings.TrimSpace(<-outChan))
+			if out != out1 {
+				logrus.Infof("Nodes not in sync")
+				err = "net_demo didnt run"
+				break
+			}
+		}
+	}
+	cmd := exec.Command("sudo rm -rf","ansible genInventoryFile.py server.log")
+	cmd.Run()	
+	c.Assert(err, Equals, "")
+}
