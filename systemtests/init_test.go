@@ -22,8 +22,8 @@ type systemtestSuite struct {
 	nodes      []*node
 	fwdMode    string
 	basicInfo  BasicInfo
-	acinfoHost ACInfoHost
-	acinfoGlob ACInfoGlob
+  infoHost InfoHost
+	infoGlob InfoGlob
 }
 type BasicInfo struct {
 	Scheduler    string `json:"scheduler"`      //swarm, k8s or plain docker
@@ -42,7 +42,7 @@ type BasicInfo struct {
 	Master       bool   `json:"master"`
 }
 
-type ACInfoHost struct {
+type InfoHost struct {
 	IP                string `json:"ip"`
 	HostIPs           string `json:"hostips"`
 	HostUsernames     string `json:"hostusernames"`
@@ -51,7 +51,7 @@ type ACInfoHost struct {
 	Master            bool   `json:"master"`
 }
 
-type ACInfoGlob struct {
+type InfoGlob struct {
 	Vlan    string `json:"vlan"`
 	Vxlan   string `json:"vxlan"`
 	Subnet  string `json:"subnet"`
@@ -98,22 +98,22 @@ func TestSystem(t *T) {
 
 func (s *systemtestSuite) SetUpSuite(c *C) {
 	logrus.Infof("Bootstrapping system tests")
-	s.basicInfo, s.acinfoHost, s.acinfoGlob = getMaster("cfg.json")
+	s.basicInfo, s.infoHost, s.acinfoGlob = getMaster("cfg.json")
 
 	switch s.basicInfo.AciMode {
 	case "on":
 		logrus.Infof("ACI_SYS_TEST_MODE is on")
 		logrus.Infof("Private keyFile = %s", s.basicInfo.KeyFile)
 		logrus.Infof("Binary binpath = %s", s.basicInfo.BinPath)
-		logrus.Infof("Interface vlanIf = %s", s.basicInfo.VlanIf)
+		logrus.Infof("Interface vlanIf = %s", s.infoHost.HostDataInterface)
 
 		s.baremetal = vagrantssh.Baremetal{}
 		bm := &s.baremetal
 
 		// To fill the hostInfo data structure for Baremetal VMs
 		name := "aci-swarm-node"
-		hostIPs := strings.Split(s.acinfoHost.HostIPs, ",")
-		hostNames := strings.Split(s.acinfoHost.HostUsernames, ",")
+		hostIPs := strings.Split(s.infoHost.HostIPs, ",")
+		hostNames := strings.Split(s.infoHost.HostUsernames, ",")
 		hosts := make([]vagrantssh.HostInfo, 2)
 
 		for i := range hostIPs {
@@ -441,12 +441,12 @@ func (s *systemtestSuite) BaremetalTestInstall(c *C) {
 	err := ""
 
 	for _, node := range s.nodes {
-		
+
 		if i == 1 {
 			out1, _ = node.runCommand(mystr)
 			outChan <- out1
 			logrus.Infof("for first node docker info | grep nodes ====== %s", strings.TrimSpace(<-outChan))
-			
+
 		if out1 == "" {
 				logrus.Infof("Nothing found on the first node ")
 				err = "net_demo didnt run"
@@ -454,7 +454,7 @@ func (s *systemtestSuite) BaremetalTestInstall(c *C) {
 			}
 		} else {
 			out, _ = node.runCommand(mystr)
-			
+
 			outChan <- out
 			logrus.Infof("docker info | grep nodes ====== %s", strings.TrimSpace(<-outChan))
 			if out != out1 {
@@ -465,6 +465,6 @@ func (s *systemtestSuite) BaremetalTestInstall(c *C) {
 		}
 	}
 	cmd := exec.Command("sudo rm -rf","ansible genInventoryFile.py server.log")
-	cmd.Run()	
+	cmd.Run()
 	c.Assert(err, Equals, "")
 }

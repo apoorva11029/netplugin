@@ -82,7 +82,7 @@ func (n *node) stopNetplugin() error {
 
 func (s *systemtestSuite) copyBinary(fileName string) error {
 	logrus.Infof("Copying %s binary to %s", fileName, s.basicInfo.BinPath)
-	hostIPs := strings.Split(s.acinfoHost.HostIPs, ",")
+	hostIPs := strings.Split(s.infoHost.HostIPs, ",")
 	srcFile := s.basicInfo.BinPath + "/" + fileName
 	destFile := s.basicInfo.BinPath + "/" + fileName
 	for i := 1; i < len(s.nodes); i++ {
