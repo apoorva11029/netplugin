@@ -17,19 +17,19 @@ import (
 )
 
 type systemtestSuite struct {
-	vagrant    remotessh.Vagrant
-	baremetal  remotessh.Baremetal
-	cli        *client.ContivClient
-	nodes      []*node
-	fwdMode    string
-	basicInfo  BasicInfo
-  infoHost InfoHost
-	infoGlob InfoGlob
+	vagrant   remotessh.Vagrant
+	baremetal remotessh.Baremetal
+	cli       *client.ContivClient
+	nodes     []*node
+	fwdMode   string
+	basicInfo BasicInfo
+	infoHost  InfoHost
+	infoGlob  InfoGlob
 }
 type BasicInfo struct {
 	Scheduler    string `json:"scheduler"`      //swarm, k8s or plain docker
 	SwarmEnv     string `json:"swarm_variable"` //env variables to be set with swarm environment
-	Vagrant      bool   `json:"vagrant"`        //vagrant or baremetal
+	Platform     string `json:"platform"`       //vagrant or baremetal
 	Product      string `json:"product"`        //for netplugin / volplugin
 	AciMode      string `json:"aci_mode"`       //on/off
 	Short        bool   `json:"short"`
@@ -80,7 +80,7 @@ func TestMain(m *M) {
 	} else {
 		flag.StringVar(&sts.fwdMode, "fwd-mode", "routing", "forwarding mode to start the test ")
 	}
-	if mastbasic.Vagrant == false {
+	if mastbasic.Platform == "Baremetal" {
 		logrus.Infof("cmae here")
 		//sts.BaremetalSetup()
 	}
@@ -101,9 +101,9 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 	logrus.Infof("Bootstrapping system tests")
 	s.basicInfo, s.infoHost, s.infoGlob = getMaster("cfg.json")
 
-	switch s.basicInfo.AciMode {
-	case "on":
-		logrus.Infof("ACI_SYS_TEST_MODE is ON")
+	switch s.basicInfo.Platform {
+	case "Baremetal":
+		logrus.Infof("ACI_SYS_TEST_MODE is on")
 		logrus.Infof("Private keyFile = %s", s.basicInfo.KeyFile)
 		logrus.Infof("Binary binpath = %s", s.basicInfo.BinPath)
 		logrus.Infof("Interface vlanIf = %s", s.infoHost.HostDataInterface)
@@ -176,7 +176,7 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 		s.copyBinary("netctl")
 		s.copyBinary("contivk8s")
 
-	default:
+	case "Vagrant":
 		s.vagrant = remotessh.Vagrant{}
 		nodesStr := os.Getenv("CONTIV_NODES")
 		var contivNodes int
@@ -279,9 +279,9 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 func (s *systemtestSuite) SetUpTest(c *C) {
 	logrus.Infof("============================= %s starting ==========================", c.TestName())
 
-	switch s.basicInfo.AciMode {
+	switch s.basicInfo.Platform {
 
-	case "on":
+	case "Baremetal":
 		logrus.Infof("-----Inside  switch case ------")
 		for _, node := range s.nodes {
 			//node.exec.cleanupContainers()
@@ -330,7 +330,7 @@ func (s *systemtestSuite) SetUpTest(c *C) {
 			c.Assert((i < 10), Equals, true)
 			time.Sleep(500 * time.Millisecond)
 		}
-	default:
+	case "Vagrant":
 		for _, node := range s.nodes {
 			node.exec.cleanupContainers()
 			//node.cleanupDockerNetwork()
@@ -345,14 +345,6 @@ func (s *systemtestSuite) SetUpTest(c *C) {
 		for _, node := range s.nodes {
 			node.cleanupMaster()
 		}
-		outChan := make(chan string, 100)
-		//logrus.Infof("env value is " + s.basicInfo.SwarmEnv)
-
-		mystr := " docker info"
-		logrus.Infof("mystr _____________________ value is " + mystr)
-		out, _ := s.nodes[0].runCommand(mystr)
-		outChan <- out
-		logrus.Infof("docker info for first node ====== %s", strings.TrimSpace(<-outChan))
 
 		for _, node := range s.nodes {
 			c.Assert(node.startNetplugin(""), IsNil)
@@ -412,9 +404,9 @@ func (s *systemtestSuite) TearDownTest(c *C) {
 
 func (s *systemtestSuite) TearDownSuite(c *C) {
 
-	// for _, node := range s.nodes {
-	// 	node.exec.cleanupContainers()
-	// }
+	for _, node := range s.nodes {
+		node.exec.cleanupContainers()
+	}
 
 	// Print all errors and fatal messages
 	for _, node := range s.nodes {
@@ -465,7 +457,7 @@ func (s *systemtestSuite) BaremetalTestInstall(c *C) {
 			outChan <- out1
 			logrus.Infof("for first node docker info | grep nodes ====== %s", strings.TrimSpace(<-outChan))
 
-		if out1 == "" {
+			if out1 == "" {
 				logrus.Infof("Nothing found on the first node ")
 				err = "net_demo didnt run"
 				break
@@ -482,7 +474,7 @@ func (s *systemtestSuite) BaremetalTestInstall(c *C) {
 			}
 		}
 	}
-	cmd := exec.Command("sudo rm -rf","ansible genInventoryFile.py server.log")
+	cmd := exec.Command("sudo rm -rf", "ansible genInventoryFile.py server.log")
 	cmd.Run()
 	c.Assert(err, Equals, "")
 }
