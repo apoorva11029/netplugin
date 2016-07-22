@@ -2,7 +2,7 @@
     {
       "scheduler" : "swarm",
       "swarm_variable":"DOCKER_HOST=10.193.246.70:2375",
-      "platform" : "Baremetal",
+      "platform" : "baremetal",
       "product" : "netplugin",
       "aci_mode" : "on",
       "short"   : false,
@@ -14,7 +14,6 @@
       "key_file" : "/home/admin/.ssh/id_rsa",
       "binpath" : "/home/admin/bin",
 
-      "ip" : "10.193.246.70",
       "hostips" : "10.193.246.70,10.193.246.71",
       "hostusernames" : "admin,admin",
       "dataInterface" : "eno33559296",

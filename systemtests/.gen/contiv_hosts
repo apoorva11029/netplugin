@@ -1,3 +1,0 @@
-[netplugin-node]
-node1 ansible_ssh_host=10.193.246.70 contiv_network_mode=standalone control_interface=eno16780032 netplugin_if=eno33559296 fwd_mode=bridge
-node2 ansible_ssh_host=10.193.246.71 contiv_network_mode=standalone control_interface=eno16780032 netplugin_if=eno33559296 fwd_mode=bridge
