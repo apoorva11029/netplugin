@@ -285,7 +285,7 @@ func (w *swarm) cleanupContainers() error {
 
 func (w *swarm) startNetplugin(args string) error {
 	logrus.Infof("-------Starting netplugin on %s", w.node.Name())
-	cmd := "sudo " + w.node.suite.basicInfo.BinPath + "/netplugin -plugin-mode docker -vlan-if " + w.node.suite.basicInfo.VlanIf + " --cluster-store " + w.node.suite.basicInfo.ClusterStore + " " + args + "&> /tmp/netplugin.log"
+	cmd := "sudo " + w.node.suite.basicInfo.BinPath + "/netplugin -plugin-mode docker -vlan-if " + w.node.suite.infoHost.HostDataInterface + " --cluster-store " + w.node.suite.basicInfo.ClusterStore + " " + args + "&> /tmp/netplugin.log"
 	logrus.Infof("-------CMD is  %s", cmd)
 	return w.node.tbnode.RunCommandBackground(cmd)
 }

@@ -35,8 +35,8 @@ type systemtestSuite struct {
 	// password   string
 	// nodes      []string
 	basicInfo  BasicInfo
-	acinfoHost ACInfoHost
-	acinfoGlob ACInfoGlob
+        infoHost InfoHost
+	infoGlob InfoGlob
 }
 type BasicInfo struct {
 	Scheduler    string `json:"scheduler"`      //swarm, k8s or plain docker
@@ -55,7 +55,7 @@ type BasicInfo struct {
 	Master       bool   `json:"master"`
 }
 
-type ACInfoHost struct {
+type InfoHost struct {
 	IP                string `json:"ip"`
 	HostIPs           string `json:"hostips"`
 	HostUsernames     string `json:"hostusernames"`
@@ -64,7 +64,7 @@ type ACInfoHost struct {
 	Master            bool   `json:"master"`
 }
 
-type ACInfoGlob struct {
+type InfoGlob struct {
 	Vlan    string `json:"vlan"`
 	Vxlan   string `json:"vxlan"`
 	Subnet  string `json:"subnet"`
@@ -111,7 +111,7 @@ func TestSystem(t *T) {
 
 func (s *systemtestSuite) SetUpSuite(c *C) {
 	logrus.Infof("Bootstrapping system tests")
-	s.basicInfo, s.acinfoHost, s.acinfoGlob = getMaster("cfg.json")
+	s.basicInfo, s.infoHost, s.infoGlob = getMaster("cfg.json")
 
 	switch s.basicInfo.AciMode {
 	case "on":
@@ -122,12 +122,12 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 		logrus.Infof("ACI_SYS_TEST_MODE is ON")
 		logrus.Infof("Private keyFile = %s", s.basicInfo.KeyFile)
 		logrus.Infof("Binary binpath = %s", s.basicInfo.BinPath)
-		logrus.Infof("Interface vlanIf = %s", s.basicInfo.VlanIf)
+		logrus.Infof("Interface vlanIf = %s", s.infoHost.HostDataInterface)
 
 		// To fill the hostInfo data structure for Baremetal VMs
 		name := "aci-swarm-node"
-		hostIPs := strings.Split(s.acinfoHost.HostIPs, ",")
-		hostNames := strings.Split(s.acinfoHost.HostUsernames, ",")
+		hostIPs := strings.Split(s.infoHost.HostIPs, ",")
+		hostNames := strings.Split(s.infoHost.HostUsernames, ",")
 		hosts := make([]vagrantssh.HostInfo, 2)
 
 		for i := range hostIPs {
