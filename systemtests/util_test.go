@@ -923,7 +923,7 @@ func (s *systemtestSuite) SetUpSuiteBaremetal(c *C) {
 		}
 		//s.nodes = append(s.nodes, &node{tbnode: nodeObj, suite: s})
 	}
-
+  s.CheckNetDemoInstallation(c)
 	logrus.Info("Pulling alpine on all nodes")
 
 	s.baremetal.IterateNodes(func(node vagrantssh.TestbedNode) error {
@@ -932,7 +932,7 @@ func (s *systemtestSuite) SetUpSuiteBaremetal(c *C) {
 		node.RunCommand("touch /home/admin/GAURAV.txt")
 		return node.RunCommand("docker pull alpine")
 	})
-	s.BaremetalTestInstall(c)
+
 	//Copying binaries
 	s.copyBinary("netmaster")
 	s.copyBinary("netplugin")
@@ -1041,29 +1041,24 @@ func (s *systemtestSuite) BaremetalSetup() {
 	logrus.Infof("Done running net demo ------------------")
 }
 
-func (s *systemtestSuite) BaremetalTestInstall(c *C) {
+//Function to check if net_demo_installer script ran properly.
+//Uses the output of docker info on all the nodes in the swarm cluster.
+func (s *systemtestSuite) CheckNetDemoInstallation(c *C) {
 	outChan := make(chan string, 100)
 	mystr := "docker info | grep Nodes"
-
-	i := 1
-	var err, out, out1 string
-	for _, node := range s.nodes {
-
-		if i == 1 {
-			out1, _ = node.runCommand(mystr)
-			outChan <- out1
-			if out1 == "" {
-				err = "The script net_demo_installer didnt run properly."
-				break
-			}
-		} else {
-			out, _ = node.runCommand(mystr)
+  var err, out, out1 string
+	out1, _ = s.nodes[0].runCommand(mystr)
+	if out1 == "" {
+		err = "The script net_demo_installer didn't run properly."
+		c.Assert(err, Equals, "")
+	}
+	for i := 1; i < len(s.nodes); i++ {
+			out, _ = s.nodes[i].runCommand(mystr)
 			outChan <- out
 			if out != out1 {
-				err = "The script net_demo_installer didnt run properly."
+				err = "The script net_demo_installer didn't run properly."
 				break
 			}
-		}
 	}
 	logrus.Infof("Deleting files related to net_demo_installer")
 	os.Remove("genInventoryFile.py")

@@ -73,7 +73,7 @@ func TestMain(m *M) {
 	} else {
 		flag.StringVar(&sts.fwdMode, "fwd-mode", "routing", "forwarding mode to start the test ")
 	}
-	if mastbasic.Platform == "Baremetal" {
+	if mastbasic.Platform == "baremetal" {
 		logrus.Infof("Starting net_demo_installer")
 		sts.BaremetalSetup()
 	}
@@ -95,10 +95,10 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 	s.basicInfo, s.infoHost, s.infoGlob = getMaster("cfg.json")
 
 	switch s.basicInfo.Platform {
-	case "Baremetal":
+	case "baremetal":
 		s.SetUpSuiteBaremetal(c)
 
-	case "Vagrant":
+	case "vagrant":
 		s.SetUpSuiteVagrant(c)
 	} // end of switch case
 
@@ -110,7 +110,7 @@ func (s *systemtestSuite) SetUpTest(c *C) {
 
 	switch s.basicInfo.Platform {
 
-	case "Baremetal":
+	case "baremetal":
 		logrus.Infof("-----Inside  switch case ------")
 		for _, node := range s.nodes {
 			node.exec.cleanupContainers()
@@ -159,7 +159,7 @@ func (s *systemtestSuite) SetUpTest(c *C) {
 			c.Assert((i < 10), Equals, true)
 			time.Sleep(500 * time.Millisecond)
 		}
-	case "Vagrant":
+	case "vagrant":
 		for _, node := range s.nodes {
 			node.exec.cleanupContainers()
 			node.exec.cleanupDockerNetwork()
