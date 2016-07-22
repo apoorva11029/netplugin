@@ -1025,7 +1025,11 @@ func (s *systemtestSuite) SetUpSuiteVagrant(c *C) {
 func (s *systemtestSuite) BaremetalSetup() {
 	cmd := exec.Command("chmod +x", "net_demo_installer")
 	cmd.Run()
-	cmd = exec.Command("./net_demo_installer", "-ar")
+	if s.basicInfo.AciMode=="on" {
+	cmd = exec.Command("./net_demo_installer", "-ars")
+	} else {
+	cmd = exec.Command("./net_demo_installer", "-rs")
+	}
 	// setup log file
 	file, err := os.Create("server.log")
 	if err != nil {

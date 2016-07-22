@@ -1,4 +1,4 @@
-node2 | SUCCESS | rc=0 >>
+node1 | SUCCESS | rc=0 >>
 ## Sudoers allows particular users to run various commands as
 ## the root user, without needing the root password.
 ##
@@ -119,7 +119,7 @@ admin	ALL=(ALL) 	NOPASSWD: ALL
 
 ## Read drop-in files from /etc/sudoers.d (the # here does not mean a comment)
 #includedir /etc/sudoers.d
-node1 | SUCCESS | rc=0 >>
+node2 | SUCCESS | rc=0 >>
 ## Sudoers allows particular users to run various commands as
 ## the root user, without needing the root password.
 ##
