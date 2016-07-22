@@ -5,7 +5,7 @@ Loaded plugins: fastestmirror, langpacks
 Loading mirror speeds from cached hostfile
  * base: centos.unixheads.org
  * epel: reflector.westga.edu
- * extras: mirrors.lga7.us.voxel.net
+ * extras: mirrors.mit.edu
  * updates: mirror.atlanticmetro.net
 Package epel-release-7-7.noarch already installed and latest version
 No package epel-testing available.
@@ -16,8 +16,8 @@ Loaded plugins: fastestmirror, langpacks
 Loading mirror speeds from cached hostfile
  * base: centos.unixheads.org
  * epel: reflector.westga.edu
- * epel-testing: fedora-epel.mirror.lstn.net
- * extras: mirror.cs.vt.edu
+ * epel-testing: reflector.westga.edu
+ * extras: centos.mirrors.tds.net
  * updates: mirror.cc.columbia.edu
 Package ansible-2.1.0.0-1.el7.noarch already installed and latest version
 Nothing to do
@@ -31,7 +31,7 @@ Netplugin Cluster will be set up on the following servers in ACI mode:
   10.193.246.71  
  
  
-Cloning into 'ansible'...
+Current branch master is up to date.
 Verifying ansible reachability
 Verifying OS versions on all hosts...
 OS is supported.
@@ -63,16 +63,16 @@ Stopping all services
 PLAY [all] *********************************************************************
 
 TASK [setup] *******************************************************************
-ok: [node2]
 ok: [node1]
+ok: [node2]
 
 TASK [include_vars] ************************************************************
-ok: [node2] => (item=contiv_network)
 ok: [node1] => (item=contiv_network)
+ok: [node2] => (item=contiv_network)
 ok: [node1] => (item=contiv_storage)
 ok: [node2] => (item=contiv_storage)
-ok: [node2] => (item=swarm)
 ok: [node1] => (item=swarm)
+ok: [node2] => (item=swarm)
 ok: [node2] => (item=ucp)
 ok: [node1] => (item=ucp)
 ok: [node2] => (item=docker)
@@ -81,96 +81,94 @@ ok: [node2] => (item=etcd)
 ok: [node1] => (item=etcd)
 
 TASK [include] *****************************************************************
-included: /home/admin/src/github.com/contiv/netplugin/systemtests/ansible/roles/ucarp/tasks/cleanup.yml for node1, node2
-included: /home/admin/src/github.com/contiv/netplugin/systemtests/ansible/roles/contiv_network/tasks/cleanup.yml for node1, node2
-included: /home/admin/src/github.com/contiv/netplugin/systemtests/ansible/roles/contiv_storage/tasks/cleanup.yml for node1, node2
-included: /home/admin/src/github.com/contiv/netplugin/systemtests/ansible/roles/swarm/tasks/cleanup.yml for node1, node2
-included: /home/admin/src/github.com/contiv/netplugin/systemtests/ansible/roles/ucp/tasks/cleanup.yml for node1, node2
-included: /home/admin/src/github.com/contiv/netplugin/systemtests/ansible/roles/etcd/tasks/cleanup.yml for node1, node2
-included: /home/admin/src/github.com/contiv/netplugin/systemtests/ansible/roles/nfs/tasks/cleanup.yml for node1, node2
-included: /home/admin/src/github.com/contiv/netplugin/systemtests/ansible/roles/docker/tasks/cleanup.yml for node1, node2
+included: /home/admin/src/github.com/contiv/netplugin/systemtests/ansible/roles/ucarp/tasks/cleanup.yml for node2, node1
+included: /home/admin/src/github.com/contiv/netplugin/systemtests/ansible/roles/contiv_network/tasks/cleanup.yml for node2, node1
+included: /home/admin/src/github.com/contiv/netplugin/systemtests/ansible/roles/contiv_storage/tasks/cleanup.yml for node2, node1
+included: /home/admin/src/github.com/contiv/netplugin/systemtests/ansible/roles/swarm/tasks/cleanup.yml for node2, node1
+included: /home/admin/src/github.com/contiv/netplugin/systemtests/ansible/roles/ucp/tasks/cleanup.yml for node2, node1
+included: /home/admin/src/github.com/contiv/netplugin/systemtests/ansible/roles/etcd/tasks/cleanup.yml for node2, node1
+included: /home/admin/src/github.com/contiv/netplugin/systemtests/ansible/roles/nfs/tasks/cleanup.yml for node2, node1
+included: /home/admin/src/github.com/contiv/netplugin/systemtests/ansible/roles/docker/tasks/cleanup.yml for node2, node1
 
 TASK [stop ucarp] **************************************************************
-fatal: [node1]: FAILED! => {"changed": false, "failed": true, "msg": "systemd could not find the requested service \"'ucarp'\": "}
-...ignoring
 fatal: [node2]: FAILED! => {"changed": false, "failed": true, "msg": "systemd could not find the requested service \"'ucarp'\": "}
+...ignoring
+fatal: [node1]: FAILED! => {"changed": false, "failed": true, "msg": "systemd could not find the requested service \"'ucarp'\": "}
 ...ignoring
 
 TASK [stop netmaster] **********************************************************
-ok: [node1]
-ok: [node2]
+fatal: [node1]: FAILED! => {"changed": false, "failed": true, "msg": "failure 1 running systemctl show for 'netmaster': Failed to get properties: Access denied\n"}
+...ignoring
+fatal: [node2]: FAILED! => {"changed": false, "failed": true, "msg": "failure 1 running systemctl show for 'netmaster': Failed to get properties: Access denied\n"}
+...ignoring
 
 TASK [stop aci-gw container] ***************************************************
 ok: [node1]
 ok: [node2]
 
 TASK [stop netplugin] **********************************************************
-ok: [node1]
-ok: [node2]
+fatal: [node2]: FAILED! => {"changed": false, "failed": true, "msg": "failure 1 running systemctl show for 'netplugin': Failed to get properties: Access denied\n"}
+...ignoring
+fatal: [node1]: FAILED! => {"changed": false, "failed": true, "msg": "failure 1 running systemctl show for 'netplugin': Failed to get properties: Access denied\n"}
+...ignoring
 
 TASK [cleanup netmaster host alias] ********************************************
-ok: [node2]
-ok: [node1]
+changed: [node2]
+changed: [node1]
 
 TASK [cleanup iptables for contiv network control plane] ***********************
-failed: [node1] (item=9001) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 9001 -j ACCEPT -m comment --comment \"contiv network traffic (9001)\"", "delta": "0:00:00.004613", "end": "2016-07-21 19:27:01.517527", "failed": true, "item": 9001, "rc": 1, "start": "2016-07-21 19:27:01.512914", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-failed: [node2] (item=9001) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 9001 -j ACCEPT -m comment --comment \"contiv network traffic (9001)\"", "delta": "0:00:00.004706", "end": "2016-07-21 19:27:01.526520", "failed": true, "item": 9001, "rc": 1, "start": "2016-07-21 19:27:01.521814", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-failed: [node2] (item=9002) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 9002 -j ACCEPT -m comment --comment \"contiv network traffic (9002)\"", "delta": "0:00:00.003647", "end": "2016-07-21 19:27:01.755547", "failed": true, "item": 9002, "rc": 1, "start": "2016-07-21 19:27:01.751900", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-failed: [node1] (item=9002) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 9002 -j ACCEPT -m comment --comment \"contiv network traffic (9002)\"", "delta": "0:00:00.003664", "end": "2016-07-21 19:27:01.755262", "failed": true, "item": 9002, "rc": 1, "start": "2016-07-21 19:27:01.751598", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-failed: [node2] (item=9003) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 9003 -j ACCEPT -m comment --comment \"contiv network traffic (9003)\"", "delta": "0:00:00.003586", "end": "2016-07-21 19:27:01.984004", "failed": true, "item": 9003, "rc": 1, "start": "2016-07-21 19:27:01.980418", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-failed: [node1] (item=9003) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 9003 -j ACCEPT -m comment --comment \"contiv network traffic (9003)\"", "delta": "0:00:00.003673", "end": "2016-07-21 19:27:01.988235", "failed": true, "item": 9003, "rc": 1, "start": "2016-07-21 19:27:01.984562", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-failed: [node2] (item=9999) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 9999 -j ACCEPT -m comment --comment \"contiv network traffic (9999)\"", "delta": "0:00:00.003655", "end": "2016-07-21 19:27:02.213187", "failed": true, "item": 9999, "rc": 1, "start": "2016-07-21 19:27:02.209532", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-failed: [node1] (item=9999) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 9999 -j ACCEPT -m comment --comment \"contiv network traffic (9999)\"", "delta": "0:00:00.003589", "end": "2016-07-21 19:27:02.219761", "failed": true, "item": 9999, "rc": 1, "start": "2016-07-21 19:27:02.216172", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-failed: [node2] (item=8080) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 8080 -j ACCEPT -m comment --comment \"contiv network traffic (8080)\"", "delta": "0:00:00.003617", "end": "2016-07-21 19:27:02.438538", "failed": true, "item": 8080, "rc": 1, "start": "2016-07-21 19:27:02.434921", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-failed: [node1] (item=8080) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 8080 -j ACCEPT -m comment --comment \"contiv network traffic (8080)\"", "delta": "0:00:00.003595", "end": "2016-07-21 19:27:02.453305", "failed": true, "item": 8080, "rc": 1, "start": "2016-07-21 19:27:02.449710", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-failed: [node2] (item=179) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 179 -j ACCEPT -m comment --comment \"contiv network traffic (179)\"", "delta": "0:00:00.003710", "end": "2016-07-21 19:27:02.657437", "failed": true, "item": 179, "rc": 1, "start": "2016-07-21 19:27:02.653727", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-...ignoring
-failed: [node1] (item=179) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 179 -j ACCEPT -m comment --comment \"contiv network traffic (179)\"", "delta": "0:00:00.003656", "end": "2016-07-21 19:27:02.681160", "failed": true, "item": 179, "rc": 1, "start": "2016-07-21 19:27:02.677504", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-...ignoring
+changed: [node1] => (item=9001)
+changed: [node2] => (item=9001)
+changed: [node1] => (item=9002)
+changed: [node2] => (item=9002)
+changed: [node1] => (item=9003)
+changed: [node2] => (item=9003)
+changed: [node1] => (item=9999)
+changed: [node2] => (item=9999)
+changed: [node1] => (item=8080)
+changed: [node2] => (item=8080)
+changed: [node1] => (item=179)
+changed: [node2] => (item=179)
 
 TASK [include] *****************************************************************
 included: /home/admin/src/github.com/contiv/netplugin/systemtests/ansible/roles/contiv_network/tasks/ovs_cleanup.yml for node1, node2
 
 TASK [cleanup ovs vlan state] **************************************************
-fatal: [node1]: FAILED! => {"changed": true, "cmd": "ovs-vsctl del-br contivVlanBridge", "delta": "0:00:00.005365", "end": "2016-07-21 19:27:03.030779", "failed": true, "rc": 1, "start": "2016-07-21 19:27:03.025414", "stderr": "ovs-vsctl: no bridge named contivVlanBridge", "stdout": "", "stdout_lines": [], "warnings": []}
-...ignoring
-fatal: [node2]: FAILED! => {"changed": true, "cmd": "ovs-vsctl del-br contivVlanBridge", "delta": "0:00:00.005530", "end": "2016-07-21 19:27:03.042769", "failed": true, "rc": 1, "start": "2016-07-21 19:27:03.037239", "stderr": "ovs-vsctl: no bridge named contivVlanBridge", "stdout": "", "stdout_lines": [], "warnings": []}
-...ignoring
+changed: [node1]
+changed: [node2]
 
 TASK [cleanup ovs vxlan state] *************************************************
-fatal: [node2]: FAILED! => {"changed": true, "cmd": "ovs-vsctl del-br contivVxlanBridge", "delta": "0:00:00.004799", "end": "2016-07-21 19:27:03.294701", "failed": true, "rc": 1, "start": "2016-07-21 19:27:03.289902", "stderr": "ovs-vsctl: no bridge named contivVxlanBridge", "stdout": "", "stdout_lines": [], "warnings": []}
-...ignoring
-fatal: [node1]: FAILED! => {"changed": true, "cmd": "ovs-vsctl del-br contivVxlanBridge", "delta": "0:00:00.007327", "end": "2016-07-21 19:27:03.325129", "failed": true, "rc": 1, "start": "2016-07-21 19:27:03.317802", "stderr": "ovs-vsctl: no bridge named contivVxlanBridge", "stdout": "", "stdout_lines": [], "warnings": []}
-...ignoring
+changed: [node1]
+changed: [node2]
 
 TASK [cleanup ports] ***********************************************************
-changed: [node2]
 changed: [node1]
+changed: [node2]
 
 TASK [debug] *******************************************************************
-ok: [node2] => {
+ok: [node1] => {
     "ports": {
         "changed": true, 
         "cmd": "set -x; for p in $(ifconfig | grep vport | awk '{print $1}'); do\n ip link delete $p type veth;\n done", 
-        "delta": "0:00:00.007971", 
-        "end": "2016-07-21 19:27:03.586662", 
+        "delta": "0:00:00.051158", 
+        "end": "2016-07-22 10:03:44.011036", 
         "rc": 0, 
-        "start": "2016-07-21 19:27:03.578691", 
-        "stderr": "++ ifconfig\n++ grep vport\n++ awk '{print $1}'", 
+        "start": "2016-07-22 10:03:43.959878", 
+        "stderr": "++ ifconfig\n++ grep vport\n++ awk '{print $1}'\n+ for p in '$(ifconfig | grep vport | awk '\\''{print $1}'\\'')'\n+ ip link delete vvport1: type veth\n+ for p in '$(ifconfig | grep vport | awk '\\''{print $1}'\\'')'\n+ ip link delete vvport2: type veth", 
         "stdout": "", 
         "stdout_lines": [], 
         "warnings": []
     }
 }
-ok: [node1] => {
+ok: [node2] => {
     "ports": {
         "changed": true, 
         "cmd": "set -x; for p in $(ifconfig | grep vport | awk '{print $1}'); do\n ip link delete $p type veth;\n done", 
-        "delta": "0:00:00.009390", 
-        "end": "2016-07-21 19:27:03.608742", 
+        "delta": "0:00:00.042988", 
+        "end": "2016-07-22 10:03:44.019480", 
         "rc": 0, 
-        "start": "2016-07-21 19:27:03.599352", 
-        "stderr": "++ ifconfig\n++ grep vport\n++ awk '{print $1}'", 
+        "start": "2016-07-22 10:03:43.976492", 
+        "stderr": "++ ifconfig\n++ grep vport\n++ awk '{print $1}'\n+ for p in '$(ifconfig | grep vport | awk '\\''{print $1}'\\'')'\n+ ip link delete vvport3: type veth\n+ for p in '$(ifconfig | grep vport | awk '\\''{print $1}'\\'')'\n+ ip link delete vvport4: type veth", 
         "stdout": "", 
         "stdout_lines": [], 
         "warnings": []
@@ -178,21 +176,17 @@ ok: [node1] => {
 }
 
 TASK [deny openvswitch_t type in selinux] **************************************
-fatal: [node1]: FAILED! => {"changed": true, "cmd": "semanage permissive -d openvswitch_t", "delta": "0:00:02.774006", "end": "2016-07-21 19:27:06.742533", "failed": true, "rc": 1, "start": "2016-07-21 19:27:03.968527", "stderr": "libsemanage.get_module_file_by_name: Module permissive_openvswitch_t was not found.\nValueError: Could not remove permissive domain openvswitch_t (remove failed)", "stdout": "", "stdout_lines": [], "warnings": []}
-...ignoring
-fatal: [node2]: FAILED! => {"changed": true, "cmd": "semanage permissive -d openvswitch_t", "delta": "0:00:02.795543", "end": "2016-07-21 19:27:06.795194", "failed": true, "rc": 1, "start": "2016-07-21 19:27:03.999651", "stderr": "libsemanage.get_module_file_by_name: Module permissive_openvswitch_t was not found.\nValueError: Could not remove permissive domain openvswitch_t (remove failed)", "stdout": "", "stdout_lines": [], "warnings": []}
-...ignoring
+changed: [node1]
+changed: [node2]
 
 TASK [cleanup iptables for vxlan vtep port] ************************************
-failed: [node2] (item=4789) => {"changed": true, "cmd": "iptables -D INPUT -p udp --dport 4789 -j ACCEPT -m comment --comment \"contiv network traffic (4789)\"", "delta": "0:00:00.003792", "end": "2016-07-21 19:27:07.079276", "failed": true, "item": 4789, "rc": 1, "start": "2016-07-21 19:27:07.075484", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-failed: [node1] (item=4789) => {"changed": true, "cmd": "iptables -D INPUT -p udp --dport 4789 -j ACCEPT -m comment --comment \"contiv network traffic (4789)\"", "delta": "0:00:00.003830", "end": "2016-07-21 19:27:07.080387", "failed": true, "item": 4789, "rc": 1, "start": "2016-07-21 19:27:07.076557", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-...ignoring
-...ignoring
+changed: [node1] => (item=4789)
+changed: [node2] => (item=4789)
 
 TASK [stop volmaster] **********************************************************
-fatal: [node2]: FAILED! => {"changed": false, "failed": true, "msg": "systemd could not find the requested service \"'volmaster'\": "}
-...ignoring
 fatal: [node1]: FAILED! => {"changed": false, "failed": true, "msg": "systemd could not find the requested service \"'volmaster'\": "}
+...ignoring
+fatal: [node2]: FAILED! => {"changed": false, "failed": true, "msg": "systemd could not find the requested service \"'volmaster'\": "}
 ...ignoring
 
 TASK [stop volsupervisor] ******************************************************
@@ -208,14 +202,12 @@ fatal: [node2]: FAILED! => {"changed": false, "failed": true, "msg": "systemd co
 ...ignoring
 
 TASK [stop swarm] **************************************************************
-ok: [node2]
-ok: [node1]
+changed: [node2]
+changed: [node1]
 
 TASK [cleanup iptables for swarm] **********************************************
-failed: [node2] (item=2375) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 2375 -j ACCEPT -m comment --comment \"swarm traffic (2375)\"", "delta": "0:00:00.003681", "end": "2016-07-21 19:27:08.340669", "failed": true, "item": 2375, "rc": 1, "start": "2016-07-21 19:27:08.336988", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-...ignoring
-failed: [node1] (item=2375) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 2375 -j ACCEPT -m comment --comment \"swarm traffic (2375)\"", "delta": "0:00:00.003694", "end": "2016-07-21 19:27:08.345119", "failed": true, "item": 2375, "rc": 1, "start": "2016-07-21 19:27:08.341425", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-...ignoring
+changed: [node1] => (item=2375)
+changed: [node2] => (item=2375)
 
 TASK [stop ucp] ****************************************************************
 fatal: [node1]: FAILED! => {"changed": false, "failed": true, "msg": "systemd could not find the requested service \"'ucp'\": "}
@@ -226,68 +218,66 @@ fatal: [node2]: FAILED! => {"changed": false, "failed": true, "msg": "systemd co
 TASK [cleanup ucp files from remote] *******************************************
 ok: [node1] => (item=ucp-fingerprint)
 ok: [node2] => (item=ucp-fingerprint)
-ok: [node1] => (item=ucp-instance-id)
 ok: [node2] => (item=ucp-instance-id)
-ok: [node1] => (item=ucp-certificate-backup.tar)
+ok: [node1] => (item=ucp-instance-id)
 ok: [node2] => (item=ucp-certificate-backup.tar)
+ok: [node1] => (item=ucp-certificate-backup.tar)
 
 TASK [cleanup ucp generated docker config file] ********************************
-ok: [node2]
 ok: [node1]
+ok: [node2]
 
 TASK [cleanup iptables for ucp] ************************************************
-failed: [node1] (item=12376) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 12376 -j ACCEPT -m comment --comment \"ucp traffic (12376)\"", "delta": "0:00:00.003629", "end": "2016-07-21 19:27:09.874339", "failed": true, "item": "12376", "rc": 1, "start": "2016-07-21 19:27:09.870710", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-failed: [node2] (item=12376) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 12376 -j ACCEPT -m comment --comment \"ucp traffic (12376)\"", "delta": "0:00:00.003594", "end": "2016-07-21 19:27:09.879727", "failed": true, "item": "12376", "rc": 1, "start": "2016-07-21 19:27:09.876133", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-failed: [node2] (item=12379) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 12379 -j ACCEPT -m comment --comment \"ucp traffic (12379)\"", "delta": "0:00:00.003589", "end": "2016-07-21 19:27:10.098600", "failed": true, "item": "12379", "rc": 1, "start": "2016-07-21 19:27:10.095011", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-failed: [node1] (item=12379) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 12379 -j ACCEPT -m comment --comment \"ucp traffic (12379)\"", "delta": "0:00:00.003611", "end": "2016-07-21 19:27:10.100141", "failed": true, "item": "12379", "rc": 1, "start": "2016-07-21 19:27:10.096530", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-failed: [node2] (item=12380) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 12380 -j ACCEPT -m comment --comment \"ucp traffic (12380)\"", "delta": "0:00:00.003601", "end": "2016-07-21 19:27:10.324020", "failed": true, "item": "12380", "rc": 1, "start": "2016-07-21 19:27:10.320419", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-failed: [node1] (item=12380) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 12380 -j ACCEPT -m comment --comment \"ucp traffic (12380)\"", "delta": "0:00:00.003634", "end": "2016-07-21 19:27:10.332239", "failed": true, "item": "12380", "rc": 1, "start": "2016-07-21 19:27:10.328605", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-failed: [node2] (item=12381) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 12381 -j ACCEPT -m comment --comment \"ucp traffic (12381)\"", "delta": "0:00:00.003729", "end": "2016-07-21 19:27:10.549653", "failed": true, "item": "12381", "rc": 1, "start": "2016-07-21 19:27:10.545924", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-failed: [node1] (item=12381) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 12381 -j ACCEPT -m comment --comment \"ucp traffic (12381)\"", "delta": "0:00:00.003601", "end": "2016-07-21 19:27:10.574133", "failed": true, "item": "12381", "rc": 1, "start": "2016-07-21 19:27:10.570532", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-failed: [node2] (item=12382) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 12382 -j ACCEPT -m comment --comment \"ucp traffic (12382)\"", "delta": "0:00:00.003597", "end": "2016-07-21 19:27:10.767777", "failed": true, "item": "12382", "rc": 1, "start": "2016-07-21 19:27:10.764180", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-failed: [node1] (item=12382) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 12382 -j ACCEPT -m comment --comment \"ucp traffic (12382)\"", "delta": "0:00:00.006101", "end": "2016-07-21 19:27:10.796667", "failed": true, "item": "12382", "rc": 1, "start": "2016-07-21 19:27:10.790566", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-failed: [node2] (item=12383) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 12383 -j ACCEPT -m comment --comment \"ucp traffic (12383)\"", "delta": "0:00:00.003603", "end": "2016-07-21 19:27:10.989085", "failed": true, "item": "12383", "rc": 1, "start": "2016-07-21 19:27:10.985482", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-failed: [node1] (item=12383) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 12383 -j ACCEPT -m comment --comment \"ucp traffic (12383)\"", "delta": "0:00:00.003584", "end": "2016-07-21 19:27:11.019142", "failed": true, "item": "12383", "rc": 1, "start": "2016-07-21 19:27:11.015558", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-failed: [node2] (item=12384) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 12384 -j ACCEPT -m comment --comment \"ucp traffic (12384)\"", "delta": "0:00:00.003633", "end": "2016-07-21 19:27:11.204462", "failed": true, "item": "12384", "rc": 1, "start": "2016-07-21 19:27:11.200829", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-failed: [node1] (item=12384) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 12384 -j ACCEPT -m comment --comment \"ucp traffic (12384)\"", "delta": "0:00:00.003655", "end": "2016-07-21 19:27:11.244527", "failed": true, "item": "12384", "rc": 1, "start": "2016-07-21 19:27:11.240872", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-failed: [node2] (item=12385) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 12385 -j ACCEPT -m comment --comment \"ucp traffic (12385)\"", "delta": "0:00:00.003589", "end": "2016-07-21 19:27:11.428296", "failed": true, "item": "12385", "rc": 1, "start": "2016-07-21 19:27:11.424707", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-failed: [node1] (item=12385) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 12385 -j ACCEPT -m comment --comment \"ucp traffic (12385)\"", "delta": "0:00:00.003617", "end": "2016-07-21 19:27:11.468314", "failed": true, "item": "12385", "rc": 1, "start": "2016-07-21 19:27:11.464697", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-failed: [node2] (item=12386) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 12386 -j ACCEPT -m comment --comment \"ucp traffic (12386)\"", "delta": "0:00:00.003611", "end": "2016-07-21 19:27:11.659822", "failed": true, "item": "12386", "rc": 1, "start": "2016-07-21 19:27:11.656211", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-failed: [node1] (item=12386) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 12386 -j ACCEPT -m comment --comment \"ucp traffic (12386)\"", "delta": "0:00:00.003566", "end": "2016-07-21 19:27:11.708915", "failed": true, "item": "12386", "rc": 1, "start": "2016-07-21 19:27:11.705349", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-failed: [node2] (item=2375) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 2375 -j ACCEPT -m comment --comment \"ucp traffic (2375)\"", "delta": "0:00:00.003599", "end": "2016-07-21 19:27:11.880373", "failed": true, "item": "2375", "rc": 1, "start": "2016-07-21 19:27:11.876774", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-failed: [node1] (item=2375) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 2375 -j ACCEPT -m comment --comment \"ucp traffic (2375)\"", "delta": "0:00:00.003678", "end": "2016-07-21 19:27:11.935221", "failed": true, "item": "2375", "rc": 1, "start": "2016-07-21 19:27:11.931543", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-failed: [node2] (item=2376) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 2376 -j ACCEPT -m comment --comment \"ucp traffic (2376)\"", "delta": "0:00:00.003576", "end": "2016-07-21 19:27:12.103616", "failed": true, "item": "2376", "rc": 1, "start": "2016-07-21 19:27:12.100040", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-failed: [node1] (item=2376) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 2376 -j ACCEPT -m comment --comment \"ucp traffic (2376)\"", "delta": "0:00:00.003762", "end": "2016-07-21 19:27:12.156990", "failed": true, "item": "2376", "rc": 1, "start": "2016-07-21 19:27:12.153228", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-failed: [node2] (item=443) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 443 -j ACCEPT -m comment --comment \"ucp traffic (443)\"", "delta": "0:00:00.003620", "end": "2016-07-21 19:27:12.325192", "failed": true, "item": "443", "rc": 1, "start": "2016-07-21 19:27:12.321572", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
+failed: [node2] (item=12376) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 12376 -j ACCEPT -m comment --comment \"ucp traffic (12376)\"", "delta": "0:00:00.003703", "end": "2016-07-22 10:04:03.656834", "failed": true, "item": "12376", "rc": 1, "start": "2016-07-22 10:04:03.653131", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
+failed: [node1] (item=12376) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 12376 -j ACCEPT -m comment --comment \"ucp traffic (12376)\"", "delta": "0:00:00.003719", "end": "2016-07-22 10:04:03.650062", "failed": true, "item": "12376", "rc": 1, "start": "2016-07-22 10:04:03.646343", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
+failed: [node1] (item=12379) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 12379 -j ACCEPT -m comment --comment \"ucp traffic (12379)\"", "delta": "0:00:00.003726", "end": "2016-07-22 10:04:03.898532", "failed": true, "item": "12379", "rc": 1, "start": "2016-07-22 10:04:03.894806", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
+failed: [node2] (item=12379) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 12379 -j ACCEPT -m comment --comment \"ucp traffic (12379)\"", "delta": "0:00:00.003723", "end": "2016-07-22 10:04:03.916546", "failed": true, "item": "12379", "rc": 1, "start": "2016-07-22 10:04:03.912823", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
+failed: [node2] (item=12380) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 12380 -j ACCEPT -m comment --comment \"ucp traffic (12380)\"", "delta": "0:00:00.003705", "end": "2016-07-22 10:04:04.145310", "failed": true, "item": "12380", "rc": 1, "start": "2016-07-22 10:04:04.141605", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
+failed: [node1] (item=12380) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 12380 -j ACCEPT -m comment --comment \"ucp traffic (12380)\"", "delta": "0:00:00.003723", "end": "2016-07-22 10:04:04.143971", "failed": true, "item": "12380", "rc": 1, "start": "2016-07-22 10:04:04.140248", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
+failed: [node1] (item=12381) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 12381 -j ACCEPT -m comment --comment \"ucp traffic (12381)\"", "delta": "0:00:00.003756", "end": "2016-07-22 10:04:04.367526", "failed": true, "item": "12381", "rc": 1, "start": "2016-07-22 10:04:04.363770", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
+failed: [node2] (item=12381) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 12381 -j ACCEPT -m comment --comment \"ucp traffic (12381)\"", "delta": "0:00:00.003720", "end": "2016-07-22 10:04:04.370190", "failed": true, "item": "12381", "rc": 1, "start": "2016-07-22 10:04:04.366470", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
+failed: [node2] (item=12382) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 12382 -j ACCEPT -m comment --comment \"ucp traffic (12382)\"", "delta": "0:00:00.003661", "end": "2016-07-22 10:04:04.608520", "failed": true, "item": "12382", "rc": 1, "start": "2016-07-22 10:04:04.604859", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
+failed: [node1] (item=12382) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 12382 -j ACCEPT -m comment --comment \"ucp traffic (12382)\"", "delta": "0:00:00.003718", "end": "2016-07-22 10:04:04.606207", "failed": true, "item": "12382", "rc": 1, "start": "2016-07-22 10:04:04.602489", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
+failed: [node2] (item=12383) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 12383 -j ACCEPT -m comment --comment \"ucp traffic (12383)\"", "delta": "0:00:00.003699", "end": "2016-07-22 10:04:04.850790", "failed": true, "item": "12383", "rc": 1, "start": "2016-07-22 10:04:04.847091", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
+failed: [node1] (item=12383) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 12383 -j ACCEPT -m comment --comment \"ucp traffic (12383)\"", "delta": "0:00:00.003797", "end": "2016-07-22 10:04:04.843338", "failed": true, "item": "12383", "rc": 1, "start": "2016-07-22 10:04:04.839541", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
+failed: [node2] (item=12384) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 12384 -j ACCEPT -m comment --comment \"ucp traffic (12384)\"", "delta": "0:00:00.003738", "end": "2016-07-22 10:04:05.077697", "failed": true, "item": "12384", "rc": 1, "start": "2016-07-22 10:04:05.073959", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
+failed: [node1] (item=12384) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 12384 -j ACCEPT -m comment --comment \"ucp traffic (12384)\"", "delta": "0:00:00.003751", "end": "2016-07-22 10:04:05.073368", "failed": true, "item": "12384", "rc": 1, "start": "2016-07-22 10:04:05.069617", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
+failed: [node1] (item=12385) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 12385 -j ACCEPT -m comment --comment \"ucp traffic (12385)\"", "delta": "0:00:00.003685", "end": "2016-07-22 10:04:05.293722", "failed": true, "item": "12385", "rc": 1, "start": "2016-07-22 10:04:05.290037", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
+failed: [node2] (item=12385) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 12385 -j ACCEPT -m comment --comment \"ucp traffic (12385)\"", "delta": "0:00:00.003695", "end": "2016-07-22 10:04:05.302624", "failed": true, "item": "12385", "rc": 1, "start": "2016-07-22 10:04:05.298929", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
+failed: [node1] (item=12386) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 12386 -j ACCEPT -m comment --comment \"ucp traffic (12386)\"", "delta": "0:00:00.003722", "end": "2016-07-22 10:04:05.517672", "failed": true, "item": "12386", "rc": 1, "start": "2016-07-22 10:04:05.513950", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
+failed: [node2] (item=12386) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 12386 -j ACCEPT -m comment --comment \"ucp traffic (12386)\"", "delta": "0:00:00.003787", "end": "2016-07-22 10:04:05.535632", "failed": true, "item": "12386", "rc": 1, "start": "2016-07-22 10:04:05.531845", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
+failed: [node1] (item=2375) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 2375 -j ACCEPT -m comment --comment \"ucp traffic (2375)\"", "delta": "0:00:00.003685", "end": "2016-07-22 10:04:05.749646", "failed": true, "item": "2375", "rc": 1, "start": "2016-07-22 10:04:05.745961", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
+failed: [node2] (item=2375) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 2375 -j ACCEPT -m comment --comment \"ucp traffic (2375)\"", "delta": "0:00:00.003696", "end": "2016-07-22 10:04:05.760677", "failed": true, "item": "2375", "rc": 1, "start": "2016-07-22 10:04:05.756981", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
+failed: [node1] (item=2376) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 2376 -j ACCEPT -m comment --comment \"ucp traffic (2376)\"", "delta": "0:00:00.003743", "end": "2016-07-22 10:04:05.989771", "failed": true, "item": "2376", "rc": 1, "start": "2016-07-22 10:04:05.986028", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
+failed: [node2] (item=2376) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 2376 -j ACCEPT -m comment --comment \"ucp traffic (2376)\"", "delta": "0:00:00.003710", "end": "2016-07-22 10:04:05.996012", "failed": true, "item": "2376", "rc": 1, "start": "2016-07-22 10:04:05.992302", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
+failed: [node1] (item=443) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 443 -j ACCEPT -m comment --comment \"ucp traffic (443)\"", "delta": "0:00:00.004175", "end": "2016-07-22 10:04:06.216806", "failed": true, "item": "443", "rc": 1, "start": "2016-07-22 10:04:06.212631", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
 ...ignoring
-failed: [node1] (item=443) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 443 -j ACCEPT -m comment --comment \"ucp traffic (443)\"", "delta": "0:00:00.003662", "end": "2016-07-21 19:27:12.379416", "failed": true, "item": "443", "rc": 1, "start": "2016-07-21 19:27:12.375754", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
+failed: [node2] (item=443) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 443 -j ACCEPT -m comment --comment \"ucp traffic (443)\"", "delta": "0:00:00.003672", "end": "2016-07-22 10:04:06.222960", "failed": true, "item": "443", "rc": 1, "start": "2016-07-22 10:04:06.219288", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
 ...ignoring
 
 TASK [stop etcd] ***************************************************************
-ok: [node2]
-ok: [node1]
+changed: [node2]
+changed: [node1]
 
 TASK [cleanup iptables for etcd] ***********************************************
-failed: [node1] (item=2379) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 2379 -j ACCEPT -m comment --comment \"etcd traffic (2379)\"", "delta": "0:00:00.003661", "end": "2016-07-21 19:27:12.885163", "failed": true, "item": 2379, "rc": 1, "start": "2016-07-21 19:27:12.881502", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-failed: [node2] (item=2379) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 2379 -j ACCEPT -m comment --comment \"etcd traffic (2379)\"", "delta": "0:00:00.003682", "end": "2016-07-21 19:27:12.886797", "failed": true, "item": 2379, "rc": 1, "start": "2016-07-21 19:27:12.883115", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-failed: [node2] (item=4001) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 4001 -j ACCEPT -m comment --comment \"etcd traffic (4001)\"", "delta": "0:00:00.003581", "end": "2016-07-21 19:27:13.102649", "failed": true, "item": 4001, "rc": 1, "start": "2016-07-21 19:27:13.099068", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-failed: [node1] (item=4001) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 4001 -j ACCEPT -m comment --comment \"etcd traffic (4001)\"", "delta": "0:00:00.003649", "end": "2016-07-21 19:27:13.101751", "failed": true, "item": 4001, "rc": 1, "start": "2016-07-21 19:27:13.098102", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-failed: [node1] (item=2380) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 2380 -j ACCEPT -m comment --comment \"etcd traffic (2380)\"", "delta": "0:00:00.003656", "end": "2016-07-21 19:27:13.316086", "failed": true, "item": 2380, "rc": 1, "start": "2016-07-21 19:27:13.312430", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-failed: [node2] (item=2380) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 2380 -j ACCEPT -m comment --comment \"etcd traffic (2380)\"", "delta": "0:00:00.003611", "end": "2016-07-21 19:27:13.315974", "failed": true, "item": 2380, "rc": 1, "start": "2016-07-21 19:27:13.312363", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-failed: [node1] (item=7001) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 7001 -j ACCEPT -m comment --comment \"etcd traffic (7001)\"", "delta": "0:00:00.003617", "end": "2016-07-21 19:27:13.540392", "failed": true, "item": 7001, "rc": 1, "start": "2016-07-21 19:27:13.536775", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-...ignoring
-failed: [node2] (item=7001) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 7001 -j ACCEPT -m comment --comment \"etcd traffic (7001)\"", "delta": "0:00:00.003558", "end": "2016-07-21 19:27:13.543254", "failed": true, "item": 7001, "rc": 1, "start": "2016-07-21 19:27:13.539696", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-...ignoring
+changed: [node1] => (item=2379)
+changed: [node2] => (item=2379)
+changed: [node1] => (item=4001)
+changed: [node2] => (item=4001)
+changed: [node1] => (item=2380)
+changed: [node2] => (item=2380)
+changed: [node1] => (item=7001)
+changed: [node2] => (item=7001)
 
 TASK [stop nfs services (redhat)] **********************************************
-ok: [node2] => (item=rpcbind)
 ok: [node1] => (item=rpcbind)
-ok: [node2] => (item=nfs-server)
+ok: [node2] => (item=rpcbind)
 ok: [node1] => (item=nfs-server)
-ok: [node2] => (item=rpc-statd)
+ok: [node2] => (item=nfs-server)
 ok: [node1] => (item=rpc-statd)
-ok: [node2] => (item=nfs-idmapd)
+ok: [node2] => (item=rpc-statd)
 ok: [node1] => (item=nfs-idmapd)
+ok: [node2] => (item=nfs-idmapd)
 
 TASK [stop nfs services (debian)] **********************************************
 failed: [node1] (item=nfs-kernel-server) => {"failed": true, "item": "nfs-kernel-server", "msg": "systemd could not find the requested service \"'nfs-kernel-server'\": "}
@@ -298,22 +288,20 @@ failed: [node2] (item=nfs-common) => {"failed": true, "item": "nfs-common", "msg
 ...ignoring
 
 TASK [stop docker] *************************************************************
-ok: [node2]
-ok: [node1]
+changed: [node1]
+changed: [node2]
 
 TASK [stop docker tcp socket] **************************************************
-ok: [node1]
-ok: [node2]
+changed: [node2]
+changed: [node1]
 
 TASK [cleanup iptables for docker] *********************************************
-failed: [node1] (item=2385) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 2385 -j ACCEPT -m comment --comment \"docker api (2385)\"", "delta": "0:00:00.003641", "end": "2016-07-21 19:27:15.810700", "failed": true, "item": 2385, "rc": 1, "start": "2016-07-21 19:27:15.807059", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-...ignoring
-failed: [node2] (item=2385) => {"changed": true, "cmd": "iptables -D INPUT -p tcp --dport 2385 -j ACCEPT -m comment --comment \"docker api (2385)\"", "delta": "0:00:00.003632", "end": "2016-07-21 19:27:15.818366", "failed": true, "item": 2385, "rc": 1, "start": "2016-07-21 19:27:15.814734", "stderr": "iptables: Bad rule (does a matching rule exist in that chain?).", "stdout": "", "stdout_lines": [], "warnings": []}
-...ignoring
+changed: [node1] => (item=2385)
+changed: [node2] => (item=2385)
 
 PLAY RECAP *********************************************************************
-node1                      : ok=39   changed=1    unreachable=0    failed=0   
-node2                      : ok=39   changed=1    unreachable=0    failed=0   
+node1                      : ok=39   changed=14   unreachable=0    failed=0   
+node2                      : ok=39   changed=14   unreachable=0    failed=0   
 
 Setting up services on nodes
 
@@ -357,15 +345,15 @@ ok: [node2] => (item=[u'yum-utils', u'ntp', u'unzip', u'bzip2', u'curl', u'pytho
 ok: [node1] => (item=[u'yum-utils', u'ntp', u'unzip', u'bzip2', u'curl', u'python-requests', u'bash-completion', u'libselinux-python', u'e2fsprogs', u'openssh-server'])
 
 TASK [base : install and start ntp] ********************************************
-ok: [node2]
 ok: [node1]
+ok: [node2]
 
 TASK [base : include] **********************************************************
 included: /home/admin/src/github.com/contiv/netplugin/systemtests/ansible/roles/base/tasks/os_agnostic_tasks.yml for node1, node2
 
 TASK [base : download consul binary] *******************************************
-ok: [node2]
 ok: [node1]
+ok: [node2]
 
 TASK [base : install consul] ***************************************************
 ok: [node1]
@@ -376,12 +364,12 @@ changed: [node1]
 changed: [node2]
 
 TASK [docker : create docker daemon's config directory] ************************
-ok: [node2]
 ok: [node1]
+ok: [node2]
 
 TASK [docker : setup docker daemon's environment] ******************************
-ok: [node2]
 ok: [node1]
+ok: [node2]
 
 TASK [docker : include] ********************************************************
 skipping: [node1]
@@ -404,12 +392,12 @@ ok: [node1]
 ok: [node2]
 
 TASK [docker : check docker-tcp socket state] **********************************
-changed: [node2]
 changed: [node1]
+changed: [node2]
 
 TASK [docker : include] ********************************************************
-skipping: [node1]
 skipping: [node2]
+skipping: [node1]
 
 TASK [docker : copy systemd units for docker tcp socket settings] **************
 ok: [node1]
@@ -428,16 +416,16 @@ changed: [node1]
 changed: [node2]
 
 TASK [docker : check docker service state] *************************************
-changed: [node2]
 changed: [node1]
+changed: [node2]
 
 TASK [docker : remove the docker key file, if any. It shall be regenerated by docker on restart] ***
-changed: [node2]
 changed: [node1]
+changed: [node2]
 
 TASK [docker : reload docker systemd configuration] ****************************
-changed: [node2]
 changed: [node1]
+changed: [node2]
 
 TASK [docker : restart docker (first time)] ************************************
 fatal: [node1]: FAILED! => {"failed": true, "msg": "The conditional check 'thin_provisioned|changed' failed. The error was: |changed expects a dictionary\n\nThe error appears to have been in '/home/admin/src/github.com/contiv/netplugin/systemtests/ansible/roles/docker/tasks/main.yml': line 98, column 3, but may\nbe elsewhere in the file depending on the exact syntax problem.\n\nThe offending line appears to be:\n\n#      of some docker bug I've not investigated.\n- name: restart docker (first time)\n  ^ here\n"}
@@ -466,8 +454,8 @@ skipping: [node1]
 skipping: [node2]
 
 TASK [docker : check contiv-compose version] ***********************************
-changed: [node2]
 changed: [node1]
+changed: [node2]
 
 TASK [docker : download contiv-compose] ****************************************
 skipping: [node1]
@@ -482,30 +470,30 @@ ok: [node1]
 ok: [node2]
 
 TASK [etcd : install etcdctl] **************************************************
-changed: [node2]
 changed: [node1]
+changed: [node2]
 
 TASK [etcd : install etcd v2.3.1] **********************************************
 changed: [node2]
 changed: [node1]
 
 TASK [etcd : setup iptables for etcd] ******************************************
-changed: [node2] => (item=2379)
 changed: [node1] => (item=2379)
+changed: [node2] => (item=2379)
 changed: [node1] => (item=4001)
 changed: [node2] => (item=4001)
-changed: [node2] => (item=2380)
 changed: [node1] => (item=2380)
-changed: [node2] => (item=7001)
+changed: [node2] => (item=2380)
 changed: [node1] => (item=7001)
+changed: [node2] => (item=7001)
 
 TASK [etcd : copy the etcd start/stop script] **********************************
 ok: [node1]
 ok: [node2]
 
 TASK [etcd : copy systemd units for etcd] **************************************
-ok: [node2]
 ok: [node1]
+ok: [node2]
 
 TASK [etcd : start etcd] *******************************************************
 changed: [node1]
@@ -528,12 +516,12 @@ ok: [node1]
 ok: [node2]
 
 TASK [swarm : copy systemd units for swarm] ************************************
-ok: [node2]
 ok: [node1]
+ok: [node2]
 
 TASK [swarm : start swarm] *****************************************************
-changed: [node2]
 changed: [node1]
+changed: [node2]
 
 TASK [ucp : download and install ucp images] ***********************************
 skipping: [node1]
@@ -541,26 +529,26 @@ skipping: [node2]
 
 TASK [ucp : setup iptables for ucp] ********************************************
 skipping: [node1] => (item=12376) 
-skipping: [node2] => (item=12376) 
 skipping: [node1] => (item=12379) 
+skipping: [node2] => (item=12376) 
 skipping: [node2] => (item=12379) 
+skipping: [node1] => (item=12380) 
 skipping: [node2] => (item=12380) 
 skipping: [node2] => (item=12381) 
-skipping: [node2] => (item=12382) 
-skipping: [node1] => (item=12380) 
-skipping: [node2] => (item=12383) 
 skipping: [node1] => (item=12381) 
-skipping: [node2] => (item=12384) 
+skipping: [node2] => (item=12382) 
 skipping: [node1] => (item=12382) 
+skipping: [node2] => (item=12383) 
 skipping: [node1] => (item=12383) 
 skipping: [node1] => (item=12384) 
 skipping: [node1] => (item=12385) 
 skipping: [node1] => (item=12386) 
-skipping: [node2] => (item=12385) 
-skipping: [node2] => (item=12386) 
 skipping: [node1] => (item=2375) 
 skipping: [node1] => (item=2376) 
 skipping: [node1] => (item=443) 
+skipping: [node2] => (item=12384) 
+skipping: [node2] => (item=12385) 
+skipping: [node2] => (item=12386) 
 skipping: [node2] => (item=2375) 
 skipping: [node2] => (item=2376) 
 skipping: [node2] => (item=443) 
@@ -589,29 +577,29 @@ TASK [ucp : wait for ucp files to be created, which ensures the service has star
 skipping: [node1] => (item=ucp-fingerprint) 
 skipping: [node2] => (item=ucp-fingerprint) 
 skipping: [node1] => (item=ucp-instance-id) 
-skipping: [node2] => (item=ucp-instance-id) 
 skipping: [node1] => (item=ucp-certificate-backup.tar) 
+skipping: [node2] => (item=ucp-instance-id) 
 skipping: [node2] => (item=ucp-certificate-backup.tar) 
 
 TASK [ucp : fetch the ucp files from master nodes] *****************************
 skipping: [node1] => (item=ucp-fingerprint) 
 skipping: [node2] => (item=ucp-fingerprint) 
-skipping: [node1] => (item=ucp-instance-id) 
 skipping: [node2] => (item=ucp-instance-id) 
-skipping: [node1] => (item=ucp-certificate-backup.tar) 
+skipping: [node1] => (item=ucp-instance-id) 
 skipping: [node2] => (item=ucp-certificate-backup.tar) 
+skipping: [node1] => (item=ucp-certificate-backup.tar) 
 
 TASK [ucp : copy the ucp files to replicas and worker nodes] *******************
 skipping: [node1] => (item=ucp-fingerprint) 
-skipping: [node1] => (item=ucp-instance-id) 
 skipping: [node2] => (item=ucp-fingerprint) 
+skipping: [node1] => (item=ucp-instance-id) 
 skipping: [node2] => (item=ucp-instance-id) 
-skipping: [node1] => (item=ucp-certificate-backup.tar) 
 skipping: [node2] => (item=ucp-certificate-backup.tar) 
+skipping: [node1] => (item=ucp-certificate-backup.tar) 
 
 TASK [contiv_network : check dns container image] ******************************
-changed: [node1]
 changed: [node2]
+changed: [node1]
 
 TASK [contiv_network : pull dns container image] *******************************
 skipping: [node1]
@@ -625,8 +613,8 @@ ok: [node1] => (item={u'url': u'https://cisco.box.com/shared/static/zzmpe1zesdpf
 ok: [node2] => (item={u'url': u'https://cisco.box.com/shared/static/zzmpe1zesdpf270k9pml40rlm4o8fs56.rpm', u'dest': u'/tmp/openvswitch-2.3.1-2.el7.x86_64.rpm'})
 
 TASK [contiv_network : install ovs (redhat)] ***********************************
-ok: [node1]
 ok: [node2]
+ok: [node1]
 
 TASK [contiv_network : download ovs binaries (debian)] *************************
 skipping: [node1] => (item={u'url': u'https://cisco.box.com/shared/static/v1dvgoboo5zgqrtn6tu27vxeqtdo2bdl.deb', u'dest': u'/tmp/ovs-common.deb'}) 
@@ -653,8 +641,8 @@ changed: [node2] => (item=ptcp:6640)
 changed: [node1] => (item=ptcp:6640)
 
 TASK [contiv_network : check selinux status] ***********************************
-changed: [node1]
 changed: [node2]
+changed: [node1]
 
 TASK [contiv_network : permit openvswitch_t type in selinux] *******************
 changed: [node2]
@@ -665,48 +653,48 @@ changed: [node1] => (item=4789)
 changed: [node2] => (item=4789)
 
 TASK [contiv_network : setup iptables for contiv network control plane] ********
-changed: [node2] => (item=9001)
 changed: [node1] => (item=9001)
-changed: [node2] => (item=9002)
+changed: [node2] => (item=9001)
 changed: [node1] => (item=9002)
-changed: [node2] => (item=9003)
+changed: [node2] => (item=9002)
 changed: [node1] => (item=9003)
+changed: [node2] => (item=9003)
 changed: [node1] => (item=9999)
 changed: [node2] => (item=9999)
 changed: [node1] => (item=8080)
 changed: [node2] => (item=8080)
-changed: [node2] => (item=179)
 changed: [node1] => (item=179)
+changed: [node2] => (item=179)
 
 TASK [contiv_network : download netmaster and netplugin] ***********************
-ok: [node2]
-ok: [node1]
+changed: [node2]
+changed: [node1]
 
 TASK [contiv_network : ensure netplugin directory exists] **********************
 ok: [node1]
 ok: [node2]
 
 TASK [contiv_network : install netmaster and netplugin] ************************
-changed: [node1]
 changed: [node2]
+changed: [node1]
 
 TASK [contiv_network : create links for netplugin binaries] ********************
-ok: [node2] => (item=netctl)
-ok: [node1] => (item=netctl)
-ok: [node2] => (item=netmaster)
+changed: [node1] => (item=netctl)
+changed: [node2] => (item=netctl)
 ok: [node1] => (item=netmaster)
-ok: [node2] => (item=netplugin)
+ok: [node2] => (item=netmaster)
 ok: [node1] => (item=netplugin)
-ok: [node2] => (item=contivk8s)
+ok: [node2] => (item=netplugin)
 ok: [node1] => (item=contivk8s)
+ok: [node2] => (item=contivk8s)
 
 TASK [contiv_network : copy environment file for netplugin] ********************
-ok: [node2]
 ok: [node1]
+ok: [node2]
 
 TASK [contiv_network : copy systemd units for netplugin] ***********************
-ok: [node1]
-ok: [node2]
+changed: [node1]
+changed: [node2]
 
 TASK [contiv_network : copy bash auto complete file for netctl] ****************
 ok: [node1]
@@ -723,107 +711,69 @@ changed: [node2]
 TASK [contiv_network : setup hostname alias] ***********************************
 ok: [node1] => (item={u'regexp': u'^127\\.0\\.0\\.1', u'line': u'127.0.0.1 localhost'})
 ok: [node2] => (item={u'regexp': u'^127\\.0\\.0\\.1', u'line': u'127.0.0.1 localhost'})
-ok: [node1] => (item={u'regexp': u' apoorva-testbed-1$', u'line': u'10.193.246.70 apoorva-testbed-1'})
 ok: [node2] => (item={u'regexp': u' apoorva-testbed-2$', u'line': u'10.193.246.71 apoorva-testbed-2'})
+ok: [node1] => (item={u'regexp': u' apoorva-testbed-1$', u'line': u'10.193.246.70 apoorva-testbed-1'})
 
 TASK [contiv_network : copy environment file for netmaster] ********************
 ok: [node2]
 ok: [node1]
 
 TASK [contiv_network : copy systemd units for netmaster] ***********************
-ok: [node1]
-ok: [node2]
-
-TASK [contiv_network : start netmaster] ****************************************
 changed: [node2]
 changed: [node1]
+
+TASK [contiv_network : start netmaster] ****************************************
+changed: [node1]
+changed: [node2]
 
 TASK [contiv_network : download contivctl] *************************************
 ok: [node2]
 ok: [node1]
 
 TASK [contiv_network : install contivctl] **************************************
-changed: [node1]
 changed: [node2]
+changed: [node1]
 
 TASK [contiv_network : include] ************************************************
 included: /home/admin/src/github.com/contiv/netplugin/systemtests/ansible/roles/contiv_network/tasks/aci_tasks.yml for node1, node2
 
 TASK [contiv_network : pull aci-gw container] **********************************
-changed: [node1]
 changed: [node2]
+changed: [node1]
 
 TASK [contiv_network : copy shell script for starting aci-gw] ******************
-ok: [node1]
 ok: [node2]
+ok: [node1]
 
 TASK [contiv_network : copy systemd units for aci-gw] **************************
 ok: [node2]
 ok: [node1]
 
 TASK [contiv_network : start aci-gw container] *********************************
-changed: [node2]
-changed: [node1]
+ok: [node1]
+ok: [node2]
 
 TASK [contiv_network : wait for netmaster to be ready] *************************
-changed: [node2]
 changed: [node1]
+changed: [node2]
 
 TASK [contiv_network : set aci mode] *******************************************
 changed: [node1]
 
 PLAY RECAP *********************************************************************
-node1                      : ok=70   changed=33   unreachable=0    failed=0   
-node2                      : ok=69   changed=32   unreachable=0    failed=0   
+node1                      : ok=70   changed=36   unreachable=0    failed=0   
+node2                      : ok=69   changed=35   unreachable=0    failed=0   
 
 Using default tag: latest
-latest: Pulling from jainvipin/web
-65f3b0435c42: Already exists
-5f70bf18a086: Already exists
-b734b7339275: Already exists
-f01e8626d61f: Already exists
-eb746b9c3e1e: Already exists
-dbd1909a8e8d: Already exists
-5f70bf18a086: Already exists
-dc5aef0b699e: Already exists
-5f70bf18a086: Already exists
-5f70bf18a086: Already exists
-08f3499a30f1: Already exists
-cb184317a3f7: Already exists
-5f70bf18a086: Already exists
-d6b19deaf5fb: Already exists
-081c68aa0577: Already exists
-5f70bf18a086: Already exists
-43551e2aa6c3: Already exists
-5f70bf18a086: Already exists
-e1814f4e8949: Already exists
-Digest: sha256:c417bb3d15abfbdbca3a2b39f4907a3abe95ea736554b26ee15674ed07753b13
-Status: Image is up to date for jainvipin/web:latest
+apoorva-testbed-1: Pulling jainvipin/web:latest...
+apoorva-testbed-2: Pulling jainvipin/web:latest...
+apoorva-testbed-2: Pulling jainvipin/web:latest... : downloaded
+apoorva-testbed-1: Pulling jainvipin/web:latest... : downloaded
 Using default tag: latest
-latest: Pulling from jainvipin/redis
-371849a1ec48: Already exists
-5f70bf18a086: Already exists
-4f17d3531811: Already exists
-09a59f74156f: Already exists
-4c50ce0903b5: Already exists
-d548d00cce37: Already exists
-5f70bf18a086: Already exists
-5f70bf18a086: Already exists
-5f70bf18a086: Already exists
-fd70a14c7b1e: Already exists
-64a7a43c8dbd: Already exists
-5f70bf18a086: Already exists
-5f70bf18a086: Already exists
-7986f971c50f: Already exists
-5f70bf18a086: Already exists
-5f70bf18a086: Already exists
-5f70bf18a086: Already exists
-b474c1432396: Already exists
-5f70bf18a086: Already exists
-5f70bf18a086: Already exists
-5f70bf18a086: Already exists
-Digest: sha256:125b424bdf95f6439b3f71fc6eef9df61acaabb8535d8a60f2a71ebae506723b
-Status: Image is up to date for jainvipin/redis:latest
+apoorva-testbed-1: Pulling jainvipin/redis:latest...
+apoorva-testbed-2: Pulling jainvipin/redis:latest...
+apoorva-testbed-2: Pulling jainvipin/redis:latest... : downloaded
+apoorva-testbed-1: Pulling jainvipin/redis:latest... : downloaded
 Install complete.
 =========================================================
  
