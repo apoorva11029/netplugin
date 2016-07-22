@@ -361,14 +361,6 @@ func (s *systemtestSuite) SetUpTest(c *C) {
 		for _, node := range s.nodes {
 			node.cleanupMaster()
 		}
-		outChan := make(chan string, 100)
-		//logrus.Infof("env value is " + s.basicInfo.SwarmEnv)
-
-		mystr := " docker info"
-		logrus.Infof("mystr _____________________ value is " + mystr)
-		out, _ := s.nodes[0].runCommand(mystr)
-		outChan <- out
-		logrus.Infof("docker info for first node ====== %s", strings.TrimSpace(<-outChan))
 
 		for _, node := range s.nodes {
 			c.Assert(node.startNetplugin(""), IsNil)
@@ -429,9 +421,9 @@ func (s *systemtestSuite) TearDownTest(c *C) {
 
 func (s *systemtestSuite) TearDownSuite(c *C) {
 
-	// for _, node := range s.nodes {
-	// 	node.exec.cleanupContainers()
-	// }
+	for _, node := range s.nodes {
+		node.exec.cleanupContainers()
+	}
 
 	// Print all errors and fatal messages
 	for _, node := range s.nodes {
