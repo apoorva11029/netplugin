@@ -2,10 +2,9 @@ package systemtests
 
 import (
 	"fmt"
+	"github.com/Sirupsen/logrus"
 	"regexp"
 	"strings"
-	//"time"
-	"github.com/Sirupsen/logrus"
 )
 
 type swarm struct {
@@ -17,7 +16,6 @@ func (s *systemtestSuite) NewSwarmExec(n *node) *swarm {
 	w := new(swarm)
 	w.node = n
 	w.env = s.basicInfo.SwarmEnv + " "
-	fmt.Printf("\n\t ################ENV is : %s", w.env)
 	return w
 }
 
@@ -273,20 +271,17 @@ func (w *swarm) cleanupDockerNetwork() error {
 
 func (w *swarm) cleanupContainers() error {
 	logrus.Infof("Cleaning up containers on %s", w.node.Name())
-	// if os.Getenv("ACI_SYS_TEST_MODE") == "ON" {
-	// 	logrus.Infof("-----clearning containers on swarm----------")
-	// 	return w.node.tbnode.RunCommand("docker ps | grep alpine | awk '{print $s}' $(docker kill -s 9 `docker ps -aq`; docker rm -f `docker ps -aq`)")
-	// }
 
-	return w.node.tbnode.RunCommand("docker ps | grep alpine | awk '{print $2}' $(docker kill -s 9 `docker ps -aq`; docker rm -f `docker ps -aq`)")
-
-	//return w.node.tbnode.RunCommand("docker kill -s 9 `docker ps -aq`; docker rm -f `docker ps -aq`")
+	// Stopping all running alpine image containers
+	//w.node.tbnode.RunCommandWithOutput("docker kill -s 9 $(docker ps -a | grep alpine | awk '{print $1}')")
+	w.node.tbnode.RunCommandWithOutput("docker kill -s 9 $(docker ps -a | grep alpine)")
+	// Removing all alpine container images
+	//return w.node.tbnode.RunCommand("docker rm -f `docker ps -a | grep alpine | awk '{print $1}'`")
+	return w.node.tbnode.RunCommand("docker rm -f $(docker ps -a | grep alpine)")
 }
-
 func (w *swarm) startNetplugin(args string) error {
-	logrus.Infof("-------Starting netplugin on %s", w.node.Name())
+	logrus.Infof("Starting netplugin on %s", w.node.Name())
 	cmd := "sudo " + w.node.suite.basicInfo.BinPath + "/netplugin -plugin-mode docker -vlan-if " + w.node.suite.infoHost.HostDataInterface + " --cluster-store " + w.node.suite.basicInfo.ClusterStore + " " + args + "&> /tmp/netplugin.log"
-	logrus.Infof("-------CMD is  %s", cmd)
 	return w.node.tbnode.RunCommandBackground(cmd)
 }
 
@@ -325,15 +320,6 @@ func (w *swarm) cleanupSlave() {
 	vNode.RunCommand("sudo ovs-vsctl del-br contivVxlanBridge")
 	vNode.RunCommand("sudo ovs-vsctl del-br contivVlanBridge")
 	vNode.RunCommand("for p in `ifconfig  | grep vport | awk '{print $1}'`; do sudo ip link delete $p type veth; done")
-	vNode.RunCommand("sudo rm /var/run/docker/plugins/netplugin.sock")
-	//vNode.RunCommand("sudo systemctl daemon-reaload")
-	//vNode.RunCommand("sudo systemctl stop docker ")
-	//vNode.RunCommand("systemctl start docker-tcp.socket")
-
-	//vNode.RunCommand("sudo systemctl start docker")
-	if w.node.suite.basicInfo.AciMode != "on" {
-		vNode.RunCommand("sudo service docker restart")
-	}
 }
 
 func (w *swarm) runCommandUntilNoNetpluginError() error {

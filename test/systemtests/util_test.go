@@ -6,15 +6,16 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Sirupsen/logrus"
+	"github.com/contiv/vagrantssh"
+	. "gopkg.in/check.v1"
 	"io/ioutil"
 	"math/rand"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/Sirupsen/logrus"
 )
 
 func (s *systemtestSuite) checkConnectionPair(containers1, containers2 []*container, port int) error {
@@ -976,4 +977,308 @@ func getMaster(file string) (BasicInfo, InfoHost, InfoGlob) {
 		}
 	}
 	return mastbasic, masthost, mastglob
+}
+
+func (s *systemtestSuite) SetUpSuiteBaremetal(c *C) {
+
+	logrus.Infof("Private keyFile = %s", s.basicInfo.KeyFile)
+	logrus.Infof("Binary binpath = %s", s.basicInfo.BinPath)
+	logrus.Infof("Interface vlanIf = %s", s.infoHost.HostDataInterface)
+
+	s.baremetal = vagrantssh.Baremetal{}
+	bm := &s.baremetal
+
+	// To fill the hostInfo data structure for Baremetal VMs
+	var name string
+	if s.basicInfo.AciMode == "on" {
+		name = "aci-swarm-baremetal-node"
+	} else {
+		name = "swarm-baremetal-node"
+	}
+	hostIPs := strings.Split(s.infoHost.HostIPs, ",")
+	hostNames := strings.Split(s.infoHost.HostUsernames, ",")
+	hosts := make([]vagrantssh.HostInfo, len(hostNames))
+
+	for i := range hostIPs {
+		hosts[i].Name = name + strconv.Itoa(i+1)
+		logrus.Infof("Name=%s", hosts[i].Name)
+
+		hosts[i].SSHAddr = hostIPs[i]
+		logrus.Infof("SHAddr=%s", hosts[i].SSHAddr)
+
+		hosts[i].SSHPort = "22"
+
+		hosts[i].User = hostNames[i]
+		logrus.Infof("User=%s", hosts[i].User)
+
+		hosts[i].PrivKeyFile = s.basicInfo.KeyFile
+		logrus.Infof("PrivKeyFile=%s", hosts[i].PrivKeyFile)
+	}
+	c.Assert(bm.Setup(hosts), IsNil)
+
+	s.nodes = []*node{}
+
+	for _, nodeObj := range s.baremetal.GetNodes() {
+		nodeName := nodeObj.GetName()
+		if strings.Contains(nodeName, "aci") ||
+			strings.Contains(nodeName, "swarm") {
+			node := &node{}
+			node.tbnode = nodeObj
+			node.suite = s
+
+			switch s.basicInfo.Scheduler {
+			case "k8":
+				node.exec = s.NewK8sExec(node)
+			case "swarm":
+				logrus.Infof("Running in swarm mode")
+				node.exec = s.NewSwarmExec(node)
+			default:
+				logrus.Infof("Running in docker mode")
+				node.exec = s.NewDockerExec(node)
+			}
+			s.nodes = append(s.nodes, node)
+		}
+		//s.nodes = append(s.nodes, &node{tbnode: nodeObj, suite: s})
+	}
+	if s.basicInfo.Scheduler == "swarm" {
+		s.CheckNetDemoInstallation(c)
+	}
+	logrus.Info("Pulling alpine on all nodes")
+
+	s.baremetal.IterateNodes(func(node vagrantssh.TestbedNode) error {
+		//fmt.Printf("\n\t Node Name is %s", node.nodeName)
+		node.RunCommand("sudo rm /tmp/*net*")
+		return node.RunCommand("docker pull alpine")
+	})
+
+	//Copying binaries
+	s.copyBinary("netmaster")
+	s.copyBinary("netplugin")
+	s.copyBinary("netctl")
+	s.copyBinary("contivk8s")
+}
+
+func (s *systemtestSuite) SetUpSuiteVagrant(c *C) {
+	s.vagrant = vagrantssh.Vagrant{}
+	nodesStr := os.Getenv("CONTIV_NODES")
+	var contivNodes int
+
+	if nodesStr == "" {
+		contivNodes = 2
+	} else {
+		var err error
+		contivNodes, err = strconv.Atoi(nodesStr)
+		if err != nil {
+			c.Fatal(err)
+		}
+	}
+
+	s.nodes = []*node{}
+	if s.fwdMode == "routing" {
+		contivL3Nodes := 2
+		switch s.basicInfo.Scheduler {
+		case "k8":
+			contivNodes = 4
+			c.Assert(s.vagrant.Setup(false, []string{"CONTIV_L3=1 VAGRANT_CWD=/home/ladmin/src/github.com/contiv/netplugin/vagrant/k8s/"}, contivNodes), IsNil)
+		case "swarm":
+			c.Assert(s.vagrant.Setup(false, append([]string{"CONTIV_NODES=3 CONTIV_L3=1"}, s.basicInfo.SwarmEnv), contivNodes+contivL3Nodes), IsNil)
+		default:
+			c.Assert(s.vagrant.Setup(false, []string{"CONTIV_NODES=3 CONTIV_L3=1"}, contivNodes+contivL3Nodes), IsNil)
+
+		}
+
+	} else {
+		switch s.basicInfo.Scheduler {
+		case "k8":
+			contivNodes = contivNodes + 1 //k8master
+			c.Assert(s.vagrant.Setup(false, []string{"VAGRANT_CWD=/home/ladmin/src/github.com/contiv/netplugin/vagrant/k8s/"}, contivNodes), IsNil)
+		case "swarm":
+			c.Assert(s.vagrant.Setup(false, append([]string{}, s.basicInfo.SwarmEnv), contivNodes), IsNil)
+		default:
+			c.Assert(s.vagrant.Setup(false, []string{}, contivNodes), IsNil)
+
+		}
+
+	}
+
+	for _, nodeObj := range s.vagrant.GetNodes() {
+		nodeName := nodeObj.GetName()
+		if strings.Contains(nodeName, "netplugin-node") ||
+			strings.Contains(nodeName, "k8") {
+			node := &node{}
+			node.tbnode = nodeObj
+			node.suite = s
+			switch s.basicInfo.Scheduler {
+			case "k8":
+				node.exec = s.NewK8sExec(node)
+			case "swarm":
+				logrus.Infof("in swarm mode")
+				node.exec = s.NewSwarmExec(node)
+			default:
+				logrus.Infof("in docker mode")
+				node.exec = s.NewDockerExec(node)
+			}
+			s.nodes = append(s.nodes, node)
+		}
+	}
+
+	logrus.Info("Pulling alpine on all nodes")
+	s.vagrant.IterateNodes(func(node vagrantssh.TestbedNode) error {
+		node.RunCommand("sudo rm /tmp/net*")
+		return node.RunCommand("docker pull alpine")
+	})
+}
+
+func (s *systemtestSuite) SetUpTestBaremetal(c *C) {
+
+	for _, node := range s.nodes {
+		node.exec.cleanupContainers()
+		node.exec.cleanupDockerNetwork()
+
+		node.stopNetplugin()
+		node.cleanupSlave()
+		node.deleteFile("/etc/systemd/system/netplugin.service")
+		node.stopNetmaster()
+		node.deleteFile("/etc/systemd/system/netmaster.service")
+		node.deleteFile("/usr/bin/netplugin")
+		node.deleteFile("/usr/bin/netmaster")
+		node.deleteFile("/usr/bin/netctl")
+	}
+
+	for _, node := range s.nodes {
+		node.cleanupMaster()
+	}
+
+	for _, node := range s.nodes {
+		if s.fwdMode == "bridge" {
+			c.Assert(node.startNetplugin(""), IsNil)
+			time.Sleep(15 * time.Second)
+			c.Assert(node.exec.runCommandUntilNoNetpluginError(), IsNil)
+		} else if s.fwdMode == "routing" {
+			c.Assert(node.startNetplugin("-fwd-mode=routing -vlan-if=eth2"), IsNil)
+			c.Assert(node.exec.runCommandUntilNoNetpluginError(), IsNil)
+		}
+	}
+
+	time.Sleep(15 * time.Second)
+
+	for _, node := range s.nodes {
+		c.Assert(node.startNetmaster(), IsNil)
+		time.Sleep(1 * time.Second)
+		c.Assert(node.exec.runCommandUntilNoNetmasterError(), IsNil)
+	}
+
+	time.Sleep(5 * time.Second)
+	for i := 0; i < 11; i++ {
+		_, err := s.cli.TenantGet("default")
+		if err == nil {
+			break
+		}
+		// Fail if we reached last iteration
+		c.Assert((i < 10), Equals, true)
+		time.Sleep(500 * time.Millisecond)
+	}
+}
+
+func (s *systemtestSuite) SetUpTestVagrant(c *C) {
+	for _, node := range s.nodes {
+		node.exec.cleanupContainers()
+		node.exec.cleanupDockerNetwork()
+		node.stopNetplugin()
+		node.cleanupSlave()
+	}
+
+	for _, node := range s.nodes {
+		node.stopNetmaster()
+
+	}
+	for _, node := range s.nodes {
+		node.cleanupMaster()
+	}
+
+	for _, node := range s.nodes {
+		if s.fwdMode == "bridge" {
+			c.Assert(node.startNetplugin(""), IsNil)
+			c.Assert(node.exec.runCommandUntilNoNetpluginError(), IsNil)
+		} else if s.fwdMode == "routing" {
+			c.Assert(node.startNetplugin("-fwd-mode=routing -vlan-if=eth2"), IsNil)
+			c.Assert(node.exec.runCommandUntilNoNetpluginError(), IsNil)
+		}
+	}
+
+	time.Sleep(15 * time.Second)
+
+	// temporarily enable DNS for service discovery tests
+	prevDNSEnabled := s.basicInfo.EnableDNS
+	if strings.Contains(c.TestName(), "SvcDiscovery") {
+		s.basicInfo.EnableDNS = true
+	}
+
+	defer func() { s.basicInfo.EnableDNS = prevDNSEnabled }()
+
+	for _, node := range s.nodes {
+		c.Assert(node.startNetmaster(), IsNil)
+		time.Sleep(1 * time.Second)
+		c.Assert(node.exec.runCommandUntilNoNetmasterError(), IsNil)
+	}
+
+	time.Sleep(5 * time.Second)
+	if s.basicInfo.Scheduler != "k8" {
+		for i := 0; i < 11; i++ {
+
+			_, err := s.cli.TenantGet("default")
+			if err == nil {
+				break
+			}
+			// Fail if we reached last iteration
+			c.Assert((i < 10), Equals, true)
+			time.Sleep(500 * time.Millisecond)
+		}
+	}
+}
+
+func (s *systemtestSuite) NetDemoInstallation() {
+	cmd := exec.Command("wget", "https://raw.githubusercontent.com/contiv/demo/master/net/net_demo_installer")
+	cmd.Run()
+	os.Chmod("net_demo_installer", 0777)
+	if s.basicInfo.AciMode == "on" {
+		cmd = exec.Command("./net_demo_installer", "-ars")
+	} else {
+		cmd = exec.Command("./net_demo_installer", "-rs")
+	}
+	// setup log file
+	file, _ := os.Create("server.log")
+	cmd.Stdout = file
+	cmd.Run()
+	logrus.Infof("Done setting up swarm cluster ")
+}
+
+//Function to check if net_demo_installer script ran properly.
+//Uses the output of docker info on all the nodes in the swarm cluster.
+func (s *systemtestSuite) CheckNetDemoInstallation(c *C) {
+
+	logrus.Infof("Checking if the swarm cluster was setup properly")
+	outChan := make(chan string, 100)
+	mystr := "docker info | grep Nodes"
+	var err, out, out1 string
+	out1, _ = s.nodes[0].runCommand(mystr)
+	if out1 == "" {
+		err = "The script net_demo_installer didn't run properly."
+		c.Assert(err, Equals, "")
+	}
+	for i := 1; i < len(s.nodes); i++ {
+		out, _ = s.nodes[i].runCommand(mystr)
+		outChan <- out
+		if out != out1 {
+			err = "The script net_demo_installer didn't run properly."
+			break
+		}
+	}
+	logrus.Infof("Deleting files related to net_demo_installer")
+	os.Remove("genInventoryFile.py")
+	os.RemoveAll("./.gen")
+	os.RemoveAll("./ansible")
+	os.Remove("net_demo_installer")
+	c.Assert(err, Equals, "")
+	os.Remove("server.log")
 }
