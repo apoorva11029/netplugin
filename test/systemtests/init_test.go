@@ -115,7 +115,7 @@ func TestSystem(t *T) {
 
 func (s *systemtestSuite) SetUpSuite(c *C) {
 	logrus.Infof("Bootstrapping system tests")
-	s.basicInfo, s.infoHost, s.acinfoGlob = getMaster("cfg.json")
+	s.basicInfo, s.infoHost, s.infoGlob = getMaster("cfg.json")
 
 	switch s.basicInfo.AciMode {
 	case "on":

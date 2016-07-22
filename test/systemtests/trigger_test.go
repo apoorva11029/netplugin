@@ -43,7 +43,7 @@ func (s *systemtestSuite) TestTriggerNetmasterSwitchover(c *C) {
 		c.Assert(err, IsNil)
 		logrus.Infof("leaderIP is %s", leaderIP)
 		for _, node := range s.nodes {
-			res, err := node.getIPAddr(infoHost.HostMgmtInterface)
+			res, err := node.getIPAddr(s.infoHost.HostMgmtInterface)
 			c.Assert(err, IsNil)
 			logrus.Infof("my ip is %s", res)
 			if leaderIP == res {
