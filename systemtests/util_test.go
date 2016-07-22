@@ -1025,10 +1025,10 @@ func (s *systemtestSuite) SetUpSuiteVagrant(c *C) {
 func (s *systemtestSuite) BaremetalSetup() {
 	cmd := exec.Command("chmod +x", "net_demo_installer")
 	cmd.Run()
-	if s.basicInfo.AciMode=="on" {
-	cmd = exec.Command("./net_demo_installer", "-ars")
+	if s.basicInfo.AciMode == "on" {
+		cmd = exec.Command("./net_demo_installer", "-ars")
 	} else {
-	cmd = exec.Command("./net_demo_installer", "-rs")
+		cmd = exec.Command("./net_demo_installer", "-rs")
 	}
 	// setup log file
 	file, err := os.Create("server.log")
@@ -1067,7 +1067,8 @@ func (s *systemtestSuite) BaremetalTestInstall(c *C) {
 	}
 	logrus.Infof("Deleting files created by net_demo_installer")
 	os.Remove("genInventoryFile.py")
+	os.Remove(".gen")
 	os.RemoveAll("./ansible")
-	//os.Remove("server.log")
+	os.Remove("server.log")
 	c.Assert(err, Equals, "")
 }
