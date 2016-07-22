@@ -1040,37 +1040,30 @@ func (s *systemtestSuite) BaremetalSetup() {
 func (s *systemtestSuite) BaremetalTestInstall(c *C) {
 	outChan := make(chan string, 100)
 	mystr := "docker info | grep Nodes"
-	out := ""
+
 	i := 1
-	out1 := ""
-
-	err := ""
-
+	var err, out, out1 string
 	for _, node := range s.nodes {
 
 		if i == 1 {
 			out1, _ = node.runCommand(mystr)
 			outChan <- out1
-			logrus.Infof("for first node docker info | grep nodes ====== %s", strings.TrimSpace(<-outChan))
-
 			if out1 == "" {
-				logrus.Infof("Nothing found on the first node ")
-				err = "net_demo didnt run"
+				err = "The script net_demo_installer didnt run properly."
 				break
 			}
 		} else {
 			out, _ = node.runCommand(mystr)
-
 			outChan <- out
-			logrus.Infof("docker info | grep nodes ====== %s", strings.TrimSpace(<-outChan))
 			if out != out1 {
-				logrus.Infof("Nodes not in sync")
-				err = "net_demo didnt run"
+				err = "The script net_demo_installer didnt run properly."
 				break
 			}
 		}
 	}
-	cmd := exec.Command("sudo rm -rf", "ansible genInventoryFile.py server.log")
-	cmd.Run()
+	logrus.Infof("Deleting files created by net_demo_installer")
+	os.Remove("genInventoryFile.py")
+	os.RemoveAll("./ansible")
+	//os.Remove("server.log")
 	c.Assert(err, Equals, "")
 }
