@@ -19,7 +19,7 @@ ENV_FILE="./.gen/env.json"
 ANSIBLE_SITE_FILE="./ansible/site.yml"
 ANSIBLE_CLEANUP_FILE="./ansible/cleanup.yml"
 NETPLUGIN_HOSTGROUP="netplugin-node"
-CFG_FILE=${CFG_FILE:-"./cfg.yml"}
+CFG_FILE=${CFG_FILE:-"/home/admin/cfg.yml"}
 INTERACTIVE_MODE=${INTERACTIVE_MODE:-"yes"}
 
 SAMPLE_CFG_FILE_URL="https://raw.githubusercontent.com/contiv/demo/master/net/extras/sample_cfg.yml"

@@ -286,7 +286,7 @@ func (d *docker) cleanupContainers() error {
 
 func (d *docker) startNetplugin(args string) error {
 	logrus.Infof("Starting netplugin on %s", d.node.Name())
-	return d.node.tbnode.RunCommandBackground("sudo " + d.node.suite.basicInfo.BinPath + "/netplugin -plugin-mode docker -vlan-if " + d.node.suite.basicInfo.VlanIf + " --cluster-store " + d.node.suite.basicInfo.ClusterStore + " " + args + "&> /tmp/netplugin.log")
+	return d.node.tbnode.RunCommandBackground("sudo " + d.node.suite.basicInfo.BinPath + "/netplugin -plugin-mode docker -vlan-if " + d.node.suite.infoHost.HostDataInterface + " --cluster-store " + d.node.suite.basicInfo.ClusterStore + " " + args + "&> /tmp/netplugin.log")
 }
 
 func (d *docker) stopNetplugin() error {

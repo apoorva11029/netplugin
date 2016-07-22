@@ -285,7 +285,7 @@ func (w *swarm) cleanupContainers() error {
 
 func (w *swarm) startNetplugin(args string) error {
 	logrus.Infof("-------Starting netplugin on %s", w.node.Name())
-	cmd := "sudo " + w.node.suite.basicInfo.BinPath + "/netplugin -plugin-mode docker -vlan-if " + w.node.suite.basicInfo.VlanIf + " --cluster-store " + w.node.suite.basicInfo.ClusterStore + " " + args + "&> /tmp/netplugin.log"
+	cmd := "sudo " + w.node.suite.basicInfo.BinPath + "/netplugin -plugin-mode docker -vlan-if " + w.node.suite.infoHost.HostDataInterface + " --cluster-store " + w.node.suite.basicInfo.ClusterStore + " " + args + "&> /tmp/netplugin.log"
 	logrus.Infof("-------CMD is  %s", cmd)
 	return w.node.tbnode.RunCommandBackground(cmd)
 }
@@ -306,7 +306,7 @@ func (w *swarm) startNetmaster() error {
 	if w.node.suite.basicInfo.EnableDNS {
 		dnsOpt = " --dns-enable=true "
 	}
-	return w.node.tbnode.RunCommandBackground(w.node.suite.basicInfo.BinPath + "/netmaster" + dnsOpt + " --cluster-store " + w.node.suite.basicInfo.ClusterStore + " &> /tmp/netmaster.log")
+	return w.node.tbnode.RunCommandBackground("sudo " + w.node.suite.basicInfo.BinPath + "/netmaster" + dnsOpt + " --cluster-store " + w.node.suite.basicInfo.ClusterStore + " &> /tmp/netmaster.log")
 }
 func (w *swarm) cleanupMaster() {
 	logrus.Infof("Cleaning up master on %s", w.node.Name())
@@ -326,7 +326,14 @@ func (w *swarm) cleanupSlave() {
 	vNode.RunCommand("sudo ovs-vsctl del-br contivVlanBridge")
 	vNode.RunCommand("for p in `ifconfig  | grep vport | awk '{print $1}'`; do sudo ip link delete $p type veth; done")
 	vNode.RunCommand("sudo rm /var/run/docker/plugins/netplugin.sock")
-	vNode.RunCommand("sudo service docker restart")
+	//vNode.RunCommand("sudo systemctl daemon-reaload")
+	//vNode.RunCommand("sudo systemctl stop docker ")
+	//vNode.RunCommand("systemctl start docker-tcp.socket")
+
+	//vNode.RunCommand("sudo systemctl start docker")
+	if w.node.suite.basicInfo.AciMode != "on" {
+		vNode.RunCommand("sudo service docker restart")
+	}
 }
 
 func (w *swarm) runCommandUntilNoNetpluginError() error {
