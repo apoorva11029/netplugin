@@ -220,7 +220,7 @@ func (w *swarm) stop(c *container) error {
 }
 
 func (w *swarm) rm(c *container) error {
-	logrus.Infof("Removing container %s on %s", c.containerID, c.node.Name())
+	logrus.Infof("########## Swarm Removing container %s on %s", c.containerID, c.node.Name())
 	w.swarmCmd(c, "kill -s 9")
 	return w.swarmCmd(c, "rm -f")
 }
@@ -278,7 +278,7 @@ func (w *swarm) cleanupContainers() error {
 	w.node.tbnode.RunCommand("docker kill -s 9 $(docker ps -a | grep alpine | awk '{print $1}')")
 
 	// Removing all alpine container images
-	return w.node.tbnode.RunCommand("docker rm -f $(docker ps -a | grep alpine | awk '{print $1}')")
+	return w.node.tbnode.RunCommand("docker rm -f `docker ps -a | grep alpine | awk '{print $1}'`")
 }
 func (w *swarm) startNetplugin(args string) error {
 	logrus.Infof("-------Starting netplugin on %s", w.node.Name())

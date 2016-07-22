@@ -42,7 +42,6 @@ type BasicInfo struct {
 }
 
 type InfoHost struct {
-	IP                string `json:"ip"`
 	HostIPs           string `json:"hostips"`
 	HostUsernames     string `json:"hostusernames"`
 	HostDataInterface string `json:"dataInterface"`

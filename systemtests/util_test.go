@@ -1023,8 +1023,9 @@ func (s *systemtestSuite) SetUpSuiteVagrant(c *C) {
 }
 
 func (s *systemtestSuite) BaremetalSetup() {
-	cmd := exec.Command("chmod +x", "net_demo_installer")
+	cmd := exec.Command("wget", "https://raw.githubusercontent.com/contiv/demo/master/net/net_demo_installer")
 	cmd.Run()
+	os.Chmod("net_demo_installer", 0777)
 	if s.basicInfo.AciMode == "on" {
 		cmd = exec.Command("./net_demo_installer", "-ars")
 	} else {
@@ -1036,7 +1037,6 @@ func (s *systemtestSuite) BaremetalSetup() {
 		logrus.Infof("no err here")
 	}
 	cmd.Stdout = file
-
 	cmd.Run()
 	logrus.Infof("Done running net demo ------------------")
 }
@@ -1065,10 +1065,11 @@ func (s *systemtestSuite) BaremetalTestInstall(c *C) {
 			}
 		}
 	}
-	logrus.Infof("Deleting files created by net_demo_installer")
+	logrus.Infof("Deleting files related to net_demo_installer")
 	os.Remove("genInventoryFile.py")
-	os.Remove(".gen")
+	os.RemoveAll("./.gen")
 	os.RemoveAll("./ansible")
 	os.Remove("server.log")
+	os.Remove("net_demo_installer")
 	c.Assert(err, Equals, "")
 }
