@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 func (s *systemtestSuite) checkConnectionPair(containers1, containers2 []*container, port int) error {
@@ -913,17 +914,19 @@ func (s *systemtestSuite) SetUpSuiteBaremetal(c *C) {
 			case "k8":
 				node.exec = s.NewK8sExec(node)
 			case "swarm":
-				logrus.Infof("#############in swarm")
+				logrus.Infof("Running in swarm mode")
 				node.exec = s.NewSwarmExec(node)
 			default:
-				logrus.Infof("in docker MOOOOOD")
+				logrus.Infof("Running in docker mode")
 				node.exec = s.NewDockerExec(node)
 			}
 			s.nodes = append(s.nodes, node)
 		}
 		//s.nodes = append(s.nodes, &node{tbnode: nodeObj, suite: s})
 	}
-  s.CheckNetDemoInstallation(c)
+	if s.basicInfo.Scheduler == "swarm" {
+		s.CheckNetDemoInstallation(c)
+	}
 	logrus.Info("Pulling alpine on all nodes")
 
 	s.baremetal.IterateNodes(func(node vagrantssh.TestbedNode) error {
@@ -956,16 +959,6 @@ func (s *systemtestSuite) SetUpSuiteVagrant(c *C) {
 	}
 
 	s.nodes = []*node{}
-
-	outChan := make(chan string, 100)
-	//logrus.Infof("env value is " + s.basicInfo.SwarmEnv)
-
-	mystr := "DOCKER_HOST=10.193.246.70:2375 docker info"
-	logrus.Infof("mystr _____________________ value is " + mystr)
-	out, _ := s.nodes[0].runCommand(mystr)
-	outChan <- out
-	logrus.Infof("docker ps for first node ====== %s", strings.TrimSpace(<-outChan))
-
 	if s.fwdMode == "routing" {
 		contivL3Nodes := 2
 		switch s.basicInfo.Scheduler {
@@ -992,7 +985,7 @@ func (s *systemtestSuite) SetUpSuiteVagrant(c *C) {
 		}
 
 	}
-	logrus.Infof("Checkpoint 1-----")
+
 	for _, nodeObj := range s.vagrant.GetNodes() {
 		nodeName := nodeObj.GetName()
 		if strings.Contains(nodeName, "netplugin-node") ||
@@ -1014,7 +1007,7 @@ func (s *systemtestSuite) SetUpSuiteVagrant(c *C) {
 			s.nodes = append(s.nodes, node)
 		}
 	}
-	logrus.Infof("Checkpoint 2-----")
+
 	logrus.Info("Pulling alpine on all nodes")
 	s.vagrant.IterateNodes(func(node vagrantssh.TestbedNode) error {
 		node.RunCommand("sudo rm /tmp/net*")
@@ -1022,7 +1015,115 @@ func (s *systemtestSuite) SetUpSuiteVagrant(c *C) {
 	})
 }
 
-func (s *systemtestSuite) BaremetalSetup() {
+func (s *systemtestSuite) SetUpTestBaremetal(c *C) {
+
+	for _, node := range s.nodes {
+		node.exec.cleanupContainers()
+		node.exec.cleanupDockerNetwork()
+
+		node.stopNetplugin()
+		node.cleanupSlave()
+		node.deleteFile("/etc/systemd/system/netplugin.service")
+		node.stopNetmaster()
+		node.deleteFile("/etc/systemd/system/netmaster.service")
+		node.deleteFile("/usr/bin/netplugin")
+		node.deleteFile("/usr/bin/netmaster")
+		node.deleteFile("/usr/bin/netctl")
+	}
+
+	for _, node := range s.nodes {
+		node.cleanupMaster()
+	}
+
+	for _, node := range s.nodes {
+		if s.fwdMode == "bridge" {
+			c.Assert(node.startNetplugin(""), IsNil)
+			time.Sleep(15 * time.Second)
+			c.Assert(node.exec.runCommandUntilNoNetpluginError(), IsNil)
+		} else if s.fwdMode == "routing" {
+			c.Assert(node.startNetplugin("-fwd-mode=routing -vlan-if=eth2"), IsNil)
+			c.Assert(node.exec.runCommandUntilNoNetpluginError(), IsNil)
+		}
+	}
+
+	time.Sleep(15 * time.Second)
+
+	for _, node := range s.nodes {
+		c.Assert(node.startNetmaster(), IsNil)
+		time.Sleep(1 * time.Second)
+		c.Assert(node.exec.runCommandUntilNoNetmasterError(), IsNil)
+	}
+
+	time.Sleep(5 * time.Second)
+	for i := 0; i < 11; i++ {
+		_, err := s.cli.TenantGet("default")
+		if err == nil {
+			break
+		}
+		// Fail if we reached last iteration
+		c.Assert((i < 10), Equals, true)
+		time.Sleep(500 * time.Millisecond)
+	}
+}
+
+func (s *systemtestSuite) SetUpTestVagrant(c *C) {
+	for _, node := range s.nodes {
+		node.exec.cleanupContainers()
+		node.exec.cleanupDockerNetwork()
+		node.stopNetplugin()
+		node.cleanupSlave()
+	}
+
+	for _, node := range s.nodes {
+		node.stopNetmaster()
+
+	}
+	for _, node := range s.nodes {
+		node.cleanupMaster()
+	}
+
+	for _, node := range s.nodes {
+		if s.fwdMode == "bridge" {
+			c.Assert(node.startNetplugin(""), IsNil)
+			c.Assert(node.exec.runCommandUntilNoNetpluginError(), IsNil)
+		} else if s.fwdMode == "routing" {
+			c.Assert(node.startNetplugin("-fwd-mode=routing -vlan-if=eth2"), IsNil)
+			c.Assert(node.exec.runCommandUntilNoNetpluginError(), IsNil)
+		}
+	}
+
+	time.Sleep(15 * time.Second)
+
+	// temporarily enable DNS for service discovery tests
+	prevDNSEnabled := s.basicInfo.EnableDNS
+	if strings.Contains(c.TestName(), "SvcDiscovery") {
+		s.basicInfo.EnableDNS = true
+	}
+
+	defer func() { s.basicInfo.EnableDNS = prevDNSEnabled }()
+
+	for _, node := range s.nodes {
+		c.Assert(node.startNetmaster(), IsNil)
+		time.Sleep(1 * time.Second)
+		c.Assert(node.exec.runCommandUntilNoNetmasterError(), IsNil)
+	}
+
+	time.Sleep(5 * time.Second)
+	if s.basicInfo.Scheduler != "k8" {
+		for i := 0; i < 11; i++ {
+
+			_, err := s.cli.TenantGet("default")
+			if err == nil {
+				break
+			}
+			// Fail if we reached last iteration
+			c.Assert((i < 10), Equals, true)
+			time.Sleep(500 * time.Millisecond)
+		}
+	}
+}
+
+func (s *systemtestSuite) NetDemoInstallation() {
 	cmd := exec.Command("wget", "https://raw.githubusercontent.com/contiv/demo/master/net/net_demo_installer")
 	cmd.Run()
 	os.Chmod("net_demo_installer", 0777)
@@ -1032,33 +1133,32 @@ func (s *systemtestSuite) BaremetalSetup() {
 		cmd = exec.Command("./net_demo_installer", "-rs")
 	}
 	// setup log file
-	file, err := os.Create("server.log")
-	if err != nil {
-		logrus.Infof("no err here")
-	}
+	file, _ := os.Create("server.log")
 	cmd.Stdout = file
 	cmd.Run()
-	logrus.Infof("Done running net demo ------------------")
+	logrus.Infof("Done setting up swarm cluster ")
 }
 
 //Function to check if net_demo_installer script ran properly.
 //Uses the output of docker info on all the nodes in the swarm cluster.
 func (s *systemtestSuite) CheckNetDemoInstallation(c *C) {
+
+	logrus.Infof("Checking if the swarm cluster was setup properly")
 	outChan := make(chan string, 100)
 	mystr := "docker info | grep Nodes"
-  var err, out, out1 string
+	var err, out, out1 string
 	out1, _ = s.nodes[0].runCommand(mystr)
 	if out1 == "" {
 		err = "The script net_demo_installer didn't run properly."
 		c.Assert(err, Equals, "")
 	}
 	for i := 1; i < len(s.nodes); i++ {
-			out, _ = s.nodes[i].runCommand(mystr)
-			outChan <- out
-			if out != out1 {
-				err = "The script net_demo_installer didn't run properly."
-				break
-			}
+		out, _ = s.nodes[i].runCommand(mystr)
+		outChan <- out
+		if out != out1 {
+			err = "The script net_demo_installer didn't run properly."
+			break
+		}
 	}
 	logrus.Infof("Deleting files related to net_demo_installer")
 	os.Remove("genInventoryFile.py")

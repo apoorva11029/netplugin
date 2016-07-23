@@ -8,10 +8,7 @@ import (
 	"github.com/contiv/vagrantssh"
 	. "gopkg.in/check.v1"
 	"os"
-
-	"strings"
 	. "testing"
-	"time"
 )
 
 type systemtestSuite struct {
@@ -74,11 +71,12 @@ func TestMain(m *M) {
 		flag.StringVar(&sts.fwdMode, "fwd-mode", "routing", "forwarding mode to start the test ")
 	}
 	if mastbasic.Platform == "baremetal" {
-		logrus.Infof("Starting net_demo_installer")
-		sts.BaremetalSetup()
+		if mastbasic.Scheduler == "swarm" {
+			logrus.Infof("Setting up swarm cluster")
+			sts.NetDemoInstallation()
+		}
 	}
 	flag.Parse()
-	//logrus.Infof("Running system test with params: %+v", sts)
 	os.Exit(m.Run())
 }
 
@@ -109,114 +107,13 @@ func (s *systemtestSuite) SetUpTest(c *C) {
 	logrus.Infof("============================= %s starting ==========================", c.TestName())
 
 	switch s.basicInfo.Platform {
-
 	case "baremetal":
-		logrus.Infof("-----Inside  switch case ------")
-		for _, node := range s.nodes {
-			node.exec.cleanupContainers()
-			node.exec.cleanupDockerNetwork()
+		s.SetUpTestBaremetal(c)
 
-			node.stopNetplugin()
-			node.cleanupSlave()
-			node.deleteFile("/etc/systemd/system/netplugin.service")
-			node.stopNetmaster()
-			node.deleteFile("/etc/systemd/system/netmaster.service")
-			node.deleteFile("/usr/bin/netplugin")
-			node.deleteFile("/usr/bin/netmaster")
-			node.deleteFile("/usr/bin/netctl")
-		}
-
-		for _, node := range s.nodes {
-			node.cleanupMaster()
-		}
-
-		for _, node := range s.nodes {
-			if s.fwdMode == "bridge" {
-				c.Assert(node.startNetplugin(""), IsNil)
-				time.Sleep(15 * time.Second)
-				c.Assert(node.exec.runCommandUntilNoNetpluginError(), IsNil)
-			} else if s.fwdMode == "routing" {
-				c.Assert(node.startNetplugin("-fwd-mode=routing -vlan-if=eth2"), IsNil)
-				c.Assert(node.exec.runCommandUntilNoNetpluginError(), IsNil)
-			}
-		}
-
-		time.Sleep(15 * time.Second)
-
-		for _, node := range s.nodes {
-			c.Assert(node.startNetmaster(), IsNil)
-			time.Sleep(1 * time.Second)
-			c.Assert(node.exec.runCommandUntilNoNetmasterError(), IsNil)
-		}
-
-		time.Sleep(5 * time.Second)
-		for i := 0; i < 11; i++ {
-			_, err := s.cli.TenantGet("default")
-			if err == nil {
-				break
-			}
-			// Fail if we reached last iteration
-			c.Assert((i < 10), Equals, true)
-			time.Sleep(500 * time.Millisecond)
-		}
 	case "vagrant":
-		for _, node := range s.nodes {
-			node.exec.cleanupContainers()
-			node.exec.cleanupDockerNetwork()
-			node.stopNetplugin()
-			node.cleanupSlave()
-		}
+		s.SetUpTestVagrant(c)
 
-		for _, node := range s.nodes {
-			node.stopNetmaster()
-
-		}
-		for _, node := range s.nodes {
-			node.cleanupMaster()
-		}
-
-		for _, node := range s.nodes {
-			if s.fwdMode == "bridge" {
-				c.Assert(node.startNetplugin(""), IsNil)
-				logrus.Infof("-----CHECKPOINT 3-------")
-				c.Assert(node.exec.runCommandUntilNoNetpluginError(), IsNil)
-				logrus.Infof("-----CHECKPOINT 3-------")
-			} else if s.fwdMode == "routing" {
-				c.Assert(node.startNetplugin("-fwd-mode=routing -vlan-if=eth2"), IsNil)
-				c.Assert(node.exec.runCommandUntilNoNetpluginError(), IsNil)
-			}
-		}
-
-		time.Sleep(15 * time.Second)
-
-		// temporarily enable DNS for service discovery tests
-		prevDNSEnabled := s.basicInfo.EnableDNS
-		if strings.Contains(c.TestName(), "SvcDiscovery") {
-			s.basicInfo.EnableDNS = true
-		}
-
-		defer func() { s.basicInfo.EnableDNS = prevDNSEnabled }()
-
-		for _, node := range s.nodes {
-			c.Assert(node.startNetmaster(), IsNil)
-			time.Sleep(1 * time.Second)
-			c.Assert(node.exec.runCommandUntilNoNetmasterError(), IsNil)
-		}
-
-		time.Sleep(5 * time.Second)
-		if s.basicInfo.Scheduler != "k8" {
-			for i := 0; i < 11; i++ {
-
-				_, err := s.cli.TenantGet("default")
-				if err == nil {
-					break
-				}
-				// Fail if we reached last iteration
-				c.Assert((i < 10), Equals, true)
-				time.Sleep(500 * time.Millisecond)
-			}
-		}
-	} // end of switch case
+	}
 
 }
 
