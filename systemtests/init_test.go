@@ -98,7 +98,7 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 
 	case "vagrant":
 		s.SetUpSuiteVagrant(c)
-	} // end of switch case
+	}
 
 	s.cli, _ = client.NewContivClient("http://localhost:9999")
 }
@@ -144,8 +144,16 @@ func (s *systemtestSuite) TearDownSuite(c *C) {
 }
 
 func (s *systemtestSuite) Test00SSH(c *C) {
-	c.Assert(s.baremetal.IterateNodes(func(node vagrantssh.TestbedNode) error {
-		logrus.Infof("-----in test00SSH-------")
-		return node.RunCommand("true")
-	}), IsNil)
+	switch s.basicInfo.Platform {
+	case "baremetal":
+		c.Assert(s.baremetal.IterateNodes(func(node vagrantssh.TestbedNode) error {
+			return node.RunCommand("true")
+		}), IsNil)
+
+	case "vagrant":
+		c.Assert(s.vagrant.IterateNodes(func(node vagrantssh.TestbedNode) error {
+			return node.RunCommand("true")
+		}), IsNil)
+
+	}
 }

@@ -867,7 +867,6 @@ func getMaster(file string) (BasicInfo, InfoHost, InfoGlob) {
 
 func (s *systemtestSuite) SetUpSuiteBaremetal(c *C) {
 
-	logrus.Infof("ACI_SYS_TEST_MODE is on")
 	logrus.Infof("Private keyFile = %s", s.basicInfo.KeyFile)
 	logrus.Infof("Binary binpath = %s", s.basicInfo.BinPath)
 	logrus.Infof("Interface vlanIf = %s", s.infoHost.HostDataInterface)
@@ -876,10 +875,15 @@ func (s *systemtestSuite) SetUpSuiteBaremetal(c *C) {
 	bm := &s.baremetal
 
 	// To fill the hostInfo data structure for Baremetal VMs
-	name := "aci-swarm-node"
+	var name string
+	if s.basicInfo.AciMode == "on" {
+		name = "aci-swarm-baremetal-node"
+	} else {
+		name = "swarm-baremetal-node"
+	}
 	hostIPs := strings.Split(s.infoHost.HostIPs, ",")
 	hostNames := strings.Split(s.infoHost.HostUsernames, ",")
-	hosts := make([]vagrantssh.HostInfo, 2)
+	hosts := make([]vagrantssh.HostInfo, len(hostNames))
 
 	for i := range hostIPs {
 		hosts[i].Name = name + strconv.Itoa(i+1)
@@ -896,13 +900,11 @@ func (s *systemtestSuite) SetUpSuiteBaremetal(c *C) {
 		hosts[i].PrivKeyFile = s.basicInfo.KeyFile
 		logrus.Infof("PrivKeyFile=%s", hosts[i].PrivKeyFile)
 	}
-	logrus.Infof("hosts are %s", hosts)
 	c.Assert(bm.Setup(hosts), IsNil)
 
 	s.nodes = []*node{}
 
 	for _, nodeObj := range s.baremetal.GetNodes() {
-		logrus.Infof("node name is %s", nodeObj.GetName())
 		nodeName := nodeObj.GetName()
 		if strings.Contains(nodeName, "aci") ||
 			strings.Contains(nodeName, "swarm") {
@@ -932,7 +934,6 @@ func (s *systemtestSuite) SetUpSuiteBaremetal(c *C) {
 	s.baremetal.IterateNodes(func(node vagrantssh.TestbedNode) error {
 		//fmt.Printf("\n\t Node Name is %s", node.nodeName)
 		node.RunCommand("sudo rm /tmp/*net*")
-		node.RunCommand("touch /home/admin/GAURAV.txt")
 		return node.RunCommand("docker pull alpine")
 	})
 
@@ -993,15 +994,14 @@ func (s *systemtestSuite) SetUpSuiteVagrant(c *C) {
 			node := &node{}
 			node.tbnode = nodeObj
 			node.suite = s
-			logrus.Infof("scheduler is %s ", s.basicInfo.Scheduler)
 			switch s.basicInfo.Scheduler {
 			case "k8":
 				node.exec = s.NewK8sExec(node)
 			case "swarm":
-				logrus.Infof("in swarm mooooood")
+				logrus.Infof("in swarm mode")
 				node.exec = s.NewSwarmExec(node)
 			default:
-				logrus.Infof("in docker mooooood")
+				logrus.Infof("in docker mode")
 				node.exec = s.NewDockerExec(node)
 			}
 			s.nodes = append(s.nodes, node)

@@ -72,7 +72,7 @@ func (s *systemtestSuite) getNodeByName(name string) *node {
 }
 
 func (n *node) startNetplugin(args string) error {
-	logrus.Infof("#####Starting netplugin on %s", n.Name())
+	logrus.Infof("Starting netplugin on %s", n.Name())
 	return n.exec.startNetplugin(args)
 }
 
