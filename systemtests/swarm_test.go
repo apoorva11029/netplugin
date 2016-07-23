@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-	//"time"
 	"github.com/Sirupsen/logrus"
 )
 
@@ -17,7 +16,6 @@ func (s *systemtestSuite) NewSwarmExec(n *node) *swarm {
 	w := new(swarm)
 	w.node = n
 	w.env = s.basicInfo.SwarmEnv + " "
-	fmt.Printf("\n\t ################ENV is : %s", w.env)
 	return w
 }
 
@@ -220,7 +218,7 @@ func (w *swarm) stop(c *container) error {
 }
 
 func (w *swarm) rm(c *container) error {
-	logrus.Infof("########## Swarm Removing container %s on %s", c.containerID, c.node.Name())
+	logrus.Infof("Removing container %s on %s", c.containerID, c.node.Name())
 	w.swarmCmd(c, "kill -s 9")
 	return w.swarmCmd(c, "rm -f")
 }
@@ -272,7 +270,7 @@ func (w *swarm) cleanupDockerNetwork() error {
 }
 
 func (w *swarm) cleanupContainers() error {
-	logrus.Infof("######Cleaning up containers on %s", w.node.Name())
+	logrus.Infof("Cleaning up containers on %s", w.node.Name())
 
 	// Stopping all running alpine image containers
 	w.node.tbnode.RunCommand("docker kill -s 9 $(docker ps -a | grep alpine | awk '{print $1}')")
@@ -281,9 +279,8 @@ func (w *swarm) cleanupContainers() error {
 	return w.node.tbnode.RunCommand("docker rm -f `docker ps -a | grep alpine | awk '{print $1}'`")
 }
 func (w *swarm) startNetplugin(args string) error {
-	logrus.Infof("-------Starting netplugin on %s", w.node.Name())
+	logrus.Infof("Starting netplugin on %s", w.node.Name())
 	cmd := "sudo " + w.node.suite.basicInfo.BinPath + "/netplugin -plugin-mode docker -vlan-if " + w.node.suite.infoHost.HostDataInterface + " --cluster-store " + w.node.suite.basicInfo.ClusterStore + " " + args + "&> /tmp/netplugin.log"
-	logrus.Infof("-------CMD is  %s", cmd)
 	return w.node.tbnode.RunCommandBackground(cmd)
 }
 
@@ -322,11 +319,6 @@ func (w *swarm) cleanupSlave() {
 	vNode.RunCommand("sudo ovs-vsctl del-br contivVxlanBridge")
 	vNode.RunCommand("sudo ovs-vsctl del-br contivVlanBridge")
 	vNode.RunCommand("for p in `ifconfig  | grep vport | awk '{print $1}'`; do sudo ip link delete $p type veth; done")
-	vNode.RunCommand("sudo rm /var/run/docker/plugins/netplugin.sock")
-	//vNode.RunCommand("sudo systemctl start docker")
-	if w.node.suite.basicInfo.Scheduler != "swarm" {
-		vNode.RunCommand("sudo service docker restart")
-	}
 }
 
 func (w *swarm) runCommandUntilNoNetpluginError() error {
