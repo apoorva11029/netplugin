@@ -1164,7 +1164,7 @@ func (s *systemtestSuite) CheckNetDemoInstallation(c *C) {
 	os.Remove("genInventoryFile.py")
 	os.RemoveAll("./.gen")
 	os.RemoveAll("./ansible")
-	os.Remove("server.log")
 	os.Remove("net_demo_installer")
 	c.Assert(err, Equals, "")
+	os.Remove("server.log")
 }
