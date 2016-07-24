@@ -1013,9 +1013,21 @@ func (s *systemtestSuite) SetUpSuiteBaremetal(c *C) {
 
 		hosts[i].PrivKeyFile = s.basicInfo.KeyFile
 		logrus.Infof("PrivKeyFile=%s", hosts[i].PrivKeyFile)
+
+		hosts[i].Env = append([]string{}, s.basicInfo.SwarmEnv)
+		logrus.Infof("Env variables are =%s", hosts[i].Env)
+
 	}
 	c.Assert(bm.Setup(hosts), IsNil)
+	/*outChan := make(chan string, 100)
+	out, _ := s.nodes[0].runCommand("echo $DOCKER_HOST")
+        outChan <- out
+        logrus.Infof("docker info for first node ====== %s", strings.TrimSpace(<-outChan))
 
+	out, _ = s.nodes[1].runCommand("echo $DOCKER_HOST")
+        outChan <- out
+        logrus.Infof("docker info for first node ====== %s", strings.TrimSpace(<-outChan))
+	*/
 	s.nodes = []*node{}
 
 	for _, nodeObj := range s.baremetal.GetNodes() {
@@ -1040,7 +1052,17 @@ func (s *systemtestSuite) SetUpSuiteBaremetal(c *C) {
 		}
 		//s.nodes = append(s.nodes, &node{tbnode: nodeObj, suite: s})
 	}
-	if s.basicInfo.Scheduler == "swarm" {
+	/*
+	outChan := make(chan string, 100)
+        out, _ := s.nodes[0].runCommand("echo $DOCKER_HOST")
+        outChan <- out
+        logrus.Infof("docker info for first node ====== %s", strings.TrimSpace(<-outChan))
+
+        out, _ = s.nodes[1].runCommand("echo $DOCKER_HOST")
+        outChan <- out
+        logrus.Infof("docker info for first node ====== %s", strings.TrimSpace(<-outChan))
+	*/
+	if s.basicInfo.Platform == "baremetal" {
 		s.CheckNetDemoInstallation(c)
 	}
 	logrus.Info("Pulling alpine on all nodes")
@@ -1050,7 +1072,16 @@ func (s *systemtestSuite) SetUpSuiteBaremetal(c *C) {
 		node.RunCommand("sudo rm /tmp/*net*")
 		return node.RunCommand("docker pull alpine")
 	})
+	/*
+	outChan := make(chan string, 100)
+        out, _ := s.nodes[0].runCommand("echo $DOCKER_HOST")
+        outChan <- out
+        logrus.Infof("docker info for first node ====== %s", strings.TrimSpace(<-outChan))
 
+        out, _ = s.nodes[1].runCommand("echo $DOCKER_HOST")
+        outChan <- out
+        logrus.Infof("docker info for first node ====== %s", strings.TrimSpace(<-outChan))
+	*/
 	//Copying binaries
 	s.copyBinary("netmaster")
 	s.copyBinary("netplugin")
@@ -1262,6 +1293,7 @@ func (s *systemtestSuite) CheckNetDemoInstallation(c *C) {
 	mystr := "docker info | grep Nodes"
 	var err, out, out1 string
 	out1, _ = s.nodes[0].runCommand(mystr)
+	logrus.Infof("---------------------------docker info during CHECKNTEDEMO IS %s",out1)
 	if out1 == "" {
 		err = "The script net_demo_installer didn't run properly."
 		c.Assert(err, Equals, "")

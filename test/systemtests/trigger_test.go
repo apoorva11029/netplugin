@@ -61,7 +61,7 @@ func (s *systemtestSuite) TestTriggerNetmasterSwitchover(c *C) {
 			c.Assert(err, IsNil)
 
 			for _, node := range s.nodes {
-				res, err := node.getIPAddr("eth1")
+				res, err := node.getIPAddr(s.infoHost.HostMgmtInterface)
 				c.Assert(err, IsNil)
 				if res == newLeaderIP && res != leaderIP {
 					oldLeader = leader

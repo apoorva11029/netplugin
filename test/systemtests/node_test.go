@@ -177,6 +177,7 @@ func (n *node) restartClusterStore() error {
 
 		n.runCommand("sudo systemctl stop etcd")
 		time.Sleep(5 * time.Second)
+		logrus.Infof("Done stopping the etcd")
 		n.runCommand("sudo systemctl start etcd")
 
 		logrus.Infof("Restarted etcd on %s", n.Name())
