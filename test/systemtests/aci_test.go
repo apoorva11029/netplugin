@@ -121,11 +121,11 @@ func (s *systemtestSuite) TestACIPingGateway(c *C) {
 	}), IsNil)
 
 	mystr := "epgA/" + s.infoGlob.Tenant
-	cA1, err := s.nodes[0].runContainer(containerSpec{networkName: mystr})
+	cA1, err := s.nodes[0].exec.runContainer(containerSpec{networkName: mystr})
 	c.Assert(err, IsNil)
 
 	// Verify cA1 can ping default gateway
-	c.Assert(cA1.checkPingWithCount(s.infoGlob.Gateway, 5), IsNil)
+	c.Assert(s.nodes[0].exec.checkPing(cA1, s.infoGlob.Gateway), IsNil)
 
 	c.Assert(s.removeContainers([]*container{cA1}), IsNil)
 	c.Assert(s.cli.AppProfileDelete(s.infoGlob.Tenant, "profile1"), IsNil)
