@@ -56,7 +56,6 @@ Testing with Vagrant:
   make system-test
 ```
 Testing with Baremetal:
-
 Scheduler: Swarm
 
 * Make a suitable JSON file on your local machine (inside the systemtests directory).
