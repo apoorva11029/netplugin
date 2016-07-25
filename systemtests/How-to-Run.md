@@ -1,7 +1,7 @@
 A guide to running netplugin SYSTEMTESTS on Vagrant and Baremetal platforms:
 
 Customize the JSON file netplugin/systemtests/cfg.json according to your environment. A typical file for vagrant with swarm looks like:
-
+```
 [
     {
       "scheduler" : "swarm",      //Scheduler used : Docker, Swarm, k8s
@@ -34,6 +34,7 @@ Customize the JSON file netplugin/systemtests/cfg.json according to your environ
       "master" : true
       }
 ]
+```
 
 Testing with Vagrant:
 
