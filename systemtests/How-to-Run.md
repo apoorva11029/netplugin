@@ -64,14 +64,14 @@ make run-build
 ```
 5.  Run Systemtests like this
 ```
-godep go test -v -timeout 240m ./systemtests -check.v -check.f "<Name of ACI Test Function>"
+godep go test -v -timeout 240m ./systemtests -check.v -check.f "<Test Function>"
 for eg :
 
-godep go test -v -timeout 240m ./systemtests -check.v -check.f "TestACIMode"
+godep go test -v -timeout 240m ./systemtests -check.v -check.f "TestPolicyFromEPGVLAN"
 
-	This will run TestACIMode test function metioned in systemtests/aci_test.go
+	This will run TestPolicyFromEPGVLAN test function mentioned in systemtests/policy_test.go
 
 godep go test -v -timeout 240m ./systemtests -check.v -check.f "TestACI"
 
-	This will run all the test function which are Starting from TestACI
+	This will run all the test functions which have the string TestACI
 ```
