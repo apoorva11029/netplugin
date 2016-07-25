@@ -1,11 +1,11 @@
 A guide to running netplugin SYSTEMTESTS on Vagrant and Baremetal platforms:
 
 Customize the JSON file netplugin/systemtests/cfg.json according to your environment. A typical file for vagrant with swarm looks like:
-
+```
 [
     {
       "scheduler" : "swarm",      //Scheduler used : Docker, Swarm, k8s
-      "swarm_variable":"DOCKER_HOST=192.168.2.10:2375",    //Env variable for swarm setup. Typically <master node's IP>:2375
+      "swarm_variable":"DOCKER_HOST=192.168.2.10:2375",    //Env variable for swarm. Typically <master node's IP>:2375
       "platform" : "vagrant",    //Platform: Vagrant or Platform
       "product" : "netplugin",    // Product: netplugin or volplugin(not yet supported)
       "aci_mode" : "off",      // ACI mode: on/off
@@ -23,7 +23,7 @@ Customize the JSON file netplugin/systemtests/cfg.json according to your environ
       "dataInterface" : "eth2",   
       "mgmtInterface" : "eth1",
 
-      // variables for policy tests:
+      // variables for ACI tests:
       "vlan" : "1120-1150",    
       "vxlan" : "1-10000",
       "subnet" : "10.1.1.0/24",
@@ -34,6 +34,7 @@ Customize the JSON file netplugin/systemtests/cfg.json according to your environ
       "master" : true
       }
 ]
+```
 
 Testing with Vagrant:
 
@@ -51,9 +52,11 @@ Scheduler: Swarm
 2. Make a suitable YML file in the same location for bringing up swarm, according to your host IPs and ACI mode. Check our sample cfg.yml for reference.  
 3. Set these Environment variables on the master node:
 
+```
 export GOPATH=/home/admin
 export GOBIN=$GOPATH/bin
 export PATH=$PATH:$GOBIN:/usr/local/go/bin
+```
 
 4. Build the code on master node. You can run from $GOPATH/src/github.com/contiv/netplugin
 ```

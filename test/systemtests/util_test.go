@@ -1266,13 +1266,15 @@ func (s *systemtestSuite) SetUpTestVagrant(c *C) {
 	}
 }
 
-func (s *systemtestSuite) NetDemoInstallation() {
+func (s *systemtestSuite) NetDemoInstallation(aci string) {
 	cmd := exec.Command("wget", "https://raw.githubusercontent.com/contiv/demo/master/net/net_demo_installer")
 	cmd.Run()
 	os.Chmod("net_demo_installer", 0777)
-	if s.basicInfo.AciMode == "on" {
+	if aci == "on" {
+		logrus.Infof("----------ACI MODE ON ------------")
 		cmd = exec.Command("./net_demo_installer", "-ars")
 	} else {
+		logrus.Infof("----------ACI MODE OFF ------------")
 		cmd = exec.Command("./net_demo_installer", "-rs")
 	}
 	// setup log file
