@@ -5,7 +5,7 @@ Customize the JSON file netplugin/systemtests/cfg.json according to your environ
 [
     {
       "scheduler" : "swarm",      //Scheduler used : Docker, Swarm, k8s
-      "swarm_variable":"DOCKER_HOST=192.168.2.10:2375",    //Env variable for swarm setup. Typically <master node's IP>:2375
+      "swarm_variable":"DOCKER_HOST=192.168.2.10:2375",    //Env variable for swarm. Typically <master node's IP>:2375
       "platform" : "vagrant",    //Platform: Vagrant or Platform
       "product" : "netplugin",    // Product: netplugin or volplugin(not yet supported)
       "aci_mode" : "off",      // ACI mode: on/off
@@ -23,7 +23,7 @@ Customize the JSON file netplugin/systemtests/cfg.json according to your environ
       "dataInterface" : "eth2",   
       "mgmtInterface" : "eth1",
 
-      // variables for policy tests:
+      // variables for ACI tests:
       "vlan" : "1120-1150",    
       "vxlan" : "1-10000",
       "subnet" : "10.1.1.0/24",
