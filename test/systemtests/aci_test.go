@@ -85,11 +85,8 @@ func (s *systemtestSuite) TestACIMode(c *C) {
 	c.Assert(s.cli.NetworkDelete(s.infoGlob.Tenant, s.infoGlob.Network), IsNil)
 }
 
-
-
-
 func (s *systemtestSuite) TestACIPingGateway(c *C) {
-	if s.fwdMode == "routing"  || s.basicInfo.Scheduler == "k8" {
+	if s.fwdMode == "routing" || s.basicInfo.Scheduler == "k8" {
 		return
 	}
 	c.Assert(s.cli.GlobalPost(&client.Global{
@@ -117,23 +114,24 @@ func (s *systemtestSuite) TestACIPingGateway(c *C) {
 	}), IsNil)
 
 	c.Assert(s.cli.AppProfilePost(&client.AppProfile{
-		TenantName:     s.infoGlob.,
+		TenantName:     s.infoGlob.Tenant,
 		EndpointGroups: []string{"epgA"},
 		AppProfileName: "profile1",
 	}), IsNil)
 
 	mystr := "epgA/" + s.infoGlob.Tenant
-	cA1, err := s.nodes[0].runContainer(containerSpec{networkName: mystr})
+	cA1, err := s.nodes[0].exec.runContainer(containerSpec{networkName: mystr})
 	c.Assert(err, IsNil)
 
 	// Verify cA1 can ping default gateway
-	c.Assert(cA1.checkPingWithCount(s.infoGlob.Gateway, 5), IsNil)
+	c.Assert(s.nodes[0].exec.checkPing(cA1, s.infoGlob.Gateway), IsNil)
 
 	c.Assert(s.removeContainers([]*container{cA1}), IsNil)
 	c.Assert(s.cli.AppProfileDelete(s.infoGlob.Tenant, "profile1"), IsNil)
 	c.Assert(s.cli.EndpointGroupDelete(s.infoGlob.Tenant, "epgA"), IsNil)
 	c.Assert(s.cli.NetworkDelete(s.infoGlob.Tenant, s.infoGlob.Network), IsNil)
 }
+
 /*
 func (s *systemtestSuite) TestACIProfile(c *C) {
 	if s.fwdMode == "routing" {
