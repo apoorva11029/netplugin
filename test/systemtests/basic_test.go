@@ -33,7 +33,6 @@ func (s *systemtestSuite) testBasicStartRemoveContainer(c *C, encap string) {
 		Encap:       encap,
 		TenantName:  "default",
 	}), IsNil)
-	logrus.Infof(" Betworj created ----")
 	for i := 0; i < s.basicInfo.Iterations; i++ {
 		containers, err := s.runContainers(s.basicInfo.Containers, false, "private", "", nil, nil)
 		c.Assert(err, IsNil)

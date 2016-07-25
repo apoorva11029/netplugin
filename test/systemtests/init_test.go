@@ -7,6 +7,7 @@ import (
 	"github.com/contiv/contivmodel/client"
 	. "gopkg.in/check.v1"
 	"os"
+	"strings"
 	. "testing"
 	"time"
 
@@ -107,7 +108,22 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 
 func (s *systemtestSuite) SetUpTest(c *C) {
 	logrus.Infof("============================= %s starting ==========================", c.TestName())
+	outChan := make(chan string, 100)
+	out, _ := s.nodes[0].runCommand("echo $DOCKER_HOST")
+	outChan <- out
+	logrus.Infof("DOCKER HOST for first node: %s", strings.TrimSpace(<-outChan))
 
+	out, _ = s.nodes[1].runCommand("echo $DOCKER_HOST")
+	outChan <- out
+	logrus.Infof("DOCKER HOST for second node: %s", strings.TrimSpace(<-outChan))
+
+	out, _ = s.nodes[0].runCommand("docker info")
+	outChan <- out
+	logrus.Infof("DOCKER INFO for first node: %s", strings.TrimSpace(<-outChan))
+
+	out, _ = s.nodes[1].runCommand("docker info")
+	outChan <- out
+	logrus.Infof("DOCKER INFO for second node: %s", strings.TrimSpace(<-outChan))
 	switch s.basicInfo.Platform {
 	case "baremetal":
 		s.SetUpTestBaremetal(c)

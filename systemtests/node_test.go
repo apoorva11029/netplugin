@@ -181,11 +181,9 @@ func (n *node) reloadNode() error {
 func (n *node) restartClusterStore() error {
 	if strings.Contains(n.suite.basicInfo.ClusterStore, "etcd://") {
 		logrus.Infof("Restarting etcd on %s", n.Name())
-
 		n.runCommand("sudo systemctl stop etcd")
 		time.Sleep(5 * time.Second)
 		n.runCommand("sudo systemctl start etcd")
-
 		logrus.Infof("Restarted etcd on %s", n.Name())
 	} else if strings.Contains(n.suite.basicInfo.ClusterStore, "consul://") {
 		logrus.Infof("Restarting consul on %s", n.Name())
@@ -198,4 +196,8 @@ func (n *node) restartClusterStore() error {
 	}
 
 	return nil
+}
+
+func (n *node) checkSchedulerNetworkCreated(nwName string, expectedOp bool) error {
+	return n.exec.checkSchedulerNetworkCreated(nwName, expectedOp)
 }

@@ -443,3 +443,7 @@ func (k *kubernetes) rotateLog(prefix string) error {
 	_, err := k.node.runCommand(fmt.Sprintf("mv %s.log %s-`date +%%s`.log", oldPrefix, newPrefix))
 	return err
 }
+
+func (k *kubernetes) checkSchedulerNetworkCreated(nwName string, expectedOp bool) error {
+	return nil
+}
