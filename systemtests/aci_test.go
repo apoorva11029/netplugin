@@ -81,54 +81,55 @@ func (s *systemtestSuite) TestACIMode(c *C) {
 	c.Assert(s.cli.NetworkDelete(s.infoGlob.Tenant, s.infoGlob.Network), IsNil)
 }
 
-/*
+
 
 
 func (s *systemtestSuite) TestACIPingGateway(c *C) {
-	if s.fwdMode == "routing" {
+	if s.fwdMode == "routing"  || s.basicInfo.Scheduler == "k8" {
 		return
 	}
 	c.Assert(s.cli.GlobalPost(&client.Global{
 		Name:             "global",
 		NetworkInfraType: "aci",
-		Vlans:            "1100-1200",
-		Vxlans:           "1-10000",
+		Vlans:            s.infoGlob.Vlan,
+		Vxlans:           s.infoGlob.Vxlan,
 	}), IsNil)
 	c.Assert(s.cli.TenantPost(&client.Tenant{
-		TenantName: "aciTenant",
+		TenantName: s.infoGlob.Tenant,
 	}), IsNil)
 	c.Assert(s.cli.NetworkPost(&client.Network{
-		TenantName:  "aciTenant",
-		NetworkName: "aciNet",
-		Subnet:      "20.1.1.0/24",
-		Gateway:     "20.1.1.254",
-		Encap:       "vlan",
+		TenantName:  s.infoGlob.Tenant,
+		NetworkName: s.infoGlob.Network,
+		Subnet:      s.infoGlob.Subnet,
+		Gateway:     s.infoGlob.Gateway,
+		Encap:       s.infoGlob.Encap,
 	}), IsNil)
 
 	c.Assert(s.cli.EndpointGroupPost(&client.EndpointGroup{
-		TenantName:  "aciTenant",
-		NetworkName: "aciNet",
+		TenantName:  s.infoGlob.Tenant,
+		NetworkName: s.infoGlob.Network,
 		GroupName:   "epgA",
 	}), IsNil)
 
 	c.Assert(s.cli.AppProfilePost(&client.AppProfile{
-		TenantName:     "aciTenant",
+		TenantName:     s.infoGlob.,
 		EndpointGroups: []string{"epgA"},
 		AppProfileName: "profile1",
 	}), IsNil)
 
-	cA1, err := s.nodes[0].runContainer(containerSpec{networkName: "epgA/aciTenant"})
+	mystr := "epgA/" + s.infoGlob.Tenant
+	cA1, err := s.nodes[0].runContainer(containerSpec{networkName: mystr})
 	c.Assert(err, IsNil)
 
 	// Verify cA1 can ping default gateway
-	c.Assert(cA1.checkPingWithCount("20.1.1.254", 5), IsNil)
+	c.Assert(cA1.checkPingWithCount(s.infoGlob.Gateway, 5), IsNil)
 
 	c.Assert(s.removeContainers([]*container{cA1}), IsNil)
-	c.Assert(s.cli.AppProfileDelete("aciTenant", "profile1"), IsNil)
-	c.Assert(s.cli.EndpointGroupDelete("aciTenant", "epgA"), IsNil)
-	c.Assert(s.cli.NetworkDelete("aciTenant", "aciNet"), IsNil)
+	c.Assert(s.cli.AppProfileDelete(s.infoGlob.Tenant, "profile1"), IsNil)
+	c.Assert(s.cli.EndpointGroupDelete(s.infoGlob.Tenant, "epgA"), IsNil)
+	c.Assert(s.cli.NetworkDelete(s.infoGlob.Tenant, s.infoGlob.Network), IsNil)
 }
-
+/*
 func (s *systemtestSuite) TestACIProfile(c *C) {
 	if s.fwdMode == "routing" {
 		return
