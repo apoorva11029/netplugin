@@ -52,9 +52,11 @@ Scheduler: Swarm
 2. Make a suitable YML file in the same location for bringing up swarm, according to your host IPs and ACI mode. Check our sample cfg.yml for reference.  
 3. Set these Environment variables on the master node:
 
+```
 export GOPATH=/home/admin
 export GOBIN=$GOPATH/bin
 export PATH=$PATH:$GOBIN:/usr/local/go/bin
+```
 
 4. Build the code on master node. You can run from $GOPATH/src/github.com/contiv/netplugin
 ```
