@@ -49,8 +49,8 @@ Customize the JSON file netplugin/systemtests/cfg.json according to your environ
 
 Testing with Vagrant:
 
-1. Make a suitable JSON file on your local machine (inside the systemtests directory).
-2. From the netplugin directory of your machine (outside the vagrant nodes), run:
+* Make a suitable JSON file on your local machine (inside the systemtests directory).
+* From the netplugin directory of your machine (outside the vagrant nodes), run:
 
 ```
   make system-test
@@ -59,9 +59,9 @@ Testing with Baremetal:
 
 Scheduler: Swarm
 
-1. Make a suitable JSON file on your local machine (inside the systemtests directory).
-2. Make a suitable YML file in the same location for bringing up swarm, according to your host IPs and ACI mode. Check our sample cfg.yml for reference.  
-3. Set these Environment variables on the master node:
+* Make a suitable JSON file on your local machine (inside the systemtests directory).
+* Make a suitable YML file in the same location for bringing up swarm, according to your host IPs and ACI mode. Check our sample cfg.yml for reference.  
+* Set these Environment variables on the master node:
 
 ```
 export GOPATH=/home/admin
@@ -69,11 +69,11 @@ export GOBIN=$GOPATH/bin
 export PATH=$PATH:$GOBIN:/usr/local/go/bin
 ```
 
-4. Build the code on master node. You can run from $GOPATH/src/github.com/contiv/netplugin
+* Build the code on master node. You can run from $GOPATH/src/github.com/contiv/netplugin
 ```
 make run-build
 ```
-5.  Run Systemtests like this
+*  Run Systemtests like this
 ```
 godep go test -v -timeout 240m ./systemtests -check.v -check.f "<Test Function>"
 for eg :
