@@ -5,3 +5,4 @@ Next:
 2. Merging swarm scheduler into docker.
 3. ACI testing completion.
 4. Integrating with k8s.  
+5. Error handling for JSON.
