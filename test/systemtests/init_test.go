@@ -88,7 +88,7 @@ func TestMain(m *M) {
 	if mastbasic.Platform == "baremetal" {
 		if mastbasic.Scheduler == "swarm" {
 			logrus.Infof("Setting up swarm cluster")
-			//sts.NetDemoInstallation()
+			sts.NetDemoInstallation()
 		}
 	}
 	flag.Parse()
@@ -121,21 +121,21 @@ func (s *systemtestSuite) SetUpSuite(c *C) {
 func (s *systemtestSuite) SetUpTest(c *C) {
 	logrus.Infof("============================= %s starting ==========================", c.TestName())
 	outChan := make(chan string, 100)
-        out, _ := s.nodes[0].runCommand("echo $DOCKER_HOST")
-        outChan <- out
-        logrus.Infof("DOCKER HOST for first node ====== %s", strings.TrimSpace(<-outChan))
+	out, _ := s.nodes[0].runCommand("echo $DOCKER_HOST")
+	outChan <- out
+	logrus.Infof("DOCKER HOST for first node: %s", strings.TrimSpace(<-outChan))
 
-        out, _ = s.nodes[1].runCommand("echo $DOCKER_HOST")
-        outChan <- out
-        logrus.Infof("echo DOCER HOST for first node ====== %s", strings.TrimSpace(<-outChan))
-	
+	out, _ = s.nodes[1].runCommand("echo $DOCKER_HOST")
+	outChan <- out
+	logrus.Infof("DOCKER HOST for second node: %s", strings.TrimSpace(<-outChan))
+
 	out, _ = s.nodes[0].runCommand("docker info")
-        outChan <- out
-        logrus.Infof("DOCKER info for first node ====== %s", strings.TrimSpace(<-outChan))
+	outChan <- out
+	logrus.Infof("DOCKER INFO for first node: %s", strings.TrimSpace(<-outChan))
 
-        out, _ = s.nodes[1].runCommand("docker info")
-        outChan <- out
-        logrus.Infof("docker ifno for first node ====== %s", strings.TrimSpace(<-outChan))
+	out, _ = s.nodes[1].runCommand("docker info")
+	outChan <- out
+	logrus.Infof("DOCKER INFO for second node: %s", strings.TrimSpace(<-outChan))
 	switch s.basicInfo.Platform {
 	case "baremetal":
 		s.SetUpTestBaremetal(c)
