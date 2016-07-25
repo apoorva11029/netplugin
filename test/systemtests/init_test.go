@@ -39,7 +39,7 @@ type systemtestSuite struct {
 }
 type BasicInfo struct {
 	Scheduler    string `json:"scheduler"`      //swarm, k8s or plain docker
-	SwarmEnv     string `json:"swarm_variable"` //env variables to be set with swarm 
+	SwarmEnv     string `json:"swarm_variable"` //env variables to be set with swarm
 	Platform     string `json:"platform"`       //vagrant or baremetal
 	Product      string `json:"product"`        //for netplugin / volplugin
 	AciMode      string `json:"aci_mode"`       //on/off
@@ -89,7 +89,7 @@ func TestMain(m *M) {
 	if mastbasic.Platform == "baremetal" {
 		if mastbasic.Scheduler == "swarm" {
 			logrus.Infof("Setting up swarm cluster")
-			sts.NetDemoInstallation()
+			sts.NetDemoInstallation(mastbasic.AciMode)
 		}
 	}
 	flag.Parse()
