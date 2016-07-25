@@ -746,7 +746,7 @@ func (s *systemtestSuite) startListenersOnProviders(containers []*container, por
 	return nil
 }
 
-func (s *systemtestSuite) runContainersOnNode(num int, networkName string, n *node) ([]*container, error) {
+func (s *systemtestSuite) runContainersOnNode(num int, networkName string, tenantName string, groupname string, n *node) ([]*container, error) {
 	containers := []*container{}
 	mutex := sync.Mutex{}
 
@@ -757,7 +757,13 @@ func (s *systemtestSuite) runContainersOnNode(num int, networkName string, n *no
 			spec := containerSpec{
 				imageName:   "alpine",
 				networkName: networkName,
-				name:        fmt.Sprintf("%s-%d-%s", n.Name(), i, randSeq(16)),
+				tenantName:  tenantName,
+				serviceName: groupname,
+			}
+			if groupname == "" {
+				spec.name = fmt.Sprintf("%s-%d-%s", n.Name(), i, randSeq(16))
+			} else {
+				spec.name = fmt.Sprintf("%s-%d-%s", n.Name(), i, groupname)
 			}
 
 			cont, err := n.exec.runContainer(spec)
@@ -948,7 +954,7 @@ func (s *systemtestSuite) SetUpSuiteBaremetal(c *C) {
 		        outChan <- out
 		        logrus.Infof("docker info for first node ====== %s", strings.TrimSpace(<-outChan))
 	*/
-	if s.basicInfo.Platform == "baremetal" {
+	if s.basicInfo.Scheduler == "swarm" {
 		s.CheckNetDemoInstallation(c)
 	}
 	logrus.Info("Pulling alpine on all nodes")
@@ -1179,7 +1185,6 @@ func (s *systemtestSuite) CheckNetDemoInstallation(c *C) {
 	mystr := "docker info | grep Nodes"
 	var err, out, out1 string
 	out1, _ = s.nodes[0].runCommand(mystr)
-	logrus.Infof("---------------------------docker info during CHECKNTEDEMO IS %s", out1)
 	if out1 == "" {
 		err = "The script net_demo_installer didn't run properly."
 		c.Assert(err, Equals, "")

@@ -363,3 +363,28 @@ func (w *swarm) rotateLog(prefix string) error {
 	_, err := w.node.runCommand(fmt.Sprintf("mv %s.log %s-`date +%%s`.log", oldPrefix, newPrefix))
 	return err
 }
+
+func (w *swarm) checkSchedulerNetworkCreated(nwName string, expectedOp bool) error {
+	logrus.Infof(w.env + "Checking whether docker network is created or not")
+	cmd := fmt.Sprintf("docker network ls | grep netplugin | grep %s | awk \"{print \\$2}\"", nwName)
+	logrus.Infof("Command to be executed is = %s", cmd)
+	op, err := w.node.runCommand(cmd)
+
+	if err == nil {
+		// if networks are NOT meant to be created. In ACI mode netctl net create should
+		// not create docker networks
+		ret := strings.Contains(op, nwName)
+		if expectedOp == false && ret != true {
+			logrus.Infof("Network names Input=%s and Output=%s are NOT matching and thats expected", nwName, op)
+		} else {
+			// If netwokrs are meant to be created. In ACI Once you create EPG,
+			// respective docker network should get created.
+			if ret == true {
+				logrus.Infof("Network names are matching.")
+				return nil
+			}
+		}
+		return nil
+	}
+	return err
+}

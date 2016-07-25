@@ -1,68 +1,87 @@
 package systemtests
 
-/*
 import (
 	//"errors"
-	//log "github.com/Sirupsen/logrus"
+	log "github.com/Sirupsen/logrus"
 	"github.com/contiv/contivmodel/client"
 	. "gopkg.in/check.v1"
-	//"time"
+	"time"
 )
 
 func (s *systemtestSuite) TestACIMode(c *C) {
-	if s.fwdMode == "routing" {
+	if s.fwdMode == "routing" || s.basicInfo.Scheduler == "k8" {
 		return
 	}
 	c.Assert(s.cli.GlobalPost(&client.Global{
 		Name:             "global",
 		NetworkInfraType: "aci",
-		Vlans:            "1-4094",
-		Vxlans:           "1-10000",
+		Vlans:            s.infoGlob.Vlan,
+		Vxlans:           s.infoGlob.Vxlan,
 	}), IsNil)
 	c.Assert(s.cli.NetworkPost(&client.Network{
-		TenantName:  "default",
-		NetworkName: "aciNet",
-		Subnet:      "22.2.2.0/24",
-		Gateway:     "22.2.2.254",
-		Encap:       "vlan",
+		TenantName:  s.infoGlob.Tenant,
+		NetworkName: s.infoGlob.Network,
+		Subnet:      s.infoGlob.Subnet,
+		Gateway:     s.infoGlob.Gateway,
+		Encap:       s.infoGlob.Encap,
 	}), IsNil)
+
+	err := s.nodes[0].checkSchedulerNetworkCreated(s.infoGlob.Network, false)
+	c.Assert(err, IsNil)
 
 	c.Assert(s.cli.EndpointGroupPost(&client.EndpointGroup{
-		TenantName:  "default",
-		NetworkName: "aciNet",
-		GroupName:   "epgA",
+		TenantName:  s.infoGlob.Tenant,
+		NetworkName: s.infoGlob.Network,
+		GroupName:   "epga",
 	}), IsNil)
+
+	err = s.nodes[0].exec.checkSchedulerNetworkCreated("epga", true)
+	c.Assert(err, IsNil)
 
 	c.Assert(s.cli.EndpointGroupPost(&client.EndpointGroup{
-		TenantName:  "default",
-		NetworkName: "aciNet",
-		GroupName:   "epgB",
+		TenantName:  s.infoGlob.Tenant,
+		NetworkName: s.infoGlob.Network,
+		GroupName:   "epgb",
 	}), IsNil)
 
-	cA1, err := s.nodes[0].exec.runContainer(containerSpec{networkName: "epgA"})
+	err = s.nodes[0].checkSchedulerNetworkCreated("epgb", true)
 	c.Assert(err, IsNil)
 
-	cA2, err := s.nodes[0].exec.runContainer(containerSpec{networkName: "epgA"})
+	containersA, err := s.runContainersOnNode(s.basicInfo.Containers, s.infoGlob.Network, "", "epga", s.nodes[0])
 	c.Assert(err, IsNil)
-
-	cB1, err := s.nodes[0].exec.runContainer(containerSpec{networkName: "epgB"})
-	c.Assert(err, IsNil)
-
-	cB2, err := s.nodes[0].exec.runContainer(containerSpec{networkName: "epgB"})
+	containersB, err := s.runContainersOnNode(s.basicInfo.Containers, s.infoGlob.Network, "", "epgb", s.nodes[0])
 	c.Assert(err, IsNil)
 
 	// Verify cA1 can ping cA2
-	c.Assert(cA1.node.exec.checkPing(cA1,cA2.eth0.ip), IsNil)
+	c.Assert(s.pingTest(containersA), IsNil)
 	// Verify cB1 can ping cB2
-	c.Assert(cB1.node.exec.checkPing(cB1,cB2.eth0.ip), IsNil)
+	c.Assert(s.pingTest(containersB), IsNil)
 	// Verify cA1 cannot ping cB1
-	c.Assert(cA1.node.exec.checkPing(cA1,cB1.eth0.ip), IsNil)
+	c.Assert(s.pingFailureTest(containersA, containersB), IsNil)
 
-	c.Assert(s.removeContainers([]*container{cA1, cA2, cB1, cB2}), IsNil)
-	c.Assert(s.cli.EndpointGroupDelete("default", "epgA"), IsNil)
-	c.Assert(s.cli.EndpointGroupDelete("default", "epgB"), IsNil)
-	c.Assert(s.cli.NetworkDelete("default", "aciNet"), IsNil)
+	log.Infof("Triggering netplugin restart")
+	node1 := s.nodes[0]
+	c.Assert(node1.stopNetplugin(), IsNil)
+	c.Assert(node1.rotateLog("netplugin"), IsNil)
+	c.Assert(node1.startNetplugin(""), IsNil)
+	c.Assert(node1.runCommandUntilNoError("pgrep netplugin"), IsNil)
+	time.Sleep(20 * time.Second)
+
+	// Verify cA1 can ping cA2
+	c.Assert(s.pingTest(containersA), IsNil)
+	// Verify cB1 can ping cB2
+	c.Assert(s.pingTest(containersB), IsNil)
+	// Verify cA1 cannot ping cB1
+	c.Assert(s.pingFailureTest(containersA, containersB), IsNil)
+
+	c.Assert(s.removeContainers(containersA), IsNil)
+	c.Assert(s.removeContainers(containersB), IsNil)
+	c.Assert(s.cli.EndpointGroupDelete(s.infoGlob.Tenant, "epga"), IsNil)
+	c.Assert(s.cli.EndpointGroupDelete(s.infoGlob.Tenant, "epgb"), IsNil)
+	c.Assert(s.cli.NetworkDelete(s.infoGlob.Tenant, s.infoGlob.Network), IsNil)
 }
+
+/*
 
 
 func (s *systemtestSuite) TestACIPingGateway(c *C) {

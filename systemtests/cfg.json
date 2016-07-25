@@ -23,7 +23,7 @@
       "subnet" : "10.1.1.0/24",
       "gateway" : "10.1.1.254",
       "network" : "aciNet",
-      "tenant": "TestTenant",
+      "tenant": "default",
       "encap" : "vlan",
       "master" : true
       }

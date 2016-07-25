@@ -157,7 +157,7 @@ func (s *systemtestSuite) TestTriggerNodeReload(c *C) {
 
 		// start containers on all nodes
 		for _, node := range s.nodes {
-			newContainers, err := s.runContainersOnNode(cntPerNode, "private", node)
+			newContainers, err := s.runContainersOnNode(cntPerNode, "private", "", "", node)
 			c.Assert(err, IsNil)
 			containers = append(containers, newContainers...)
 		}
@@ -196,7 +196,7 @@ func (s *systemtestSuite) TestTriggerNodeReload(c *C) {
 			}
 
 			// start new containers on reloaded node
-			newContainers, err := s.runContainersOnNode(cntPerNode, "private", node)
+			newContainers, err := s.runContainersOnNode(cntPerNode, "private", "", "", node)
 			c.Assert(err, IsNil)
 			containers = append(exContainers, newContainers...)
 
