@@ -23,7 +23,7 @@ CONNECTION_INFO:
 #
 ###===============================================================
 ### APIC Access Info
-#
+#  IF ACI_MODE is ON 
 ### Fill in the info and uncomment (quotes are needed)
 APIC_URL: "https://10.193.231.33:443"
 APIC_USERNAME: "admin"
