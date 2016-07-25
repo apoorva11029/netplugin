@@ -28,4 +28,5 @@ type systemTestScheduler interface {
 	getIPv6Addr(c *container, dev string) (string, error)
 	checkForNetpluginErrors() error
 	rotateLog(prefix string) error
+	checkSchedulerNetworkCreated(nwName string, expectedOp bool) error
 }

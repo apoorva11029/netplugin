@@ -834,7 +834,6 @@ func (s *systemtestSuite) startListenersOnProviders(containers []*container, por
 func (s *systemtestSuite) verifyVTEPs() error {
 	// get all expected VTEPs
 	var err error
-
 	expVTEPs := make(map[string]bool)
 	for _, n := range s.nodes {
 		if s.scheduler == "k8" && n.Name() == "k8master" {
@@ -848,7 +847,6 @@ func (s *systemtestSuite) verifyVTEPs() error {
 
 		expVTEPs[vtep] = true
 	}
-
 	failNode := ""
 	err = nil
 	dbgOut := ""
@@ -1061,7 +1059,7 @@ func (s *systemtestSuite) SetUpSuiteBaremetal(c *C) {
 		        outChan <- out
 		        logrus.Infof("docker info for first node ====== %s", strings.TrimSpace(<-outChan))
 	*/
-	if s.basicInfo.Platform == "baremetal" {
+	if s.basicInfo.Scheduler == "swarm" {
 		s.CheckNetDemoInstallation(c)
 	}
 	logrus.Info("Pulling alpine on all nodes")
@@ -1292,7 +1290,6 @@ func (s *systemtestSuite) CheckNetDemoInstallation(c *C) {
 	mystr := "docker info | grep Nodes"
 	var err, out, out1 string
 	out1, _ = s.nodes[0].runCommand(mystr)
-	logrus.Infof("---------------------------docker info during CHECKNTEDEMO IS %s", out1)
 	if out1 == "" {
 		err = "The script net_demo_installer didn't run properly."
 		c.Assert(err, Equals, "")
