@@ -1292,7 +1292,7 @@ func (s *systemtestSuite) CheckNetDemoInstallation(c *C) {
 	mystr := "docker info | grep Nodes"
 	var err, out, out1 string
 	out1, _ = s.nodes[0].runCommand(mystr)
-	if out1 == "" {
+	if !strings.Contains(out1, "Nodes") {
 		err = "The script net_demo_installer didn't run properly."
 		c.Assert(err, Equals, "")
 	}
