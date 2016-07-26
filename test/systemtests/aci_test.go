@@ -24,7 +24,7 @@ func (s *systemtestSuite) TestACIMode(c *C) {
 		FwdMode:          "bridge",
 	}), IsNil)
 	c.Assert(s.cli.NetworkPost(&client.Network{
-		TenantName:  s.infoGlob.Tenant,
+		TenantName:  "default",
 		NetworkName: s.infoGlob.Network,
 		Subnet:      s.infoGlob.Subnet,
 		Gateway:     s.infoGlob.Gateway,
@@ -35,7 +35,7 @@ func (s *systemtestSuite) TestACIMode(c *C) {
 	c.Assert(err, IsNil)
 
 	c.Assert(s.cli.EndpointGroupPost(&client.EndpointGroup{
-		TenantName:  s.infoGlob.Tenant,
+		TenantName:  "default",
 		NetworkName: s.infoGlob.Network,
 		GroupName:   "epga",
 	}), IsNil)
@@ -44,7 +44,7 @@ func (s *systemtestSuite) TestACIMode(c *C) {
 	c.Assert(err, IsNil)
 
 	c.Assert(s.cli.EndpointGroupPost(&client.EndpointGroup{
-		TenantName:  s.infoGlob.Tenant,
+		TenantName:  "default",
 		NetworkName: s.infoGlob.Network,
 		GroupName:   "epgb",
 	}), IsNil)
@@ -80,9 +80,9 @@ func (s *systemtestSuite) TestACIMode(c *C) {
 	c.Assert(s.pingFailureTest(containersA, containersB), IsNil)
 	c.Assert(s.removeContainers(containersA), IsNil)
 	c.Assert(s.removeContainers(containersB), IsNil)
-	c.Assert(s.cli.EndpointGroupDelete(s.infoGlob.Tenant, "epga"), IsNil)
-	c.Assert(s.cli.EndpointGroupDelete(s.infoGlob.Tenant, "epgb"), IsNil)
-	c.Assert(s.cli.NetworkDelete(s.infoGlob.Tenant, s.infoGlob.Network), IsNil)
+	c.Assert(s.cli.EndpointGroupDelete("default", "epga"), IsNil)
+	c.Assert(s.cli.EndpointGroupDelete("default", "epgb"), IsNil)
+	c.Assert(s.cli.NetworkDelete("default", s.infoGlob.Network), IsNil)
 }
 
 func (s *systemtestSuite) TestACIPingGateway(c *C) {

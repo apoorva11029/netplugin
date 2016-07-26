@@ -7,3 +7,4 @@ Next:
 4. Integrating with k8s.  
 5. Error handling for JSON.
 6. Saving logs for tests.
+7. Check for net_demo_installation more robust. 
