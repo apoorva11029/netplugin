@@ -1015,15 +1015,6 @@ func (s *systemtestSuite) SetUpSuiteBaremetal(c *C) {
 
 	}
 	c.Assert(bm.Setup(hosts), IsNil)
-	/*outChan := make(chan string, 100)
-		out, _ := s.nodes[0].runCommand("echo $DOCKER_HOST")
-	        outChan <- out
-	        logrus.Infof("docker info for first node ====== %s", strings.TrimSpace(<-outChan))
-
-		out, _ = s.nodes[1].runCommand("echo $DOCKER_HOST")
-	        outChan <- out
-	        logrus.Infof("docker info for first node ====== %s", strings.TrimSpace(<-outChan))
-	*/
 	s.nodes = []*node{}
 
 	for _, nodeObj := range s.baremetal.GetNodes() {
@@ -1048,36 +1039,15 @@ func (s *systemtestSuite) SetUpSuiteBaremetal(c *C) {
 		}
 		//s.nodes = append(s.nodes, &node{tbnode: nodeObj, suite: s})
 	}
-	/*
-			outChan := make(chan string, 100)
-		        out, _ := s.nodes[0].runCommand("echo $DOCKER_HOST")
-		        outChan <- out
-		        logrus.Infof("docker info for first node ====== %s", strings.TrimSpace(<-outChan))
-
-		        out, _ = s.nodes[1].runCommand("echo $DOCKER_HOST")
-		        outChan <- out
-		        logrus.Infof("docker info for first node ====== %s", strings.TrimSpace(<-outChan))
-	*/
 	if s.basicInfo.Scheduler == "swarm" {
 		s.CheckNetDemoInstallation(c)
 	}
 	logrus.Info("Pulling alpine on all nodes")
 
 	s.baremetal.IterateNodes(func(node vagrantssh.TestbedNode) error {
-		//fmt.Printf("\n\t Node Name is %s", node.nodeName)
 		node.RunCommand("sudo rm /tmp/*net*")
 		return node.RunCommand("docker pull alpine")
 	})
-	/*
-			outChan := make(chan string, 100)
-		        out, _ := s.nodes[0].runCommand("echo $DOCKER_HOST")
-		        outChan <- out
-		        logrus.Infof("docker info for first node ====== %s", strings.TrimSpace(<-outChan))
-
-		        out, _ = s.nodes[1].runCommand("echo $DOCKER_HOST")
-		        outChan <- out
-		        logrus.Infof("docker info for first node ====== %s", strings.TrimSpace(<-outChan))
-	*/
 	//Copying binaries
 	s.copyBinary("netmaster")
 	s.copyBinary("netplugin")
