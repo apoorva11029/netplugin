@@ -225,13 +225,13 @@ func (w *swarm) rm(c *container) error {
 
 func (w *swarm) startListener(c *container, port int, protocol string) error {
 	var protoStr string
-
+	logrus.Infof("------cAME TO THE SWARM KA LISTENEER --------")
 	if protocol == "udp" {
 		protoStr = "-u"
 	}
 
 	logrus.Infof("Starting a %s listener on %v port %d", protocol, c, port)
-	_, err := w.execBG(c, fmt.Sprintf(w.env+"nc -lk %s -p %v -e /bin/true", protoStr, port))
+	_, err := w.execBG(c, fmt.Sprintf("nc -lk %s -p %v -e /bin/true", protoStr, port))
 	return err
 }
 
