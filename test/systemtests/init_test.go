@@ -76,7 +76,7 @@ func TestMain(m *M) {
 	if mastbasic.Platform == "baremetal" {
 		if mastbasic.Scheduler == "swarm" {
 			logrus.Infof("Setting up swarm cluster")
-			//sts.NetDemoInstallation(mastbasic.AciMode)
+			sts.NetDemoInstallation(mastbasic.AciMode)
 		}
 	}
 	flag.Parse()
