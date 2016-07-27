@@ -8,3 +8,14 @@ Next:
 5. Error handling for JSON.
 6. Saving logs for tests.
 7. Check for net_demo_installation more robust. 
+
+
+
+Fails:
+Baremetal:
+non ACI: Trigger
+ACI: 
+
+Vagrant:
+Docker: ACIM
+Swarm: ACIM, Network(input header), Policy(start listener)
