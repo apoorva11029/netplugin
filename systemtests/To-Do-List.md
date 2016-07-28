@@ -8,7 +8,7 @@ Next:
 4. Integrating with k8s.  
 5. Error handling for JSON.
 6. Saving logs for tests and net_demo_installation.
-7. Check for net_demo_installation more robust. 
+7. Check for net_demo_installation more robust. --- REMOVING NET DEMO INSTALLATION FROM CODE.
 
 
 
