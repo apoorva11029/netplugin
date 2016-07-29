@@ -1042,7 +1042,7 @@ func (s *systemtestSuite) SetUpSuiteBaremetal(c *C) {
 		//s.nodes = append(s.nodes, &node{tbnode: nodeObj, suite: s})
 	}
 	if s.basicInfo.Scheduler == "swarm" {
-		s.CheckNetDemoInstallation(c)
+		//s.CheckNetDemoInstallation(c)
 	}
 	logrus.Info("Pulling alpine on all nodes")
 
