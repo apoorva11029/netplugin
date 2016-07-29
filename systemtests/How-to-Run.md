@@ -56,6 +56,16 @@ Testing with Vagrant:
   make system-test
 ```
 Testing with Baremetal:
+
+- Setup passwordless sudo on all the machines in the cluster
+- Disable requiretty for the username used on VMs.
+- Install go-1.5/6(?) on the master machine.
+- Install gcc
+- Export GOPATH, GOBIN and PATH in your environment.
+- You need to complete Pre-requisites, Step 1, Step 2, Step3 metioned here : https://github.com/contiv/demo/tree/master/net
+- Once you have cfg.yml ready you can run Swarm setup creation script like this.  ./net_demo_installer -ar 
+- Please check out Netplugin code under : $GOPATH/src/github.com/contiv/ on Node1
+
 Scheduler: Swarm
 
 * Make a suitable JSON file on your local machine (inside the systemtests directory).
@@ -85,3 +95,6 @@ godep go test -v -timeout 240m ./systemtests -check.v -check.f "TestACI"
 
 	This will run all the test functions which have the string TestACI
 ```
+
+
+
