@@ -39,7 +39,7 @@ func (s *systemtestSuite) runContainersInGroups(num int, netName string, tenantN
 		}
 
 		// XXX we don't use anything but private for this function right now
-		conts, err := s.runContainersInService(num, groupName, netName, "", names)
+		conts, err := s.runContainersInService(num, groupName, netName, tenantName, names)
 		if err != nil {
 			return nil, err
 		}
@@ -936,7 +936,7 @@ func (s *systemtestSuite) SetUpSuiteBaremetal(c *C) {
 		//s.nodes = append(s.nodes, &node{tbnode: nodeObj, suite: s})
 	}
 	if s.basicInfo.Scheduler == "swarm" {
-		s.CheckNetDemoInstallation(c)
+		//s.CheckNetDemoInstallation(c)
 	}
 	logrus.Info("Pulling alpine on all nodes")
 
