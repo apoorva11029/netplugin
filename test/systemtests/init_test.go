@@ -76,7 +76,7 @@ func TestMain(m *M) {
 	if mastbasic.Platform == "baremetal" {
 		if mastbasic.Scheduler == "swarm" {
 			logrus.Infof("Setting up swarm cluster")
-			sts.NetDemoInstallation(mastbasic.AciMode)
+			//sts.NetDemoInstallation(mastbasic.AciMode)
 		}
 	}
 	flag.Parse()
@@ -147,11 +147,11 @@ func (s *systemtestSuite) TearDownTest(c *C) {
 
 func (s *systemtestSuite) TearDownSuite(c *C) {
 
-	for _, node := range s.nodes {
+	/*for _, node := range s.nodes {
 		node.exec.cleanupContainers()
 		node.stopNetplugin()
 		node.stopNetmaster()
-	}
+	}*/
 
 	// Print all errors and fatal messages
 	for _, node := range s.nodes {
