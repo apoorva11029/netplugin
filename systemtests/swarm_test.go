@@ -43,11 +43,13 @@ func (w *swarm) runContainer(spec containerSpec) (*container, error) {
 		if (spec.tenantName != "") && (spec.tenantName != "default") {
 			netstr = netstr + "/" + spec.tenantName
 		}
-
 		if spec.serviceName != "" {
 			netstr = spec.serviceName
 		}
-
+		if (spec.tenantName != "") && (spec.tenantName != "default") {
+			logrus.Infof("came here ")
+			netstr = netstr + "/" + spec.tenantName
+		}
 		netstr = "--net=" + netstr
 	}
 
@@ -73,9 +75,7 @@ func (w *swarm) runContainer(spec containerSpec) (*container, error) {
 			labelstr += l + label + " "
 		}
 	}
-
 	logrus.Infof("Starting a container running %q on %s", spec.commandName, w.node.Name())
-
 	cmd := fmt.Sprintf("docker run -itd %s %s %s %s %s %s", namestr, netstr, dnsStr, labelstr, spec.imageName, spec.commandName)
 
 	out, err := w.node.tbnode.RunCommandWithOutput(w.env + cmd)
