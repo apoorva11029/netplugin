@@ -63,7 +63,6 @@ Testing with Baremetal:
 - Install gcc
 - Export GOPATH, GOBIN and PATH in your environment.
 - You need to complete Pre-requisites, Step 1, Step 2, Step3 metioned here : https://github.com/contiv/demo/tree/master/net
-- Once you have cfg.yml ready you can run Swarm setup creation script like this.  ./net_demo_installer -ar 
 - Please check out Netplugin code under : $GOPATH/src/github.com/contiv/ on Node1
 
 Scheduler: Swarm
