@@ -124,18 +124,21 @@ func (s *systemtestSuite) TestACIPingGateway(c *C) {
 
 	err = s.nodes[0].exec.checkSchedulerNetworkCreated("epga", true)
 	c.Assert(err, IsNil)
-	//for i := 0; i < s.basicInfo.Iterations; i++ {
-	c.Assert(s.cli.AppProfilePost(&client.AppProfile{
-		TenantName:     s.infoGlob.Tenant,
-		EndpointGroups: []string{"epga"},
-		AppProfileName: "profile1",
-	}), IsNil)
-	s.basicInfo.Iterations = 1
+
 	for i := 0; i < s.basicInfo.Iterations; i++ {
+		c.Assert(s.cli.AppProfilePost(&client.AppProfile{
+			TenantName:     s.infoGlob.Tenant,
+			EndpointGroups: []string{"epga"},
+			AppProfileName: "profile1",
+		}), IsNil)
+		time.Sleep(5 * time.Second)
+
+		//s.basicInfo.Iterations = 2
+		//for i := 0; i < s.basicInfo.Iterations; i++ {
 		containers, err := s.runContainersInGroups(s.basicInfo.Containers, s.infoGlob.Network, s.infoGlob.Tenant, []string{"epga"})
 		c.Assert(err, IsNil)
 
-		for key, _ := range containers {
+		for key := range containers {
 			containersA = append(containersA, key)
 		}
 
@@ -144,10 +147,10 @@ func (s *systemtestSuite) TestACIPingGateway(c *C) {
 
 		c.Assert(s.removeContainers(containersA), IsNil)
 		containersA = nil
+		//}
+		c.Assert(s.cli.AppProfileDelete(s.infoGlob.Tenant, "profile1"), IsNil)
+		time.Sleep(time.Second * 5)
 	}
-	c.Assert(s.cli.AppProfileDelete(s.infoGlob.Tenant, "profile1"), IsNil)
-	time.Sleep(time.Second * 5)
-
 	c.Assert(s.cli.EndpointGroupDelete(s.infoGlob.Tenant, "epga"), IsNil)
 	c.Assert(s.cli.NetworkDelete(s.infoGlob.Tenant, s.infoGlob.Network), IsNil)
 	//}
