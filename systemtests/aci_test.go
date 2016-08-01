@@ -124,7 +124,7 @@ func (s *systemtestSuite) TestACIPingGateway(c *C) {
 		EndpointGroups: []string{"epga"},
 		AppProfileName: "profile1",
 	}), IsNil)
-	s.basicInfo.Iterations=1
+	s.basicInfo.Iterations = 1
 	for i := 0; i < s.basicInfo.Iterations; i++ {
 		containers, err := s.runContainersInGroups(s.basicInfo.Containers, s.infoGlob.Network, s.infoGlob.Tenant, []string{"epga"})
 		c.Assert(err, IsNil)
