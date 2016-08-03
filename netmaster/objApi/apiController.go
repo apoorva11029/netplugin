@@ -1124,6 +1124,19 @@ func (ac *APIController) TenantCreate(tenant *contivModel.Tenant) error {
 	return nil
 }
 
+// TenantGetOper inspects tenant
+func (ac *APIController) TenantGetOper(tenant *contivModel.TenantInspect) error {
+	log.Infof("Received TenantInspect: %+v", tenant)
+
+	// Get the state driver
+	stateDriver, err := utils.GetStateDriver()
+	if err != nil {
+		return err
+	}
+
+	
+	
+}
 // TenantUpdate updates a tenant
 func (ac *APIController) TenantUpdate(tenant, params *contivModel.Tenant) error {
 	log.Infof("Received TenantUpdate: %+v, params: %+v", tenant, params)
