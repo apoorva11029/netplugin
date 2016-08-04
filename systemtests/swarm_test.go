@@ -46,8 +46,7 @@ func (w *swarm) runContainer(spec containerSpec) (*container, error) {
 		if spec.serviceName != "" {
 			netstr = spec.serviceName
 		}
-		if (spec.tenantName != "") && (spec.tenantName != "default") {
-			logrus.Infof("came here ")
+		if (spec.serviceName != "") && (spec.tenantName != "") && (spec.tenantName != "default") {
 			netstr = netstr + "/" + spec.tenantName
 		}
 		netstr = "--net=" + netstr
