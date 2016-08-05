@@ -11,7 +11,6 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"os"
-	"os/exec"
 	"strconv"
 	"strings"
 	"sync"
@@ -260,9 +259,7 @@ func (s *systemtestSuite) runContainersWithDNS(num int, tenantName, networkName,
 				dnsServer:   dnsServer,
 				tenantName:  tenantName,
 			}
-			logrus.Infof("will run containers now")
 			cont, err := s.nodes[nodeNum].exec.runContainer(spec)
-			logrus.Infof("done tunnint containers ")
 			if err != nil {
 				errChan <- err
 			}
@@ -688,9 +685,6 @@ func (s *systemtestSuite) getNetworkDNSServer(tenant, network string) (string, e
 	if err != nil {
 		return "", err
 	}
-	logrus.Infof("%s----------", netList)
-	logrus.Infof("tenant name is %s", tenant)
-	logrus.Infof("netwirk name is %s", network)
 	for _, net := range netList {
 		if net["tenant"].(string) == tenant && net["networkName"].(string) == network {
 			dnsServer := net["dnsServer"].(string)
@@ -935,9 +929,6 @@ func (s *systemtestSuite) SetUpSuiteBaremetal(c *C) {
 		}
 		//s.nodes = append(s.nodes, &node{tbnode: nodeObj, suite: s})
 	}
-	if s.basicInfo.Scheduler == "swarm" {
-		//s.CheckNetDemoInstallation(c)
-	}
 	logrus.Info("Pulling alpine on all nodes")
 
 	s.baremetal.IterateNodes(func(node vagrantssh.TestbedNode) error {
@@ -1128,52 +1119,4 @@ func (s *systemtestSuite) SetUpTestVagrant(c *C) {
 			time.Sleep(500 * time.Millisecond)
 		}
 	}
-}
-
-func (s *systemtestSuite) NetDemoInstallation(aci string) {
-	cmd := exec.Command("wget", "https://raw.githubusercontent.com/contiv/demo/master/net/net_demo_installer")
-	cmd.Run()
-	os.Chmod("net_demo_installer", 0777)
-	if aci == "on" {
-		logrus.Infof("----------ACI MODE ON ------------")
-		cmd = exec.Command("./net_demo_installer", "-ars")
-	} else {
-		logrus.Infof("----------ACI MODE OFF ------------")
-		cmd = exec.Command("./net_demo_installer", "-rs")
-	}
-	// setup log file
-	file, _ := os.Create("server.log")
-	cmd.Stdout = file
-	cmd.Run()
-	logrus.Infof("Done setting up swarm cluster ")
-}
-
-//Function to check if net_demo_installer script ran properly.
-//Uses the output of docker info on all the nodes in the swarm cluster.
-func (s *systemtestSuite) CheckNetDemoInstallation(c *C) {
-
-	logrus.Infof("Checking if the swarm cluster was setup properly")
-	outChan := make(chan string, 100)
-	mystr := "docker info | grep Nodes"
-	var err, out, out1 string
-	out1, _ = s.nodes[0].runCommand(mystr)
-	if !strings.Contains(out1, "Nodes") {
-		err = "The script net_demo_installer didn't run properly."
-		c.Assert(err, Equals, "")
-	}
-	for i := 1; i < len(s.nodes); i++ {
-		out, _ = s.nodes[i].runCommand(mystr)
-		outChan <- out
-		if out != out1 {
-			err = "The script net_demo_installer didn't run properly."
-			break
-		}
-	}
-	logrus.Infof("Deleting files related to net_demo_installer")
-	os.Remove("genInventoryFile.py")
-	os.RemoveAll("./.gen")
-	os.RemoveAll("./ansible")
-	os.Remove("net_demo_installer")
-	c.Assert(err, Equals, "")
-	os.Remove("server.log")
 }
