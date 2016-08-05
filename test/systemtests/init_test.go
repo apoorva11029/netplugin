@@ -7,7 +7,6 @@ import (
 	"github.com/contiv/contivmodel/client"
 	. "gopkg.in/check.v1"
 	"os"
-	"strings"
 	. "testing"
 	"time"
 
@@ -73,12 +72,7 @@ func TestMain(m *M) {
 	} else {
 		flag.StringVar(&sts.fwdMode, "fwd-mode", "routing", "forwarding mode to start the test ")
 	}
-	if mastbasic.Platform == "baremetal" {
-		if mastbasic.Scheduler == "swarm" {
-			logrus.Infof("Setting up swarm cluster")
-			//sts.NetDemoInstallation(mastbasic.AciMode)
-		}
-	}
+
 	flag.Parse()
 	os.Exit(m.Run())
 }

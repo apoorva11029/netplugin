@@ -224,7 +224,6 @@ func (w *swarm) rm(c *container) error {
 
 func (w *swarm) startListener(c *container, port int, protocol string) error {
 	var protoStr string
-	logrus.Infof("------cAME TO THE SWARM KA LISTENEER --------")
 	if protocol == "udp" {
 		protoStr = "-u"
 	}
@@ -270,14 +269,8 @@ func (w *swarm) cleanupDockerNetwork() error {
 
 func (w *swarm) cleanupContainers() error {
 	logrus.Infof("Cleaning up containers on %s", w.node.Name())
-
-	// Stopping all running alpine image containers
-	//w.node.tbnode.RunCommandWithOutput("docker kill -s 9 $(docker ps -a | grep alpine | awk '{print $1}')")
-	mystr := "docker kill -s 9 $(docker ps -a | grep alpine | awk '{print $1}')"
-	logrus.Infof("Cleanip comand is -------%s", mystr)
 	w.node.tbnode.RunCommand("docker kill -s 9 $(docker ps -a | grep alpine )")
 	// Removing all alpine container images
-	//return w.node.tbnode.RunCommand("docker rm -f `docker ps -a | grep alpine | awk '{print $1}'`")
 	return w.node.tbnode.RunCommand("docker rm -f $(docker ps -a | grep alpine )")
 }
 func (w *swarm) startNetplugin(args string) error {
