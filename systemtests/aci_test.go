@@ -127,8 +127,6 @@ func (s *systemtestSuite) TestACIPingGateway(c *C) {
 		}), IsNil)
 		time.Sleep(5 * time.Second)
 
-		//s.basicInfo.Iterations = 2
-		//for i := 0; i < s.basicInfo.Iterations; i++ {
 		containers, err := s.runContainersInGroups(s.basicInfo.Containers, s.infoGlob.Network, s.infoGlob.Tenant, []string{"epga"})
 		c.Assert(err, IsNil)
 
@@ -141,7 +139,6 @@ func (s *systemtestSuite) TestACIPingGateway(c *C) {
 
 		c.Assert(s.removeContainers(containersA), IsNil)
 		containersA = nil
-		//}
 		c.Assert(s.cli.AppProfileDelete(s.infoGlob.Tenant, "profile1"), IsNil)
 		time.Sleep(time.Second * 5)
 	}
