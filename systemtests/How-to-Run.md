@@ -18,7 +18,7 @@ Customize the JSON file netplugin/systemtests/cfg.json according to your environ
       "scheduler" : "swarm",      //Scheduler used : Docker, Swarm, k8s
       "swarm_variable":"DOCKER_HOST=192.168.2.10:2375",    //Env variable for swarm. Typically <master node's IP>:2375
       "platform" : "vagrant",    //Platform: Vagrant or Platform
-      "product" : "netplugin",    // Product: netplugin or volplugin(not yet supported)
+      "product" : "netplugin",    // Product: netplugin or volplugin(in future this will be supported)
       "aci_mode" : "off",      // ACI mode: on/off
       "short"   : false,      // Do a quick validation run instead of the full test suite
       "containers" : 3,       // Number of containers to use
@@ -55,8 +55,7 @@ Testing with Vagrant:
 ```
   make system-test
 ```
-Testing with Baremetal:
-Scheduler: Swarm
+Testing with Baremetal with Swarm:
 
 For ACI testing , We need to have connectivity to APIC and ACI Fabric Switches from Baremetal VMs and Hosts.
 * You need to complete Pre-requisites, Step 1, Step 2, Step3 metioned here : https://github.com/contiv/demo/tree/master/net
@@ -88,11 +87,13 @@ godep go test -v -timeout 240m ./systemtests -check.v -check.f "TestACI"
 ```
 Troubleshooting
 
-First delete all netmaster, netctl, netplugin, contivk8s binaries from $GOBIN directory from all Nodes in the Cluster
-You can perform following steps to clear etcd states
+* First delete all netmaster, netctl, netplugin, contivk8s binaries from $GOBIN directory from all Nodes in the Cluster
+* You can perform following steps to clear etcd states
+```
 sudo etcdctl rm --recursive /contiv
 sudo etcdctl rm --recursive /contiv.io
 sudo etcdctl rm --recursive /docker
 sudo etcdctl rm --recursive /skydns
-You can restart the nodes (sudo /sbin/shutdown -r now)
-Run net_demo_installer script with -suitable options again to launch Swarm cluster and all other services properly. This infra basically relies on this script to start all the services correctly and then it kills netplugin and netmaster services and start those from the source binaries which you build.
+```
+* You can restart the nodes (sudo /sbin/shutdown -r now)
+* Run net_demo_installer script with -suitable options again to launch Swarm cluster and all other services properly. This infra basically relies on this script to start all the services correctly and then it kills netplugin and netmaster services and start those from the source binaries which you build.
