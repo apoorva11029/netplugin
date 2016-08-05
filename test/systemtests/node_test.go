@@ -56,6 +56,22 @@ func (n *node) getIPAddr(dev string) (string, error) {
 	return out, err
 }
 
+func (n *node) getMACAddr(c *container, dev string) (string, error) {
+	out, err := n.runCommand(fmt.Sprintf("ip addr show dev %s | grep ether | head -1", dev))
+	if err != nil {
+		logrus.Errorf("Failed to get MAC for container %q", c.containerID)
+		logrus.Println(out)
+	}
+
+	parts := regexp.MustCompile(`\s+`).Split(strings.TrimSpace(out), -1)
+	if len(parts) < 2 {
+		return "", fmt.Errorf("Invalid output from container %q: %s", c.containerID, out)
+	}
+
+	out = parts[1]
+	return out, err
+}
+
 func (n *node) Name() string {
 	return n.tbnode.GetName()
 }
