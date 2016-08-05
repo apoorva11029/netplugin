@@ -1,6 +1,5 @@
 package systemtests
 
-/*
 import (
 	"bytes"
 	"encoding/json"
@@ -98,15 +97,15 @@ func GetEPFromAPIC(tenant, app, epg, mac string) (string, string, error) {
 
 }
 
-func checkACILearning(tenant, app, epg string, c *container) error {
+func checkACILearning(node *node, tenant, app, epg string, c *container) error {
 
 	ip := ""
-	mac, err := c.GetMACAddr("eth0")
+	mac, err := node.getMACAddr(c, "eth0")
 	if err != nil {
 		return err
 	}
 
-	containerIP, err := c.GetIPAddr("eth0")
+	containerIP, err := node.getIPAddr("eth0")
 	if err != nil {
 		return err
 	}
@@ -132,4 +131,3 @@ func checkACILearning(tenant, app, epg string, c *container) error {
 
 	return nil
 }
-*/
