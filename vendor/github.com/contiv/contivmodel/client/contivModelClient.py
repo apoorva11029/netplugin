@@ -201,6 +201,16 @@ class objmodelClient:
 
 
 
+	# Inspect endpointGroup
+	def createEndpointGroup(self, obj):
+	    postUrl = self.baseUrl + '/api/v1/inspect/endpointGroup/' + obj.tenantName + ":" + obj.groupName  + '/'
+
+	    retDate = urllib2.urlopen(postUrl)
+	    if retData == "Error":
+	        errorExit("list EndpointGroup failed")
+
+	    return json.loads(retData)
+
 
 	# Create extContractsGroup
 	def createExtContractsGroup(self, obj):
@@ -548,6 +558,16 @@ class objmodelClient:
 	    return json.loads(retData)
 
 
+
+	# Inspect tenant
+	def createTenant(self, obj):
+	    postUrl = self.baseUrl + '/api/v1/inspect/tenant/' + obj.tenantName  + '/'
+
+	    retDate = urllib2.urlopen(postUrl)
+	    if retData == "Error":
+	        errorExit("list Tenant failed")
+
+	    return json.loads(retData)
 
 
 	# Create volume

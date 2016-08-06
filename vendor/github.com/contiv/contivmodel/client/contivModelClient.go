@@ -237,8 +237,18 @@ type EndpointGroupLinks struct {
 	Tenant     Link `json:"Tenant,omitempty"`
 }
 
+type EndpointGroupOper struct {
+	Endpoints      []EndpointOper `json:"endpoints,omitempty"`
+	ExternalPktTag int            `json:"externalPktTag,omitempty"` // external packet tag
+	NumEndpoints   int            `json:"numEndpoints,omitempty"`   // external packet tag
+	PktTag         int            `json:"pktTag,omitempty"`         // internal packet tag
+
+}
+
 type EndpointGroupInspect struct {
 	Config EndpointGroup
+
+	Oper EndpointGroupOper
 }
 
 type ExtContractsGroup struct {
@@ -472,8 +482,18 @@ type TenantLinkSets struct {
 	Volumes        map[string]Link `json:"Volumes,omitempty"`
 }
 
+type TenantOper struct {
+	CntEndpoints int            `json:"cntEndpoints,omitempty"` // number of endpoints in the tenant
+	Endpoints    []EndpointOper `json:"endpoints,omitempty"`
+	NumNet       int            `json:"numNet,omitempty"`   // number of networks
+	NumRules     int            `json:"numRules,omitempty"` // number of rules linked to the tenant
+
+}
+
 type TenantInspect struct {
 	Config Tenant
+
+	Oper TenantOper
 }
 
 type Volume struct {

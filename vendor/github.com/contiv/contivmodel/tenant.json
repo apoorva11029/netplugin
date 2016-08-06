@@ -20,6 +20,26 @@
 					"format": "^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\\\-]*[a-zA-Z0-9])\\\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\\\-]*[A-Za-z0-9])?$"
 				}
 			},
+			"operProperties": {
+                                "numNet": {
+                                        "type": "int",
+                                        "title": "number of networks"
+                                },
+				"numRules": {
+					"type": "int",
+					"title": "number of rules linked to the tenant"
+					
+				},
+				"cntEndpoints": {
+					"type": "int",
+					"title": "number of endpoints in the tenant"
+				},
+				"endpoints": {
+                                        "type": "array",
+                                        "items": "endpoint",
+                                        "title": "endpoints in the tenant"
+                                }	
+                        },
 			"link-sets": {
 				"networks": {
 					"ref": "network"

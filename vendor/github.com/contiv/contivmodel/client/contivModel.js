@@ -313,6 +313,7 @@ var GlobalSummaryView = React.createClass({
 				<ModalTrigger modal={<GlobalModalView global={ global }/>}>
 					<tr key={ global.key } className="info">
 						
+						     
 					</tr>
 				</ModalTrigger>
 			);
@@ -324,6 +325,7 @@ var GlobalSummaryView = React.createClass({
 				<thead>
 					<tr>
 					
+					     
 					</tr>
 				</thead>
 				<tbody>

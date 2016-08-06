@@ -37,6 +37,16 @@ const (
 	endpointConfigPath       = endpointConfigPathPrefix + "%s"
 	epGroupConfigPathPrefix  = StateConfigPath + "endpointGroups/"
 	epGroupConfigPath        = epGroupConfigPathPrefix + "%s"
+
+	// ObjConfigPath comment
+	// ObjModelPath comment
+	ObjConfigPath = StateBasePath + "obj/"
+
+	// ObjModelPath comment
+	ObjModelPath = ObjConfigPath + "modeldb/"
+
+	tenantConfigPathPrefix = ObjModelPath + "tenant/"
+	tenantConfigPath       = tenantConfigPathPrefix + "%s"
 )
 
 // CfgNetworkState implements the State interface for a network implemented using
