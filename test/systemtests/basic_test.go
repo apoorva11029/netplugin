@@ -164,7 +164,6 @@ func (s *systemtestSuite) testBasicSvcDiscovery(c *C, encap string) {
 		c.Assert(s.cli.EndpointGroupPost(group1), IsNil)
 		logrus.Infof("Creating epg: %s", group2.GroupName)
 		c.Assert(s.cli.EndpointGroupPost(group2), IsNil)
-		logrus.Infof("Runnong DNS cntainers ")
 		containers1, err := s.runContainersWithDNS(s.basicInfo.Containers, "default", "private", fmt.Sprintf("svc1%d", i))
 		c.Assert(err, IsNil)
 		containers2, err := s.runContainersWithDNS(s.basicInfo.Containers, "default", "private", fmt.Sprintf("svc2%d", i))

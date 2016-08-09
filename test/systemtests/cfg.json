@@ -1,0 +1,30 @@
+[
+    {
+      "scheduler" : "swarm",
+      "swarm_variable":"DOCKER_HOST=10.193.246.70:2375",
+      "platform" : "baremetal",
+      "product" : "netplugin",
+      "aci_mode" : "on",
+      "short"   : false,
+      "containers" : 3,
+      "iterations" : 2,
+      "enableDNS" : false,
+      "contiv_cluster_store" : "etcd://localhost:2379",
+      "contiv_l3" : "",
+      "key_file" : "/home/admin/.ssh/id_rsa",
+      "binpath" : "/home/admin/bin",
+
+      "hostips" : "10.193.246.70,10.193.246.71",
+      "hostusernames" : "admin,admin",
+      "dataInterface" : "eno33559296",
+	"mgmtInterface" : "eno16780032",
+      "vlan" : "1120-1150",
+      "vxlan" : "1-10000",
+      "subnet" : "10.1.1.0/24",
+      "gateway" : "10.1.1.254",
+      "network" : "MyNet",
+      "tenant": "MyTenant",
+      "encap" : "vlan",
+      "master" : true
+      }
+]
