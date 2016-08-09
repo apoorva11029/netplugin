@@ -1135,15 +1135,15 @@ func (ac *APIController) TenantGetOper(tenant *contivModel.TenantInspect) error 
 
 	}
 
-	tnCfg := &mastercfg.CfgTenantState{}
+	/*tnCfg := &mastercfg.CfgTenantState{}
 	tnCfg.StateDriver = stateDriver
 	tenantID := tenant.Config.TenantName
 	if err := tnCfg.Read(tenantID); err != nil {
 		log.Errorf("Error fetching tenant from mastercfg: %s", tenantID)
 		return err
-	}
+	}*/
 	tenant.Oper.NumNet = len(tenant.Config.LinkSets.Networks)
-
+	tenantID := tenant.Config.TenantName
 	numEPs := 0
 	s := []string{}
 	log.Infof("Helloooo it's me -------o")
@@ -1162,44 +1162,40 @@ func (ac *APIController) TenantGetOper(tenant *contivModel.TenantInspect) error 
 				return err
 			}
 			numEPs = numEPs + nwCfg.EpCount
-			readEp := &mastercfg.CfgEndpointState{}
-			readEp.StateDriver = stateDriver
-			epCfgs, err := readEp.ReadAll()
-			if err == nil {
-				for _, epCfg := range epCfgs {
-					ep := epCfg.(*mastercfg.CfgEndpointState)
-					if ep.NetID == networkID {
-						epOper := contivModel.EndpointOper{}
-						epOper.Network = ep.NetID
-						epOper.EndpointID = ep.EndpointID
-						epOper.ServiceName = ep.ServiceName
-						epOper.EndpointGroupID = ep.EndpointGroupID
-						epOper.EndpointGroupKey = ep.EndpointGroupKey
-						epOper.IpAddress = []string{ep.IPAddress, ep.IPv6Address}
-						epOper.MacAddress = ep.MacAddress
-						epOper.HomingHost = ep.HomingHost
-						epOper.IntfName = ep.IntfName
-						epOper.VtepIP = ep.VtepIP
-						epOper.Labels = fmt.Sprintf("%s", ep.Labels)
-						epOper.ContainerID = ep.ContainerID
-						epOper.ContainerName = ep.ContainerName
-						tenant.Oper.Endpoints = append(tenant.Oper.Endpoints, epOper)
-					}
-				}
-			}
 
 		}
 	}
-	tenant.Oper.CntEndpoints = numEPs
-	/*readEp := &mastercfg.CfgNetworkState{}
+
+	tenant.Oper.NumEndpoints = numEPs
+
+	readEp := &mastercfg.CfgEndpointState{}
 	readEp.StateDriver = stateDriver
 	epCfgs, err := readEp.ReadAll()
 	if err == nil {
 		for _, epCfg := range epCfgs {
-			ep := epCfg.(*mastercfg.CfgNetworkState)
-			log.Infof("my network has %s", ep.Oper.Endpoints)
+			ep := epCfg.(*mastercfg.CfgEndpointState)
+			s = strings.Split(ep.NetID, ".")
+			epNetID := s[1] + ":" + s[0]
+			log.Infof("epNETID IS %s", epNetID)
+			if _, ok := tenant.Config.LinkSets.Networks[epNetID]; ok {
+				epOper := contivModel.EndpointOper{}
+				epOper.Network = ep.NetID
+				epOper.EndpointID = ep.EndpointID
+				epOper.ServiceName = ep.ServiceName
+				epOper.EndpointGroupID = ep.EndpointGroupID
+				epOper.EndpointGroupKey = ep.EndpointGroupKey
+				epOper.IpAddress = []string{ep.IPAddress, ep.IPv6Address}
+				epOper.MacAddress = ep.MacAddress
+				epOper.HomingHost = ep.HomingHost
+				epOper.IntfName = ep.IntfName
+				epOper.VtepIP = ep.VtepIP
+				epOper.Labels = fmt.Sprintf("%s", ep.Labels)
+				epOper.ContainerID = ep.ContainerID
+				epOper.ContainerName = ep.ContainerName
+				tenant.Oper.Endpoints = append(tenant.Oper.Endpoints, epOper)
+			}
 		}
-	}*/
+	}
 	return nil
 }
 
