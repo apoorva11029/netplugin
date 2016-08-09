@@ -948,7 +948,7 @@ func (s *systemtestSuite) SetUpSuiteVagrant(c *C) {
 	var contivNodes int
 
 	if nodesStr == "" {
-		contivNodes = 2
+		contivNodes = 3
 	} else {
 		var err error
 		contivNodes, err = strconv.Atoi(nodesStr)
