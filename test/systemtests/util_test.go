@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Sirupsen/logrus"
-	"github.com/contiv/vagrantssh"
+	"github.com/contiv/remotessh"
 	. "gopkg.in/check.v1"
 	"io/ioutil"
 	"math/rand"
@@ -978,7 +978,7 @@ func (s *systemtestSuite) SetUpSuiteBaremetal(c *C) {
 	logrus.Infof("Binary binpath = %s", s.basicInfo.BinPath)
 	logrus.Infof("Interface vlanIf = %s", s.infoHost.HostDataInterface)
 
-	s.baremetal = vagrantssh.Baremetal{}
+	s.baremetal = remotessh.Baremetal{}
 	bm := &s.baremetal
 
 	// To fill the hostInfo data structure for Baremetal VMs
@@ -990,7 +990,7 @@ func (s *systemtestSuite) SetUpSuiteBaremetal(c *C) {
 	}
 	hostIPs := strings.Split(s.infoHost.HostIPs, ",")
 	hostNames := strings.Split(s.infoHost.HostUsernames, ",")
-	hosts := make([]vagrantssh.HostInfo, len(hostNames))
+	hosts := make([]remotessh.HostInfo, len(hostNames))
 
 	for i := range hostIPs {
 		hosts[i].Name = name + strconv.Itoa(i+1)
@@ -1038,7 +1038,7 @@ func (s *systemtestSuite) SetUpSuiteBaremetal(c *C) {
 	}
 	logrus.Info("Pulling alpine on all nodes")
 
-	s.baremetal.IterateNodes(func(node vagrantssh.TestbedNode) error {
+	s.baremetal.IterateNodes(func(node remotessh.TestbedNode) error {
 		node.RunCommand("sudo rm /tmp/*net*")
 		return node.RunCommand("docker pull alpine")
 	})
@@ -1050,7 +1050,7 @@ func (s *systemtestSuite) SetUpSuiteBaremetal(c *C) {
 }
 
 func (s *systemtestSuite) SetUpSuiteVagrant(c *C) {
-	s.vagrant = vagrantssh.Vagrant{}
+	s.vagrant = remotessh.Vagrant{}
 	nodesStr := os.Getenv("CONTIV_NODES")
 	var contivNodes int
 
@@ -1069,9 +1069,14 @@ func (s *systemtestSuite) SetUpSuiteVagrant(c *C) {
 		contivL3Nodes := 2
 		switch s.basicInfo.Scheduler {
 		case "k8":
-			contivNodes = 4
-			c.Assert(s.vagrant.Setup(false, []string{"CONTIV_L3=1 VAGRANT_CWD=/home/ladmin/src/github.com/contiv/netplugin/vagrant/k8s/"}, contivNodes), IsNil)
-		case "swarm":
+			topDir := os.Getenv("GOPATH")
+				//topDir contains the godeps path. hence purging the gopath
+				topDir = strings.Split(topDir, ":")[1]
+
+				contivNodes = 4 // 3 contiv nodes + 1 k8master
+				c.Assert(s.vagrant.Setup(false, []string{"CONTIV_L3=1 VAGRANT_CWD=" + topDir + "/src/github.com/contiv/netplugin/vagrant/k8s/"}, contivNodes), IsNil)
+
+				case "swarm":
 			c.Assert(s.vagrant.Setup(false, append([]string{"CONTIV_NODES=3 CONTIV_L3=1"}, s.basicInfo.SwarmEnv), contivNodes+contivL3Nodes), IsNil)
 		default:
 			c.Assert(s.vagrant.Setup(false, []string{"CONTIV_NODES=3 CONTIV_L3=1"}, contivNodes+contivL3Nodes), IsNil)
@@ -1082,8 +1087,19 @@ func (s *systemtestSuite) SetUpSuiteVagrant(c *C) {
 		switch s.basicInfo.Scheduler {
 		case "k8":
 			contivNodes = contivNodes + 1 //k8master
-			c.Assert(s.vagrant.Setup(false, []string{"VAGRANT_CWD=/home/ladmin/src/github.com/contiv/netplugin/vagrant/k8s/"}, contivNodes), IsNil)
-		case "swarm":
+
+				topDir := os.Getenv("GOPATH")
+				//topDir may contain the godeps path. hence purging the gopath
+				dirs := strings.Split(topDir, ":")
+				if len(dirs) > 1 {
+					topDir = dirs[1]
+				} else {
+					topDir = dirs[0]
+				}
+
+				c.Assert(s.vagrant.Setup(false, []string{"VAGRANT_CWD=" + topDir + "/src/github.com/contiv/netplugin/vagrant/k8s/"}, contivNodes), IsNil)
+
+				case "swarm":
 			c.Assert(s.vagrant.Setup(false, append([]string{}, s.basicInfo.SwarmEnv), contivNodes), IsNil)
 		default:
 			c.Assert(s.vagrant.Setup(false, []string{}, contivNodes), IsNil)
@@ -1114,7 +1130,7 @@ func (s *systemtestSuite) SetUpSuiteVagrant(c *C) {
 	}
 
 	logrus.Info("Pulling alpine on all nodes")
-	s.vagrant.IterateNodes(func(node vagrantssh.TestbedNode) error {
+	s.vagrant.IterateNodes(func(node remotessh.TestbedNode) error {
 		node.RunCommand("sudo rm /tmp/net*")
 		return node.RunCommand("docker pull alpine")
 	})
@@ -1141,14 +1157,10 @@ func (s *systemtestSuite) SetUpTestBaremetal(c *C) {
 	}
 
 	for _, node := range s.nodes {
-		if s.fwdMode == "bridge" {
+
 			c.Assert(node.startNetplugin(""), IsNil)
-			time.Sleep(15 * time.Second)
 			c.Assert(node.exec.runCommandUntilNoNetpluginError(), IsNil)
-		} else if s.fwdMode == "routing" {
-			c.Assert(node.startNetplugin("-fwd-mode=routing -vlan-if=eth2"), IsNil)
-			c.Assert(node.exec.runCommandUntilNoNetpluginError(), IsNil)
-		}
+
 	}
 
 	time.Sleep(15 * time.Second)
@@ -1160,6 +1172,8 @@ func (s *systemtestSuite) SetUpTestBaremetal(c *C) {
 	}
 
 	time.Sleep(5 * time.Second)
+	if s.basicInfo.Scheduler != "k8"
+	{
 	for i := 0; i < 11; i++ {
 		_, err := s.cli.TenantGet("default")
 		if err == nil {
@@ -1170,11 +1184,21 @@ func (s *systemtestSuite) SetUpTestBaremetal(c *C) {
 		time.Sleep(500 * time.Millisecond)
 	}
 }
+	if s.fwdMode == "routing" {
+			c.Assert(s.cli.GlobalPost(&client.Global{FwdMode: "routing",
+				Name:             "global",
+				NetworkInfraType: "default",
+				Vlans:            "1-4094",
+				Vxlans:           "1-10000",
+			}), IsNil)
+			time.Sleep(40 * time.Second)
+		}
+}
 
 func (s *systemtestSuite) SetUpTestVagrant(c *C) {
 	for _, node := range s.nodes {
 		node.exec.cleanupContainers()
-		node.exec.cleanupDockerNetwork()
+		//node.exec.cleanupDockerNetwork()
 		node.stopNetplugin()
 		node.cleanupSlave()
 	}
@@ -1188,13 +1212,10 @@ func (s *systemtestSuite) SetUpTestVagrant(c *C) {
 	}
 
 	for _, node := range s.nodes {
-		if s.fwdMode == "bridge" {
+
 			c.Assert(node.startNetplugin(""), IsNil)
 			c.Assert(node.exec.runCommandUntilNoNetpluginError(), IsNil)
-		} else if s.fwdMode == "routing" {
-			c.Assert(node.startNetplugin("-fwd-mode=routing -vlan-if=eth2"), IsNil)
-			c.Assert(node.exec.runCommandUntilNoNetpluginError(), IsNil)
-		}
+
 	}
 
 	time.Sleep(15 * time.Second)
@@ -1226,4 +1247,14 @@ func (s *systemtestSuite) SetUpTestVagrant(c *C) {
 			time.Sleep(500 * time.Millisecond)
 		}
 	}
+	
+	if s.fwdMode == "routing" {
+			c.Assert(s.cli.GlobalPost(&client.Global{FwdMode: "routing",
+				Name:             "global",
+				NetworkInfraType: "default",
+				Vlans:            "1-4094",
+				Vxlans:           "1-10000",
+			}), IsNil)
+			time.Sleep(40 * time.Second)
+		}
 }
