@@ -40,17 +40,17 @@ func (w *swarm) runContainer(spec containerSpec) (*container, error) {
 	var namestr, netstr, dnsStr, labelstr string
 	if spec.networkName != "" {
 		netstr = spec.networkName
-		if (spec.tenantName != "") && (spec.tenantName != "default") {
-			netstr = netstr + "/" + spec.tenantName
-		}
+
 		if spec.serviceName != "" {
 			netstr = spec.serviceName
 		}
-		if (spec.serviceName != "") && (spec.tenantName != "") && (spec.tenantName != "default") {
+		if spec.tenantName != "" && spec.tenantName != "default" {
 			netstr = netstr + "/" + spec.tenantName
 		}
+
 		netstr = "--net=" + netstr
 	}
+
 
 	if spec.imageName == "" {
 		spec.imageName = "alpine"
