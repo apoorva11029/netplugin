@@ -212,6 +212,25 @@ func (k *kubernetes) getIPv6Addr(c *container, dev string) (string, error) {
 	return "", nil
 }
 
+func (k *kubernetes) getMACAddr(c *container, dev string) (string, error) {
+	////master.lock()
+	out, err := k8master.tbnode.RunCommandWithOutput(fmt.Sprintf("kubectl exec %s -- ip addr show dev %s | grep ether | head -1", c.containerID, dev))
+	//master.unlock()
+	if err != nil {
+		logrus.Errorf("Failed to get IP for container %q", c.containerID)
+		logrus.Println(out)
+	}
+
+	parts := regexp.MustCompile(`\s+`).Split(strings.TrimSpace(out), -1)
+	if len(parts) < 2 {
+		return "", fmt.Errorf("Invalid output from container %q: %s", c.containerID, out)
+	}
+
+	parts = strings.Split(parts[1], "/")
+	out = strings.TrimSpace(parts[0])
+	return out, err
+}
+
 func (k *kubernetes) exec(c *container, args string) (string, error) {
 	cmd := fmt.Sprintf("kubectl exec %s -- %s", c.containerID, args)
 	logrus.Infof("Exec: Running command %s", cmd)
