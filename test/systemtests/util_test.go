@@ -1070,13 +1070,13 @@ func (s *systemtestSuite) SetUpSuiteVagrant(c *C) {
 		switch s.basicInfo.Scheduler {
 		case "k8":
 			topDir := os.Getenv("GOPATH")
-				//topDir contains the godeps path. hence purging the gopath
-				topDir = strings.Split(topDir, ":")[1]
+			//topDir contains the godeps path. hence purging the gopath
+			topDir = strings.Split(topDir, ":")[1]
 
-				contivNodes = 4 // 3 contiv nodes + 1 k8master
-				c.Assert(s.vagrant.Setup(false, []string{"CONTIV_L3=1 VAGRANT_CWD=" + topDir + "/src/github.com/contiv/netplugin/vagrant/k8s/"}, contivNodes), IsNil)
+			contivNodes = 4 // 3 contiv nodes + 1 k8master
+			c.Assert(s.vagrant.Setup(false, []string{"CONTIV_L3=1 VAGRANT_CWD=" + topDir + "/src/github.com/contiv/netplugin/vagrant/k8s/"}, contivNodes), IsNil)
 
-				case "swarm":
+		case "swarm":
 			c.Assert(s.vagrant.Setup(false, append([]string{"CONTIV_NODES=3 CONTIV_L3=1"}, s.basicInfo.SwarmEnv), contivNodes+contivL3Nodes), IsNil)
 		default:
 			c.Assert(s.vagrant.Setup(false, []string{"CONTIV_NODES=3 CONTIV_L3=1"}, contivNodes+contivL3Nodes), IsNil)
@@ -1088,18 +1088,18 @@ func (s *systemtestSuite) SetUpSuiteVagrant(c *C) {
 		case "k8":
 			contivNodes = contivNodes + 1 //k8master
 
-				topDir := os.Getenv("GOPATH")
-				//topDir may contain the godeps path. hence purging the gopath
-				dirs := strings.Split(topDir, ":")
-				if len(dirs) > 1 {
-					topDir = dirs[1]
-				} else {
-					topDir = dirs[0]
-				}
+			topDir := os.Getenv("GOPATH")
+			//topDir may contain the godeps path. hence purging the gopath
+			dirs := strings.Split(topDir, ":")
+			if len(dirs) > 1 {
+				topDir = dirs[1]
+			} else {
+				topDir = dirs[0]
+			}
 
-				c.Assert(s.vagrant.Setup(false, []string{"VAGRANT_CWD=" + topDir + "/src/github.com/contiv/netplugin/vagrant/k8s/"}, contivNodes), IsNil)
+			c.Assert(s.vagrant.Setup(false, []string{"VAGRANT_CWD=" + topDir + "/src/github.com/contiv/netplugin/vagrant/k8s/"}, contivNodes), IsNil)
 
-				case "swarm":
+		case "swarm":
 			c.Assert(s.vagrant.Setup(false, append([]string{}, s.basicInfo.SwarmEnv), contivNodes), IsNil)
 		default:
 			c.Assert(s.vagrant.Setup(false, []string{}, contivNodes), IsNil)
@@ -1158,8 +1158,8 @@ func (s *systemtestSuite) SetUpTestBaremetal(c *C) {
 
 	for _, node := range s.nodes {
 
-			c.Assert(node.startNetplugin(""), IsNil)
-			c.Assert(node.exec.runCommandUntilNoNetpluginError(), IsNil)
+		c.Assert(node.startNetplugin(""), IsNil)
+		c.Assert(node.exec.runCommandUntilNoNetpluginError(), IsNil)
 
 	}
 
@@ -1172,27 +1172,26 @@ func (s *systemtestSuite) SetUpTestBaremetal(c *C) {
 	}
 
 	time.Sleep(5 * time.Second)
-	if s.basicInfo.Scheduler != "k8"
-	{
-	for i := 0; i < 11; i++ {
-		_, err := s.cli.TenantGet("default")
-		if err == nil {
-			break
+	if s.basicInfo.Scheduler != "k8" {
+		for i := 0; i < 11; i++ {
+			_, err := s.cli.TenantGet("default")
+			if err == nil {
+				break
+			}
+			// Fail if we reached last iteration
+			c.Assert((i < 10), Equals, true)
+			time.Sleep(500 * time.Millisecond)
 		}
-		// Fail if we reached last iteration
-		c.Assert((i < 10), Equals, true)
-		time.Sleep(500 * time.Millisecond)
 	}
-}
 	if s.fwdMode == "routing" {
-			c.Assert(s.cli.GlobalPost(&client.Global{FwdMode: "routing",
-				Name:             "global",
-				NetworkInfraType: "default",
-				Vlans:            "1-4094",
-				Vxlans:           "1-10000",
-			}), IsNil)
-			time.Sleep(40 * time.Second)
-		}
+		c.Assert(s.cli.GlobalPost(&client.Global{FwdMode: "routing",
+			Name:             "global",
+			NetworkInfraType: "default",
+			Vlans:            "1-4094",
+			Vxlans:           "1-10000",
+		}), IsNil)
+		time.Sleep(40 * time.Second)
+	}
 }
 
 func (s *systemtestSuite) SetUpTestVagrant(c *C) {
@@ -1213,8 +1212,8 @@ func (s *systemtestSuite) SetUpTestVagrant(c *C) {
 
 	for _, node := range s.nodes {
 
-			c.Assert(node.startNetplugin(""), IsNil)
-			c.Assert(node.exec.runCommandUntilNoNetpluginError(), IsNil)
+		c.Assert(node.startNetplugin(""), IsNil)
+		c.Assert(node.exec.runCommandUntilNoNetpluginError(), IsNil)
 
 	}
 
@@ -1247,14 +1246,14 @@ func (s *systemtestSuite) SetUpTestVagrant(c *C) {
 			time.Sleep(500 * time.Millisecond)
 		}
 	}
-	
+
 	if s.fwdMode == "routing" {
-			c.Assert(s.cli.GlobalPost(&client.Global{FwdMode: "routing",
-				Name:             "global",
-				NetworkInfraType: "default",
-				Vlans:            "1-4094",
-				Vxlans:           "1-10000",
-			}), IsNil)
-			time.Sleep(40 * time.Second)
-		}
+		c.Assert(s.cli.GlobalPost(&client.Global{FwdMode: "routing",
+			Name:             "global",
+			NetworkInfraType: "default",
+			Vlans:            "1-4094",
+			Vxlans:           "1-10000",
+		}), IsNil)
+		time.Sleep(40 * time.Second)
+	}
 }

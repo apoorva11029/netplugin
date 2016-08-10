@@ -17,7 +17,7 @@ package remotessh
 
 import "os"
 import "os/exec"
-import "fmt"
+//import "fmt"
 // VagrantCommand is a command that is run on a vagrant node
 type VagrantCommand struct {
 	ContivNodes int

@@ -97,39 +97,38 @@ func GetEPFromAPIC(tenant, app, epg, mac string) (string, string, error) {
 
 }
 
-
 func (s *systemtestSuite) checkACILearning(tenant, app, epg string, containers []*container) error {
 
-        ip := ""
-        for _, c := range containers {
-                mac, err := c.node.exec.getMACAddr(c, "eth0")
-                mac = strings.ToUpper(mac)
-                if err != nil {
-                        return err
-                }
+	ip := ""
+	for _, c := range containers {
+		mac, err := c.node.exec.getMACAddr(c, "eth0")
+		mac = strings.ToUpper(mac)
+		if err != nil {
+			return err
+		}
 
-                containerIP, err := c.node.exec.getIPAddr(c, "eth0")
-                if err != nil {
-                        return err
-                }
+		containerIP, err := c.node.exec.getIPAddr(c, "eth0")
+		if err != nil {
+			return err
+		}
 
-                log.Infof("Checking IP %s and MAC %s learned on ACI...", containerIP, mac)
+		log.Infof("Checking IP %s and MAC %s learned on ACI...", containerIP, mac)
 
-                for ix := 0; ix < 20; ix++ {
-                        ip, _, err = GetEPFromAPIC(tenant, app, epg, mac)
-                        if err == nil {
-                                break
-                        }
-                        time.Sleep(2 * time.Second)
-                }
-                if err != nil {
-                        return err
-                }
+		for ix := 0; ix < 20; ix++ {
+			ip, _, err = GetEPFromAPIC(tenant, app, epg, mac)
+			if err == nil {
+				break
+			}
+			time.Sleep(2 * time.Second)
+		}
+		if err != nil {
+			return err
+		}
 
-                if ip != containerIP {
-                        log.Errorf("ip from apic: %s from container: %s", ip, containerIP)
-                        return errors.New("ip mismatch")
-                }
-        }
-        return nil
+		if ip != containerIP {
+			log.Errorf("ip from apic: %s from container: %s", ip, containerIP)
+			return errors.New("ip mismatch")
+		}
+	}
+	return nil
 }
