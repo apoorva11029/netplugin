@@ -51,7 +51,6 @@ func (w *swarm) runContainer(spec containerSpec) (*container, error) {
 		netstr = "--net=" + netstr
 	}
 
-
 	if spec.imageName == "" {
 		spec.imageName = "alpine"
 	}
@@ -375,6 +374,71 @@ func (w *swarm) rotateLog(prefix string) error {
 	return err
 }
 
+func (w *swarm) checkConnectionRetry(c *container, ipaddr, protocol string, port, delay, retries int) error {
+	var protoStr string
+	var err error
+
+	err = nil
+
+	if protocol == "udp" {
+		protoStr = "-u"
+	}
+
+	logrus.Infof("Checking connection from %c to ip %s on port %d, delay: %d, retries: %d",
+		c, ipaddr, port, delay, retries)
+
+	for i := 0; i < retries; i++ {
+
+		_, err = w.exec(c, fmt.Sprintf("nc -z -n -v -w 1 %s %s %v", protoStr, ipaddr, port))
+		if err == nil {
+			logrus.Infof("Connection to ip %s on port %d SUCCEEDED, tries: %d", ipaddr, port, i+1)
+			return nil
+		}
+		time.Sleep(2 * time.Second)
+	}
+
+	logrus.Errorf("Connection  to ip %s on port %d FAILED %v", ipaddr, port, err)
+	return err
+}
+
+func (w *swarm) checkNoConnectionRetry(c *container, ipaddr, protocol string, port, delay, retries int) error {
+	logrus.Infof("Expecting connection to fail from %v to %s on port %d", c, ipaddr, port)
+
+	if err := w.checkConnectionRetry(c, ipaddr, protocol, port, delay, retries); err != nil {
+		return nil
+	}
+
+	return fmt.Errorf("Connection SUCCEEDED on port %d from %s from %s when it should have FAILED.", port, ipaddr, c)
+}
+
+func (w *swarm) checkPing6WithCount(c *container, ipaddr string, count int) error {
+	logrus.Infof("Checking ping6 from %v to %s", c, ipaddr)
+	cmd := fmt.Sprintf("ping6 -c %d %s", count, ipaddr)
+	out, err := w.exec(c, cmd)
+
+	if err != nil || strings.Contains(out, "0 received, 100% packet loss") {
+		logrus.Errorf("Ping6 from %s to %s FAILED: %q - %v", c, ipaddr, out, err)
+		return fmt.Errorf("Ping6 failed from %s to %s: %q - %v", c, ipaddr, out, err)
+	}
+
+	logrus.Infof("Ping6 from %s to %s SUCCEEDED", c, ipaddr)
+	return nil
+}
+
+func (w *swarm) checkPingWithCount(c *container, ipaddr string, count int) error {
+	logrus.Infof("Checking ping from %s to %s", c, ipaddr)
+	cmd := fmt.Sprintf("ping -c %d %s", count, ipaddr)
+	out, err := w.exec(c, cmd)
+
+	if err != nil || strings.Contains(out, "0 received, 100% packet loss") {
+		logrus.Errorf("Ping from %s to %s FAILED: %q - %v", c, ipaddr, out, err)
+		return fmt.Errorf("Ping failed from %s to %s: %q - %v", c, ipaddr, out, err)
+	}
+
+	logrus.Infof("Ping from %s to %s SUCCEEDED", c, ipaddr)
+	return nil
+}
+
 func (w *swarm) checkSchedulerNetworkCreated(nwName string, expectedOp bool) error {
 	logrus.Infof(w.env + "Checking whether docker network is created or not")
 	cmd := fmt.Sprintf("docker network ls | grep netplugin | grep %s | awk \"{print \\$2}\"", nwName)
@@ -398,4 +462,96 @@ func (w *swarm) checkSchedulerNetworkCreated(nwName string, expectedOp bool) err
 		return nil
 	}
 	return err
+}
+
+func (w *swarm) waitForListeners() error {
+	return w.node.runCommandWithTimeOut("netstat -tlpn | grep 9090 | grep LISTEN", 500*time.Millisecond, 50*time.Second)
+}
+
+func (w *swarm) verifyVTEPs(expVTEPS map[string]bool) (string, error) {
+	var data interface{}
+	actVTEPs := make(map[string]uint32)
+
+	// read vtep information from inspect
+	cmd := "curl -s localhost:9090/inspect/driver | python -mjson.tool"
+	str, err := w.node.tbnode.RunCommandWithOutput(cmd)
+	if err != nil {
+		return "", err
+	}
+
+	err = json.Unmarshal([]byte(str), &data)
+	if err != nil {
+		logrus.Errorf("Unmarshal error: %v", err)
+		return str, err
+	}
+
+	drvInfo := data.(map[string]interface{})
+	vx, found := drvInfo["vxlan"]
+	if !found {
+		logrus.Errorf("vxlan not found in driver info")
+		return str, errors.New("vxlan not found in driver info")
+	}
+
+	vt := vx.(map[string]interface{})
+	v, found := vt["VtepTable"]
+	if !found {
+		logrus.Errorf("VtepTable not found in driver info")
+		return str, errors.New("VtepTable not found in driver info")
+	}
+
+	vteps := v.(map[string]interface{})
+	for key := range vteps {
+		actVTEPs[key] = 1
+	}
+
+	// read local ip
+	l, found := vt["LocalIp"]
+	if found {
+		switch l.(type) {
+		case string:
+			localVtep := l.(string)
+			actVTEPs[localVtep] = 1
+		}
+	}
+
+	for vtep := range expVTEPS {
+		_, found := actVTEPs[vtep]
+		if !found {
+			return str, errors.New("VTEP " + vtep + " not found")
+		}
+	}
+
+	return "", nil
+}
+func (w *swarm) verifyEPs(epList []string) (string, error) {
+	// read ep information from inspect
+	cmd := "curl -s localhost:9090/inspect/driver | python -mjson.tool"
+	str, err := w.node.tbnode.RunCommandWithOutput(cmd)
+	if err != nil {
+		return "", err
+	}
+
+	for _, ep := range epList {
+		if !strings.Contains(str, ep) {
+			return str, errors.New(ep + " not found on " + w.node.Name())
+		}
+	}
+
+	return "", nil
+}
+
+func (w *swarm) reloadNode(n *node) error {
+	logrus.Infof("Reloading node %s", n.Name())
+
+	out, err := exec.Command("vagrant", "reload", n.Name()).CombinedOutput()
+	if err != nil {
+		logrus.Errorf("Error reloading node %s. Err: %v\n Output: %s", n.Name(), err, string(out))
+		return err
+	}
+
+	logrus.Infof("Reloaded node %s. Output:\n%s", n.Name(), string(out))
+	return nil
+}
+func (w *swarm) getMasterIP() (string, error) {
+	return w.node.getIPAddr("eth1")
 }
