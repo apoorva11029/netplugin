@@ -131,7 +131,7 @@ func (s *systemtestSuite) TestTriggerNodeReload(c *C) {
 	c.Skip("Skipping this tests temporarily")
 
 	// can not run this test on docker 1.10 & k8s
-	if os.Getenv("CONTIV_DOCKER_VERSION") == "1.10.3" || s.scheduler == "k8" {
+	if os.Getenv("CONTIV_DOCKER_VERSION") == "1.10.3" || s.basicInfo.Scheduler == "k8" {
 		c.Skip("Skipping node reload test on [older docker version | consul | k8s]")
 	}
 	network := &client.Network{
@@ -168,7 +168,7 @@ func (s *systemtestSuite) TestTriggerNodeReload(c *C) {
 
 		// reload VMs one at a time
 		for _, node := range s.nodes {
-			if s.scheduler == "k8" && node.Name() == "k8master" {
+			if s.basicInfo.Scheduler == "k8" && node.Name() == "k8master" {
 				continue
 			}
 			c.Assert(node.reloadNode(), IsNil)

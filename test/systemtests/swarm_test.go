@@ -5,6 +5,10 @@ import (
 	"github.com/Sirupsen/logrus"
 	"regexp"
 	"strings"
+	"time"
+	"errors"
+	"encoding/json"
+	"os/exec"
 )
 
 type swarm struct {

@@ -371,7 +371,7 @@ func (k *kubernetes) startNetmaster() error {
 	}
 	logrus.Infof("Starting netmaster on %s", k.node.Name())
 	dnsOpt := " --dns-enable=false "
-	if k.node.suite.basicInfo.EnableDNS{
+	if k.node.suite.basicInfo.EnableDNS {
 		dnsOpt = " --dns-enable=true "
 	}
 	return k.node.tbnode.RunCommandBackground(k.node.suite.basicInfo.BinPath + "/netmaster" + dnsOpt + " --cluster-store " + k.node.suite.basicInfo.ClusterStore + " " + "--cluster-mode kubernetes &> /tmp/netmaster.log")

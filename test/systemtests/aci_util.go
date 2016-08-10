@@ -9,6 +9,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"strings"
 )
 
 // EPSpec for aci-gw
