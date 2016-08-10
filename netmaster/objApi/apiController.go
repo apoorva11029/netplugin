@@ -1196,6 +1196,10 @@ func (ac *APIController) TenantGetOper(tenant *contivModel.TenantInspect) error 
 			}
 		}
 	}
+	for _, pol := range tenant.Config.LinkSets.Policies {
+		log.Infof("the policy is %s", pol)
+	}
+	log.Infof("Done printing policies.")
 	return nil
 }
 

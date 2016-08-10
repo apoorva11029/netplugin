@@ -483,10 +483,10 @@ type TenantLinkSets struct {
 }
 
 type TenantOper struct {
-	CntEndpoints int            `json:"cntEndpoints,omitempty"` // number of endpoints in the tenant
 	Endpoints    []EndpointOper `json:"endpoints,omitempty"`
-	NumNet       int            `json:"numNet,omitempty"`   // number of networks
-	NumRules     int            `json:"numRules,omitempty"` // number of rules linked to the tenant
+	NumEndpoints int            `json:"numEndpoints,omitempty"` // number of endpoints in the tenant
+	NumNet       int            `json:"numNet,omitempty"`       // number of networks
+	NumRules     int            `json:"numRules,omitempty"`     // number of rules linked to the tenant
 
 }
 

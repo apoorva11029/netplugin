@@ -30,7 +30,7 @@
 					"title": "number of rules linked to the tenant"
 					
 				},
-				"cntEndpoints": {
+				"numEndpoints": {
 					"type": "int",
 					"title": "number of endpoints in the tenant"
 				},
