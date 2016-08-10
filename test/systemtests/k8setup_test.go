@@ -346,7 +346,7 @@ func (k *kubernetes) startNetplugin(args string) error {
 		return nil
 	}
 	logrus.Infof("Starting netplugin on %s", k.node.Name())
-	return k.node.tbnode.RunCommandBackground("sudo " + k.node.suite.binpath + "/netplugin -plugin-mode kubernetes -vlan-if " + k.node.suite.vlanIf + " --cluster-store " + k.node.suite.clusterStore + " " + args + "&> /tmp/netplugin.log")
+	return k.node.tbnode.RunCommandBackground("sudo " + k.node.suite.basicInfo.BinPath + "/netplugin -plugin-mode kubernetes -vlan-if " + k.node.suite.infoHost.HostDataInterface + " --cluster-store " + k.node.suite.basicInfo.ClusterStore + " " + args + "&> /tmp/netplugin.log")
 }
 
 func (k *kubernetes) stopNetplugin() error {
@@ -371,10 +371,10 @@ func (k *kubernetes) startNetmaster() error {
 	}
 	logrus.Infof("Starting netmaster on %s", k.node.Name())
 	dnsOpt := " --dns-enable=false "
-	if k.node.suite.enableDNS {
+	if k.node.suite.basicInfo.EnableDNS{
 		dnsOpt = " --dns-enable=true "
 	}
-	return k.node.tbnode.RunCommandBackground(k.node.suite.binpath + "/netmaster" + dnsOpt + " --cluster-store " + k.node.suite.clusterStore + " " + "--cluster-mode kubernetes &> /tmp/netmaster.log")
+	return k.node.tbnode.RunCommandBackground(k.node.suite.basicInfo.BinPath + "/netmaster" + dnsOpt + " --cluster-store " + k.node.suite.basicInfo.ClusterStore + " " + "--cluster-mode kubernetes &> /tmp/netmaster.log")
 }
 func (k *kubernetes) cleanupMaster() {
 	if k.node.Name() != "k8master" {
@@ -399,7 +399,7 @@ func (k *kubernetes) cleanupSlave() {
 	logrus.Infof("Cleaning up slave on %s", k.node.Name())
 	vNode := k.node.tbnode
 	vNode.RunCommand("sudo ovs-vsctl del-br contivVxlanBridge")
-	vNode.RunCommand("sudo ovs-vsctl del-br contivVlanBridge")
+	vNode.RunCommand("sudo ovs-vsctl del-br contivBridge")
 	vNode.RunCommand("for p in `ifconfig  | grep vport | awk '{print $1}'`; do sudo ip link delete $p type veth; done")
 	vNode.RunCommand("sudo rm /var/run/docker/plugins/netplugin.sock")
 	vNode.RunCommand("sudo service docker restart")
