@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Sirupsen/logrus"
+	"github.com/contiv/contivmodel/client"
 	"github.com/contiv/remotessh"
 	. "gopkg.in/check.v1"
 	"io/ioutil"
@@ -15,7 +16,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"github.com/contiv/contivmodel/client"
 )
 
 func (s *systemtestSuite) checkConnectionPair(containers1, containers2 []*container, port int) error {
@@ -836,7 +836,7 @@ func (s *systemtestSuite) verifyVTEPs() error {
 		if s.basicInfo.Scheduler == "k8" && n.Name() == "k8master" {
 			continue
 		}
-		vtep, err := n.getIPAddr("eth1")
+		vtep, err := n.getIPAddr(s.infoHost.HostMgmtInterface)
 		if err != nil {
 			logrus.Errorf("Error getting eth1 IP address for node %s", n.Name())
 			return err
