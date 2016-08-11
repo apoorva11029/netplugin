@@ -1,7 +1,7 @@
 package systemtests
 
 import (
-	//"errors"
+	"errors"
 	log "github.com/Sirupsen/logrus"
 	"github.com/contiv/contivmodel/client"
 	//	"github.com/contiv/vagrantssh"

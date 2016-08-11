@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Sirupsen/logrus"
+	"github.com/contiv/contivmodel/client"
 	"github.com/contiv/remotessh"
 	. "gopkg.in/check.v1"
 	"io/ioutil"
@@ -832,7 +833,7 @@ func (s *systemtestSuite) verifyVTEPs() error {
 	var err error
 	expVTEPs := make(map[string]bool)
 	for _, n := range s.nodes {
-		if s.scheduler == "k8" && n.Name() == "k8master" {
+		if s.basicInfo.Scheduler == "k8" && n.Name() == "k8master" {
 			continue
 		}
 		vtep, err := n.getIPAddr(s.infoHost.HostMgmtInterface)
@@ -1140,7 +1141,7 @@ func (s *systemtestSuite) SetUpTestBaremetal(c *C) {
 
 	for _, node := range s.nodes {
 		node.exec.cleanupContainers()
-		node.exec.cleanupDockerNetwork()
+		//node.exec.cleanupDockerNetwork()
 
 		node.stopNetplugin()
 		node.cleanupSlave()

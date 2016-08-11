@@ -320,10 +320,10 @@ func (d *docker) stopNetmaster() error {
 func (d *docker) startNetmaster() error {
 	logrus.Infof("Starting netmaster on %s", d.node.Name())
 	dnsOpt := " --dns-enable=false "
-	if d.node.suite.basicInfo.EnableDNS{
+	if d.node.suite.basicInfo.EnableDNS {
 		dnsOpt = " --dns-enable=true "
 	}
-	return d.node.tbnode.RunCommandBackground(d.node.suite.basicInfo.BinPath+ "/netmaster" + dnsOpt + " --cluster-store " + d.node.suite.basicInfo.ClusterStore + " &> /tmp/netmaster.log")
+	return d.node.tbnode.RunCommandBackground(d.node.suite.basicInfo.BinPath + "/netmaster" + dnsOpt + " --cluster-store " + d.node.suite.basicInfo.ClusterStore + " &> /tmp/netmaster.log")
 }
 func (d *docker) cleanupMaster() {
 	logrus.Infof("Cleaning up master on %s", d.node.Name())

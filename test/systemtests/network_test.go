@@ -369,7 +369,7 @@ func (s *systemtestSuite) testNetworkAddDeleteTenant(c *C, encap, fwdmode string
 }
 
 func (s *systemtestSuite) TestNetworkAddDeleteTenantFwdModeChangeVXLAN(c *C) {
-	for i := 0; i < s.iterations; i++ {
+	for i := 0; i < s.basicInfo.Iterations; i++ {
 		s.testNetworkAddDeleteTenant(c, "vxlan", s.fwdMode)
 		if s.fwdMode == "routing" {
 			c.Assert(s.cli.GlobalPost(&client.Global{FwdMode: "bridge",
@@ -399,7 +399,7 @@ func (s *systemtestSuite) TestNetworkAddDeleteTenantFwdModeChangeVLAN(c *C) {
 		return
 	}
 
-	for i := 0; i < s.iterations; i++ {
+	for i := 0; i < s.basicInfo.Iterations; i++ {
 		s.testNetworkAddDeleteTenant(c, "vlan", s.fwdMode)
 		c.Assert(s.cli.GlobalPost(&client.Global{FwdMode: "bridge",
 			Name:             "global",
