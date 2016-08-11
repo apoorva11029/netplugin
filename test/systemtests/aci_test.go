@@ -188,40 +188,40 @@ func (s *systemtestSuite) TestACIProfile(c *C) {
 		c.Assert(s.cli.EndpointGroupPost(&client.EndpointGroup{
 			TenantName:  s.infoGlob.Tenant,
 			NetworkName: s.infoGlob.Network,
-			GroupName:   "epgA",
+			GroupName:   "epga",
 		}), IsNil)
 
 		c.Assert(s.cli.EndpointGroupPost(&client.EndpointGroup{
 			TenantName:  s.infoGlob.Tenant,
 			NetworkName: s.infoGlob.Network,
-			GroupName:   "epgB",
+			GroupName:   "epgb",
 		}), IsNil)
 
 		c.Assert(s.cli.AppProfilePost(&client.AppProfile{
 			TenantName:     s.infoGlob.Tenant,
-			EndpointGroups: []string{"epgA", "epgB"},
+			EndpointGroups: []string{"epga", "epgb"},
 			AppProfileName: "profile1",
 		}), IsNil)
 
 		time.Sleep(5 * time.Second)
 
-		groups := []string{"epgA", "epgB"}
+		groups := []string{"epga", "epgb"}
 		containers, err := s.runContainersInGroups(s.basicInfo.Containers, s.infoGlob.Network, s.infoGlob.Tenant, groups)
 		c.Assert(err, IsNil)
 		time.Sleep(time.Second * 20)
 		for key, value := range containers {
-			if value == "epgA" {
+			if value == "epga" {
 				containersA = append(containersA, key)
 			} else {
 				containersB = append(containersB, key)
 			}
 		}
 
-		// Verify containers in A can ping default gateway
+		// Verify containers in epga can ping default gateway
 		c.Assert(s.pingTestByName(containersA, s.infoGlob.Gateway), IsNil)
-		// Verify cA1 cannot ping cB1
+		// Verify containers in epga cannot ping containers in epgb
 		c.Assert(s.pingFailureTest(containersA, containersB), IsNil)
-		// Verify cB1 can ping default gateway
+		// Verify containers in epgb can ping default gateway
 		c.Assert(s.pingTestByName(containersB, s.infoGlob.Gateway), IsNil)
 
 		// Create a policy that allows ICMP and apply between A and B
@@ -234,7 +234,7 @@ func (s *systemtestSuite) TestACIProfile(c *C) {
 			RuleID:            "1",
 			PolicyName:        "policyAB",
 			TenantName:        s.infoGlob.Tenant,
-			FromEndpointGroup: "epgA",
+			FromEndpointGroup: "epga",
 			Direction:         "in",
 			Protocol:          "icmp",
 			Action:            "allow",
@@ -244,23 +244,22 @@ func (s *systemtestSuite) TestACIProfile(c *C) {
 			TenantName:  s.infoGlob.Tenant,
 			NetworkName: s.infoGlob.Network,
 			Policies:    []string{"policyAB"},
-			GroupName:   "epgB",
+			GroupName:   "epgb",
 		}), IsNil)
 		time.Sleep(time.Second * 5)
 
 		c.Assert(s.checkACILearning(s.infoGlob.Tenant,
 			"profile1",
-			"epgA",
+			"epga",
 			containersA), IsNil)
 
 		c.Assert(s.checkACILearning(s.infoGlob.Tenant,
 			"profile1",
-			"epgB",
+			"epgb",
 			containersB), IsNil)
 
-		// Verify cA1 can ping cB1
-		for _, cB := range containersB {
-			log.Infof("IP of me is %s", cB.eth0.ip)
+		// Verify containers in epga can ping containers in epgb
+		for _, cB := range containersB {}
 			c.Assert(s.pingTestByName(containersA, cB.eth0.ip), IsNil)
 		}
 
@@ -270,11 +269,12 @@ func (s *systemtestSuite) TestACIProfile(c *C) {
 		c.Assert(s.startListeners(containersB, []int{8000, 8001}), IsNil)
 		c.Assert(s.checkNoConnectionPairRetry(containersA, containersB, 8000, 1, 3), IsNil)
 		c.Assert(s.checkNoConnectionPairRetry(containersA, containersB, 8000, 1, 3), IsNil)
+
 		c.Assert(s.cli.RulePost(&client.Rule{
 			RuleID:            "2",
 			PolicyName:        "policyAB",
 			TenantName:        s.infoGlob.Tenant,
-			FromEndpointGroup: "epgA",
+			FromEndpointGroup: "epga",
 			Direction:         "in",
 			Protocol:          "tcp",
 			Port:              8000,
@@ -284,23 +284,26 @@ func (s *systemtestSuite) TestACIProfile(c *C) {
 
 		c.Assert(s.checkACILearning(s.infoGlob.Tenant,
 			"profile1",
-			"epgA",
+			"epga",
 			containersA), IsNil)
 
 		c.Assert(s.checkACILearning(s.infoGlob.Tenant,
 			"profile1",
-			"epgB",
+			"epgb",
 			containersB), IsNil)
 
 		c.Assert(s.checkConnectionPairRetry(containersA, containersB, 8000, 1, 3), IsNil)
 		c.Assert(s.checkNoConnectionPairRetry(containersA, containersB, 8001, 1, 3), IsNil)
+		for _, cB := range containersB {
+			c.Assert(s.pingTestByName(containersA, cB.eth0.ip), IsNil)
+		}
 
 		// Add a rule to allow 8001
 		c.Assert(s.cli.RulePost(&client.Rule{
 			RuleID:            "3",
 			PolicyName:        "policyAB",
 			TenantName:        s.infoGlob.Tenant,
-			FromEndpointGroup: "epgA",
+			FromEndpointGroup: "epga",
 			Direction:         "in",
 			Protocol:          "tcp",
 			Port:              8001,
@@ -310,16 +313,20 @@ func (s *systemtestSuite) TestACIProfile(c *C) {
 
 		c.Assert(s.checkACILearning(s.infoGlob.Tenant,
 			"profile1",
-			"epgA",
+			"epga",
 			containersA), IsNil)
 
 		c.Assert(s.checkACILearning(s.infoGlob.Tenant,
 			"profile1",
-			"epgB",
+			"epgb",
 			containersB), IsNil)
 
 		c.Assert(s.checkConnectionPairRetry(containersA, containersB, 8000, 1, 3), IsNil)
 		c.Assert(s.checkConnectionPairRetry(containersA, containersB, 8001, 1, 3), IsNil)
+		for _, cB := range containersB {
+			log.Infof("IP of me is %s", cB.eth0.ip)
+			c.Assert(s.pingTestByName(containersA, cB.eth0.ip), IsNil)
+		}
 
 		// Delete ICMP rule
 		c.Assert(s.cli.RuleDelete(s.infoGlob.Tenant, "policyAB", "1"), IsNil)
@@ -327,12 +334,12 @@ func (s *systemtestSuite) TestACIProfile(c *C) {
 
 		c.Assert(s.checkACILearning(s.infoGlob.Tenant,
 			"profile1",
-			"epgA",
+			"epga",
 			containersA), IsNil)
 
 		c.Assert(s.checkACILearning(s.infoGlob.Tenant,
 			"profile1",
-			"epgB",
+			"epgb",
 			containersB), IsNil)
 
 		c.Assert(s.pingFailureTest(containersA, containersB), IsNil)
@@ -343,12 +350,12 @@ func (s *systemtestSuite) TestACIProfile(c *C) {
 		time.Sleep(time.Second * 5)
 		c.Assert(s.checkACILearning(s.infoGlob.Tenant,
 			"profile1",
-			"epgA",
+			"epga",
 			containersA), IsNil)
 
 		c.Assert(s.checkACILearning(s.infoGlob.Tenant,
 			"profile1",
-			"epgB",
+			"epgb",
 			containersB), IsNil)
 		c.Assert(s.checkNoConnectionPairRetry(containersA, containersB, 8000, 1, 3), IsNil)
 		c.Assert(s.checkConnectionPairRetry(containersA, containersB, 8001, 1, 3), IsNil)
@@ -365,18 +372,18 @@ func (s *systemtestSuite) TestACIProfile(c *C) {
 		// Create the app profile with a different name
 		c.Assert(s.cli.AppProfilePost(&client.AppProfile{
 			TenantName:     s.infoGlob.Tenant,
-			EndpointGroups: []string{"epgA", "epgB"},
+			EndpointGroups: []string{"epga", "epgb"},
 			AppProfileName: "profile2",
 		}), IsNil)
 		time.Sleep(time.Second * 5)
 		c.Assert(s.checkACILearning(s.infoGlob.Tenant,
 			"profile2",
-			"epgA",
+			"epga",
 			containersA), IsNil)
 
 		c.Assert(s.checkACILearning(s.infoGlob.Tenant,
 			"profile2",
-			"epgB",
+			"epgb",
 			containersB), IsNil)
 		c.Assert(s.removeContainers(append(containersA, containersB...)), IsNil)
 		containersA = nil
@@ -385,7 +392,7 @@ func (s *systemtestSuite) TestACIProfile(c *C) {
 		c.Assert(err, IsNil)
 		time.Sleep(time.Second * 20)
 		for key, value := range containers {
-			if value == "epgA" {
+			if value == "epga" {
 				containersA2 = append(containersA, key)
 			} else {
 				containersB2 = append(containersB, key)
@@ -402,7 +409,7 @@ func (s *systemtestSuite) TestACIProfile(c *C) {
 			RuleID:            "2",
 			PolicyName:        "policyAB",
 			TenantName:        s.infoGlob.Tenant,
-			FromEndpointGroup: "epgA",
+			FromEndpointGroup: "epga",
 			Direction:         "in",
 			Protocol:          "tcp",
 			Port:              8000,
@@ -413,17 +420,18 @@ func (s *systemtestSuite) TestACIProfile(c *C) {
 		time.Sleep(time.Second * 5)
 		c.Assert(s.checkACILearning(s.infoGlob.Tenant,
 			"profile2",
-			"epgA",
+			"epga",
 			containersA2), IsNil)
 
 		c.Assert(s.checkACILearning(s.infoGlob.Tenant,
 			"profile2",
-			"epgB",
+			"epgb",
 			containersB2), IsNil)
 
 		c.Assert(s.checkConnectionPairRetry(containersA2, containersB2, 8000, 1, 3), IsNil)
 		c.Assert(s.checkConnectionPairRetry(containersA2, containersB2, 8001, 1, 3), IsNil)
 		c.Assert(s.pingFailureTest(containersA2, containersB2), IsNil)
+
 		// Delete the app profile
 		c.Assert(s.cli.AppProfileDelete(s.infoGlob.Tenant, "profile2"), IsNil)
 		time.Sleep(time.Second * 5)
@@ -434,8 +442,8 @@ func (s *systemtestSuite) TestACIProfile(c *C) {
 		c.Assert(s.removeContainers(append(containersA2, containersB2...)), IsNil)
 		containersA2 = nil
 		containersB2 = nil
-		c.Assert(s.cli.EndpointGroupDelete(s.infoGlob.Tenant, "epgA"), IsNil)
-		c.Assert(s.cli.EndpointGroupDelete(s.infoGlob.Tenant, "epgB"), IsNil)
+		c.Assert(s.cli.EndpointGroupDelete(s.infoGlob.Tenant, "epga"), IsNil)
+		c.Assert(s.cli.EndpointGroupDelete(s.infoGlob.Tenant, "epgb"), IsNil)
 		c.Assert(s.cli.RuleDelete(s.infoGlob.Tenant, "policyAB", "2"), IsNil)
 		c.Assert(s.cli.RuleDelete(s.infoGlob.Tenant, "policyAB", "3"), IsNil)
 

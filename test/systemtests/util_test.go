@@ -835,7 +835,7 @@ func (s *systemtestSuite) verifyVTEPs() error {
 		if s.scheduler == "k8" && n.Name() == "k8master" {
 			continue
 		}
-		vtep, err := n.getIPAddr("eth1")
+		vtep, err := n.getIPAddr(s.infoHost.HostMgmtInterface)
 		if err != nil {
 			logrus.Errorf("Error getting eth1 IP address for node %s", n.Name())
 			return err
