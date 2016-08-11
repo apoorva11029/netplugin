@@ -1,14 +1,14 @@
 package systemtests
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/Sirupsen/logrus"
+	"os/exec"
 	"regexp"
 	"strings"
 	"time"
-	"errors"
-	"encoding/json"
-	"os/exec"
 )
 
 type swarm struct {
