@@ -118,7 +118,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         v.linked_clone = true if Vagrant::VERSION =~ /^1.8/
     end
 
-    num_nodes = 2
+    num_nodes = 3
     if ENV['CONTIV_NODES'] && ENV['CONTIV_NODES'] != "" then
         num_nodes = ENV['CONTIV_NODES'].to_i
     end
@@ -289,6 +289,7 @@ SCRIPT
             # forward netmaster port
             if n == 0 then
                 node.vm.network "forwarded_port", guest: 9999, host: 9999
+                node.vm.network "forwarded_port", guest: 80, host: 9998
             end
         end
     end
