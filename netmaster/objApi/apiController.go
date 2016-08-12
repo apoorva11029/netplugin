@@ -1124,6 +1124,73 @@ func (ac *APIController) TenantCreate(tenant *contivModel.Tenant) error {
 	return nil
 }
 
+// TenantGetOper inspects tenant
+func (ac *APIController) TenantGetOper(tenant *contivModel.TenantInspect) error {
+	log.Infof("Received TenantInspect: %+v", tenant)
+	// Get the state driver
+	stateDriver, err := utils.GetStateDriver()
+	if err != nil {
+		return err
+
+	}
+	tenant.Oper.NumNet = len(tenant.Config.LinkSets.Networks)
+	tenantID := tenant.Config.TenantName
+	numEPs := 0
+	s := []string{}
+	log.Infof("Helloooo it's me -------o")
+	networkID := ""
+	for _, net := range tenant.Config.LinkSets.Networks {
+		networkID = net.ObjKey
+		log.Infof("network has ID %s", networkID)
+		log.Infof("--------------------")
+		s = strings.Split(networkID, ":")
+		if s[0] == tenantID {
+			networkID = s[1] + "." + s[0]
+			nwCfg := &mastercfg.CfgNetworkState{}
+			nwCfg.StateDriver = stateDriver
+			if err := nwCfg.Read(networkID); err != nil {
+				log.Errorf("Error fetching network from mastercfg: %s", networkID)
+				return err
+			}
+			numEPs = numEPs + nwCfg.EpCount
+
+		}
+	}
+
+	tenant.Oper.NumEndpoints = numEPs
+
+	readEp := &mastercfg.CfgEndpointState{}
+	readEp.StateDriver = stateDriver
+	epCfgs, err := readEp.ReadAll()
+	if err == nil {
+		for _, epCfg := range epCfgs {
+			ep := epCfg.(*mastercfg.CfgEndpointState)
+			s = strings.Split(ep.NetID, ".")
+			epNetID := s[1] + ":" + s[0]
+			log.Infof("epNETID IS %s", epNetID)
+			if _, ok := tenant.Config.LinkSets.Networks[epNetID]; ok {
+				epOper := contivModel.EndpointOper{}
+				epOper.Network = ep.NetID
+				epOper.EndpointID = ep.EndpointID
+				epOper.ServiceName = ep.ServiceName
+				epOper.EndpointGroupID = ep.EndpointGroupID
+				epOper.EndpointGroupKey = ep.EndpointGroupKey
+				epOper.IpAddress = []string{ep.IPAddress, ep.IPv6Address}
+				epOper.MacAddress = ep.MacAddress
+				epOper.HomingHost = ep.HomingHost
+				epOper.IntfName = ep.IntfName
+				epOper.VtepIP = ep.VtepIP
+				epOper.Labels = fmt.Sprintf("%s", ep.Labels)
+				epOper.ContainerID = ep.ContainerID
+				epOper.ContainerName = ep.ContainerName
+				tenant.Oper.Endpoints = append(tenant.Oper.Endpoints, epOper)
+			}
+		}
+	}
+	return nil
+
+}
+
 // TenantUpdate updates a tenant
 func (ac *APIController) TenantUpdate(tenant, params *contivModel.Tenant) error {
 	log.Infof("Received TenantUpdate: %+v, params: %+v", tenant, params)

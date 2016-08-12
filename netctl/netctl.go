@@ -387,6 +387,21 @@ func deleteTenant(ctx *cli.Context) {
 	errCheck(ctx, getClient(ctx).TenantDelete(tenant))
 }
 
+func inspectTenant(ctx *cli.Context) {
+	argCheck(1, ctx)
+
+	tenant := ctx.Args()[0]
+
+	fmt.Printf("Inspecting tenant: %s  ", tenant)
+
+	ten, err := getClient(ctx).TenantInspect(tenant)
+	errCheck(ctx, err)
+
+	content, err := json.MarshalIndent(ten, "", "  ")
+	os.Stdout.Write(content)
+	os.Stdout.WriteString("\n")
+}
+
 func listTenants(ctx *cli.Context) {
 	argCheck(0, ctx)
 

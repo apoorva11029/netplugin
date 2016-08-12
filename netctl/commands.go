@@ -188,6 +188,13 @@ var Commands = []cli.Command{
 				ArgsUsage: "[tenant]",
 				Action:    createTenant,
 			},
+			{
+				Name:      "inspect",
+				Usage:     "Inspect a tenant",
+				ArgsUsage: "[tenant]",
+				Flags:     []cli.Flag{jsonFlag},
+				Action:    inspectTenant,
+			},
 		},
 	},
 	{
