@@ -296,6 +296,7 @@ class objmodelClient:
 	    jdata = json.dumps({ 
 			"DSCP": obj.DSCP, 
 			"bandwidth": obj.bandwidth, 
+			"burst": obj.burst, 
 			"profileName": obj.profileName, 
 			"tenantName": obj.tenantName, 
 	    })
@@ -548,6 +549,16 @@ class objmodelClient:
 	    return json.loads(retData)
 
 
+
+	# Inspect tenant
+	def createTenant(self, obj):
+	    postUrl = self.baseUrl + '/api/v1/inspect/tenant/' + obj.tenantName  + '/'
+
+	    retDate = urllib2.urlopen(postUrl)
+	    if retData == "Error":
+	        errorExit("list Tenant failed")
+
+	    return json.loads(retData)
 
 
 	# Create volume

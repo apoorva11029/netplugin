@@ -49,7 +49,7 @@
 					"ShowSummary": true
 				}
 			},
-			"link-sets": {
+		"link-sets": {
 				"services": {
 					"ref": "service"
 				},

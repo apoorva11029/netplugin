@@ -295,6 +295,7 @@ type Netprofile struct {
 
 	DSCP        int    `json:"DSCP,omitempty"`        // DSCP
 	Bandwidth   string `json:"bandwidth,omitempty"`   // Allocated bandwidth
+	Burst       int    `json:"burst,omitempty"`       // burst size
 	ProfileName string `json:"profileName,omitempty"` // Network profile name
 	TenantName  string `json:"tenantName,omitempty"`  // Tenant name
 
@@ -472,8 +473,18 @@ type TenantLinkSets struct {
 	Volumes        map[string]Link `json:"Volumes,omitempty"`
 }
 
+type TenantOper struct {
+	Endpoints    []EndpointOper `json:"endpoints,omitempty"`
+	Networks     []NetworkOper  `json:"networks,omitempty"`
+	NumEndpoints int            `json:"numEndpoints,omitempty"` // number of endpoints in the tenant
+	NumNet       int            `json:"numNet,omitempty"`       // number of networks
+
+}
+
 type TenantInspect struct {
 	Config Tenant
+
+	Oper TenantOper
 }
 
 type Volume struct {
