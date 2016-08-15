@@ -1142,7 +1142,6 @@ func (ac *APIController) TenantGetOper(tenant *contivModel.TenantInspect) error 
 	for _, net := range tenant.Config.LinkSets.Networks {
 		networkID = net.ObjKey
 		log.Infof("network has ID %s", networkID)
-		log.Infof("--------------------")
 		s = strings.Split(networkID, ":")
 		if s[0] == tenantID {
 			networkID = s[1] + "." + s[0]
@@ -1153,40 +1152,44 @@ func (ac *APIController) TenantGetOper(tenant *contivModel.TenantInspect) error 
 				return err
 			}
 			numEPs = numEPs + nwCfg.EpCount
-
+			netOper := contivModel.NetworkOper{}
+			netOper.AllocatedAddressesCount = nwCfg.EpAddrCount
+			netOper.AvailableIPAddresses = master.ListAvailableIPs(nwCfg)
+			netOper.AllocatedIPAddresses = master.ListAllocatedIPs(nwCfg)
+			netOper.DnsServerIP = nwCfg.DNSServer
+			netOper.ExternalPktTag = nwCfg.ExtPktTag
+			netOper.PktTag = nwCfg.PktTag
+			netOper.NumEndpoints = nwCfg.EpCount
+			readEp := &mastercfg.CfgEndpointState{}
+			readEp.StateDriver = stateDriver
+			epCfgs, err := readEp.ReadAll()
+			if err == nil {
+				for _, epCfg := range epCfgs {
+					ep := epCfg.(*mastercfg.CfgEndpointState)
+					if ep.NetID == networkID {
+						epOper := contivModel.EndpointOper{}
+						epOper.Network = ep.NetID
+						epOper.EndpointID = ep.EndpointID
+						epOper.ServiceName = ep.ServiceName
+						epOper.EndpointGroupID = ep.EndpointGroupID
+						epOper.EndpointGroupKey = ep.EndpointGroupKey
+						epOper.IpAddress = []string{ep.IPAddress, ep.IPv6Address}
+						epOper.MacAddress = ep.MacAddress
+						epOper.HomingHost = ep.HomingHost
+						epOper.IntfName = ep.IntfName
+						epOper.VtepIP = ep.VtepIP
+						epOper.Labels = fmt.Sprintf("%s", ep.Labels)
+						epOper.ContainerID = ep.ContainerID
+						epOper.ContainerName = ep.ContainerName
+						netOper.Endpoints = append(netOper.Endpoints, epOper)
+					}
+				}
+			}
+			tenant.Oper.Networks = append(tenant.Oper.Networks, netOper)
 		}
 	}
 
 	tenant.Oper.NumEndpoints = numEPs
-
-	readEp := &mastercfg.CfgEndpointState{}
-	readEp.StateDriver = stateDriver
-	epCfgs, err := readEp.ReadAll()
-	if err == nil {
-		for _, epCfg := range epCfgs {
-			ep := epCfg.(*mastercfg.CfgEndpointState)
-			s = strings.Split(ep.NetID, ".")
-			epNetID := s[1] + ":" + s[0]
-			log.Infof("epNETID IS %s", epNetID)
-			if _, ok := tenant.Config.LinkSets.Networks[epNetID]; ok {
-				epOper := contivModel.EndpointOper{}
-				epOper.Network = ep.NetID
-				epOper.EndpointID = ep.EndpointID
-				epOper.ServiceName = ep.ServiceName
-				epOper.EndpointGroupID = ep.EndpointGroupID
-				epOper.EndpointGroupKey = ep.EndpointGroupKey
-				epOper.IpAddress = []string{ep.IPAddress, ep.IPv6Address}
-				epOper.MacAddress = ep.MacAddress
-				epOper.HomingHost = ep.HomingHost
-				epOper.IntfName = ep.IntfName
-				epOper.VtepIP = ep.VtepIP
-				epOper.Labels = fmt.Sprintf("%s", ep.Labels)
-				epOper.ContainerID = ep.ContainerID
-				epOper.ContainerName = ep.ContainerName
-				tenant.Oper.Endpoints = append(tenant.Oper.Endpoints, epOper)
-			}
-		}
-	}
 	return nil
 
 }
