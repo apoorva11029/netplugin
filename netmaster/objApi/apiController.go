@@ -31,13 +31,23 @@ import (
 	"github.com/contiv/netplugin/utils/netutils"
 	"github.com/contiv/objdb/modeldb"
 
+	"encoding/json"
 	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
+	api "github.com/osrg/gobgp/api"
+	"io/ioutil"
+	"net/http"
 )
 
 // APIController stores the api controller state
 type APIController struct {
 	router *mux.Router
+}
+
+// BgpInspect is bgp inspect struct
+type BgpInspect struct {
+	Peer *api.Peer
+	Rib  *api.Table
 }
 
 var apiCtrler *APIController
@@ -139,7 +149,6 @@ func (ac *APIController) GlobalGetOper(global *contivModel.GlobalInspect) error 
 	global.Oper.NumNetworks = int(numVlans + numVxlans)
 	global.Oper.VlansInUse = vlansInUse
 	global.Oper.VxlansInUse = vxlansInUse
-
 	return nil
 }
 
@@ -193,6 +202,16 @@ func (ac *APIController) GlobalUpdate(global, params *contivModel.Global) error 
 		if numVlans+numVxlans > 0 {
 			log.Errorf("Unable to update forwarding mode due to existing %d vlans and %d vxlans", numVlans, numVxlans)
 			return fmt.Errorf("Please delete %v vlans and %v vxlans before changing forwarding mode", vlansInUse, vxlansInUse)
+		}
+		if global.FwdMode == "routing" {
+			//check if  any bgp configurations exists.
+			bgpCfgs := &mastercfg.CfgBgpState{}
+			bgpCfgs.StateDriver = stateDriver
+			cfgs, _ := bgpCfgs.ReadAll()
+			if len(cfgs) != 0 {
+				log.Errorf("Unable to change the forwarding mode due to existing bgp configs")
+				return fmt.Errorf("please delete existing Bgp configs")
+			}
 		}
 		globalCfg.FwdMode = params.FwdMode
 	}
@@ -1325,6 +1344,74 @@ func (ac *APIController) BgpUpdate(oldbgpCfg *contivModel.Bgp, NewbgpCfg *contiv
 		return err
 	}
 
+	oldbgpCfg.Hostname = NewbgpCfg.Hostname
+	oldbgpCfg.Routerip = NewbgpCfg.Routerip
+	oldbgpCfg.As = NewbgpCfg.As
+	oldbgpCfg.NeighborAs = NewbgpCfg.NeighborAs
+	oldbgpCfg.Neighbor = NewbgpCfg.Neighbor
+
+	NewbgpCfg.Write()
+
+	return nil
+}
+
+//BgpGetOper inspects the oper state of bgp object
+func (ac *APIController) BgpGetOper(bgp *contivModel.BgpInspect) error {
+	log.Infof("Received BgpInspect: %+v", bgp)
+	var obj *BgpInspect
+	var host string
+
+	srvList, err := master.ObjdbClient.GetService("netplugin")
+	if err != nil {
+		log.Errorf("Error getting netplugin nodes. Err: %v", err)
+		return err
+	}
+
+	for _, srv := range srvList {
+		if srv.Hostname == bgp.Config.Hostname {
+			host = srv.HostAddr
+		}
+	}
+
+	url := "http://" + host + ":9090/inspect/bgp"
+	r, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer r.Body.Close()
+
+	switch {
+	case r.StatusCode == int(404):
+		return errors.New("Page not found!")
+	case r.StatusCode == int(403):
+		return errors.New("Access denied!")
+	case r.StatusCode == int(500):
+		response, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			return err
+		}
+		return errors.New(string(response))
+	case r.StatusCode != int(200):
+		log.Debugf("GET Status '%s' status code %d \n", r.Status, r.StatusCode)
+		return errors.New(r.Status)
+	}
+
+	response, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return err
+	}
+
+	if err := json.Unmarshal(response, &obj); err != nil {
+		return err
+	}
+
+	bgp.Oper.NeighborStatus = obj.Peer.Info.BgpState
+	bgp.Oper.AdminStatus = obj.Peer.Info.AdminState
+	bgp.Oper.NumRoutes = len(obj.Rib.Destinations)
+	for _, v := range obj.Rib.Destinations {
+		bgp.Oper.Routes = append(bgp.Oper.Routes, v.Prefix)
+	}
+
 	return nil
 }
 
@@ -1511,4 +1598,9 @@ func validatePorts(ports []string) bool {
 		}
 	}
 	return true
+}
+
+// EndpointGroupGetOper returns nil
+func (ac *APIController) EndpointGroupGetOper(endpointGroup *contivModel.EndpointGroupInspect) error {
+	return nil
 }

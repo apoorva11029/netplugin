@@ -200,6 +200,11 @@ func (p *NetPlugin) InspectState() ([]byte, error) {
 	return p.NetworkDriver.InspectState()
 }
 
+// InspectBgp returns current state of the plugin
+func (p *NetPlugin) InspectBgp() ([]byte, error) {
+	return p.NetworkDriver.InspectBgp()
+}
+
 //GlobalFwdModeUpdate update the forwarding mode
 func (p *NetPlugin) GlobalFwdModeUpdate(cfg Config) {
 	var err error
@@ -213,7 +218,7 @@ func (p *NetPlugin) GlobalFwdModeUpdate(cfg Config) {
 	p.NetworkDriver, err = utils.NewNetworkDriver(cfg.Drivers.Network, &cfg.Instance)
 
 	if err != nil {
-		logrus.Errorf("THE ERROR IS %v", err)
+		logrus.Errorf("Error updating global forwarding mode %v", err)
 		return
 	}
 

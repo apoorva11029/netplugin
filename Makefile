@@ -1,10 +1,9 @@
 
-.PHONY: all all-CI build clean default unit-test release tar
+.PHONY: all all-CI build clean default unit-test release tar checks go-version gofmt-src golint-src govet-src
 
-# find all verifiable packages.
-# XXX: explore a better way that doesn't need multiple 'find'
-PKGS := `find . -mindepth 1 -maxdepth 1 -type d -name '*' | grep -vE '/\..*$\|Godeps|examples|docs|scripts|mgmtfn|bin|vagrant|test|vendor'`
-PKGS += `find . -mindepth 2 -maxdepth 2 -type d -name '*'| grep -vE '/\..*$\|Godeps|examples|docs|scripts|bin|vagrant|vendor'`
+SHELL := /bin/bash
+EXCLUDE_DIRS := bin docs Godeps scripts test vagrant vendor
+PKG_DIRS := $(filter-out $(EXCLUDE_DIRS),$(subst /,,$(sort $(dir $(wildcard */)))))
 TO_BUILD := ./netplugin/ ./netmaster/ ./netctl/netctl/ ./mgmtfn/k8splugin/contivk8s/
 HOST_GOBIN := `if [ -n "$$(go env GOBIN)" ]; then go env GOBIN; else dirname $$(which go); fi`
 HOST_GOROOT := `go env GOROOT`
@@ -18,6 +17,12 @@ TAR_EXT := tar.bz2
 TAR_FILENAME := $(NAME)-$(VERSION).$(TAR_EXT)
 TAR_LOC := .
 TAR_FILE := $(TAR_LOC)/$(TAR_FILENAME)
+GO_MIN_VERSION := 1.5.1
+GO_MAX_VERSION := 1.6.2
+GO_VERSION := $(shell go version | cut -d' ' -f3 | sed 's/go//')
+GOLINT_CMD := golint -set_exit_status
+GOFMT_CMD := gofmt -l
+GOVET_CMD := go tool vet
 
 all: build unit-test system-test ubuntu-tests
 
@@ -37,8 +42,28 @@ default: build
 deps:
 	./scripts/deps
 
-checks:
-	./scripts/checks "$(PKGS)"
+gofmt-src: $(PKG_DIRS)
+	$(info +++ gofmt $(PKG_DIRS))
+	@for dir in $?; do $(GOFMT_CMD) $${dir} | grep "go"; [[ $$? -ne 0 ]] || exit 1; done
+
+golint-src: $(PKG_DIRS)
+	$(info +++ golint $(PKG_DIRS))
+	@for dir in $?; do $(GOLINT_CMD) $${dir}/... || exit 1;done
+
+govet-src: $(PKG_DIRS)
+	$(info +++ govet $(PKG_DIRS))
+	@for dir in $?; do $(GOVET_CMD) $${dir} || exit 1;done
+
+go-version:
+	$(info +++ check go version)
+ifneq ($(GO_VERSION), $(lastword $(sort $(GO_VERSION) $(GO_MIN_VERSION))))
+	$(error go version check failed, expected >= $(GO_MIN_VERSION), found $(GO_VERSION))
+endif
+ifneq ($(GO_VERSION), $(firstword $(sort $(GO_VERSION) $(GO_MAX_VERSION))))
+	$(error go version check failed, expected <= $(GO_MAX_VERSION), found $(GO_VERSION))
+endif
+
+checks: go-version gofmt-src golint-src govet-src
 
 # We cannot perform sudo inside a golang, the only reason to split the rules
 # here
@@ -94,7 +119,7 @@ k8s-test:
 	#make ssh-build 
 	cd vagrant/k8s/ && CONTIV_K8=1 vagrant ssh k8master -c 'sudo -i bash -lc "cd /opt/gopath/src/github.com/contiv/netplugin && make run-build"'
 	CONTIV_K8=1 cd vagrant/k8s/ && ./start_sanity_service.sh
-	CONTIV_K8=1 CONTIV_NODES=3 godep go test -v -timeout 540m ./systemtests -check.v -check.f "00SSH|Basic|Network|Policy|TestTrigger|ACIM|HostBridge" 
+	CONTIV_K8=1 CONTIV_NODES=3 go test -v -timeout 540m ./test/systemtests -check.v -check.f "00SSH|Basic|Network|Policy|TestTrigger|ACIM|HostBridge" 
 	cd vagrant/k8s && vagrant destroy -f 
 # Mesos demo targets
 mesos-docker-demo:
@@ -115,12 +140,12 @@ ifdef NET_CONTAINER_BUILD
 stop:
 else
 stop:
-	CONTIV_NODES=$${CONTIV_NODES:-2} vagrant destroy -f
+	CONTIV_NODES=$${CONTIV_NODES:-3} vagrant destroy -f
 endif
 
 demo:
 	make ssh-build
-	vagrant ssh netplugin-node1 -c 'bash -lc "source /etc/profile.d/envvar.sh && cd /opt/gopath/src/github.com/contiv/netplugin && make host-restart"'
+	vagrant ssh netplugin-node1 -c 'bash -lc "source /etc/profile.d/envvar.sh && cd /opt/gopath/src/github.com/contiv/netplugin && make host-restart && make host-swarm-restart"'
 
 ssh:
 	@vagrant ssh netplugin-node1 -c 'bash -lc "cd /opt/gopath/src/github.com/contiv/netplugin/ && bash"' || echo 'Please run "make demo"'
@@ -140,14 +165,18 @@ ubuntu-tests:
 	CONTIV_NODE_OS=ubuntu make clean build unit-test system-test stop
 
 system-test:start
-	go test -v -timeout 480m ./test/systemtests -check.v -check.f "00SSH|Basic|Network|Policy|TestTrigger|ACIM"
+	go test -v -timeout 480m ./test/systemtests -check.vv -check.f "00SSH|Basic|Network|Policy|TestTrigger|ACIM"
 
 l3-test:
 	CONTIV_L3=2 CONTIV_NODES=3 make stop
 	CONTIV_L3=2 CONTIV_NODES=3 make start
 	CONTIV_L3=2 CONTIV_NODES=3 make ssh-build
-	CONTIV_L3=2 CONTIV_NODES=3 go test -v -timeout 540m ./systemtests -check.v
+	CONTIV_L3=2 CONTIV_NODES=3 go test -v -timeout 540m ./test/systemtests -check.v  
 	CONTIV_L3=2 CONTIV_NODES=3 make stop
+l3-demo:
+	CONTIV_L3=1 CONTIV_NODES=3 vagrant up
+	make ssh-build
+	vagrant ssh netplugin-node1 -c 'sudo -i bash -lc "cd /opt/gopath/src/github.com/contiv/netplugin && make host-restart"'
 
 host-build:
 	@echo "dev: making binaries..."
@@ -167,13 +196,17 @@ host-unit-test-coverage-detail:
 
 host-integ-test: host-cleanup
 	@echo dev: running integration tests...
-	sudo -E /usr/local/go/bin/go test -v ./test/integration/ -check.v -encap vlan -fwd-mode bridge
-	sudo -E /usr/local/go/bin/go test -v ./test/integration/ -check.v -encap vxlan -fwd-mode bridge
-	sudo -E /usr/local/go/bin/go test -v ./test/integration/ -check.v -encap vxlan -fwd-mode routing
+	sudo -E /usr/local/go/bin/go test -v ./test/integration/ -check.vv -encap vlan -fwd-mode bridge
+	sudo -E /usr/local/go/bin/go test -v ./test/integration/ -check.vv -encap vxlan -fwd-mode bridge
+	sudo -E /usr/local/go/bin/go test -v ./test/integration/ -check.vv -encap vxlan -fwd-mode routing
 
 host-cleanup:
 	@echo dev: cleaning up services...
 	cd $(GOPATH)/src/github.com/contiv/netplugin/scripts/python && PYTHONIOENCODING=utf-8 ./cleanup.py -nodes ${CLUSTER_NODE_IPS}
+
+host-swarm-restart:
+	@echo dev: restarting swarm ...
+	cd $(GOPATH)/src/github.com/contiv/netplugin/scripts/python && PYTHONIOENCODING=utf-8 ./startSwarm.py -nodes ${CLUSTER_NODE_IPS}
 
 host-restart:
 	@echo dev: restarting services...

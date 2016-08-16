@@ -53,8 +53,17 @@ type Bgp struct {
 
 }
 
+type BgpOper struct {
+	AdminStatus    string   `json:"adminStatus,omitempty"`    // admin status
+	NeighborStatus string   `json:"neighborStatus,omitempty"` // neighbor status
+	NumRoutes      int      `json:"numRoutes,omitempty"`      // number of routes
+	Routes         []string `json:"routes,omitempty"`
+}
+
 type BgpInspect struct {
 	Config Bgp
+
+	Oper BgpOper
 }
 
 type EndpointOper struct {
@@ -111,8 +120,18 @@ type EndpointGroupLinks struct {
 	Tenant     modeldb.Link `json:"Tenant,omitempty"`
 }
 
+type EndpointGroupOper struct {
+	Endpoints      []EndpointOper `json:"endpoints,omitempty"`
+	ExternalPktTag int            `json:"externalPktTag,omitempty"` // external packet tag
+	NumEndpoints   int            `json:"numEndpoints,omitempty"`   // external packet tag
+	PktTag         int            `json:"pktTag,omitempty"`         // internal packet tag
+
+}
+
 type EndpointGroupInspect struct {
 	Config EndpointGroup
+
+	Oper EndpointGroupOper
 }
 
 type ExtContractsGroup struct {
@@ -442,6 +461,8 @@ type AppProfileCallbacks interface {
 }
 
 type BgpCallbacks interface {
+	BgpGetOper(Bgp *BgpInspect) error
+
 	BgpCreate(Bgp *Bgp) error
 	BgpUpdate(Bgp, params *Bgp) error
 	BgpDelete(Bgp *Bgp) error
@@ -452,6 +473,8 @@ type EndpointCallbacks interface {
 }
 
 type EndpointGroupCallbacks interface {
+	EndpointGroupGetOper(endpointGroup *EndpointGroupInspect) error
+
 	EndpointGroupCreate(endpointGroup *EndpointGroup) error
 	EndpointGroupUpdate(endpointGroup, params *EndpointGroup) error
 	EndpointGroupDelete(endpointGroup *EndpointGroup) error
@@ -1135,8 +1158,31 @@ func httpInspectBgp(w http.ResponseWriter, r *http.Request, vars map[string]stri
 	}
 	obj.Config = *objConfig
 
+	if err := GetOperBgp(&obj); err != nil {
+		log.Errorf("GetBgp error for: %+v. Err: %v", obj, err)
+		return nil, err
+	}
+
 	// Return the obj
 	return &obj, nil
+}
+
+// Get a BgpOper object
+func GetOperBgp(obj *BgpInspect) error {
+	// Check if we handle this object
+	if objCallbackHandler.BgpCb == nil {
+		log.Errorf("No callback registered for Bgp object")
+		return errors.New("Invalid object type")
+	}
+
+	// Perform callback
+	err := objCallbackHandler.BgpCb.BgpGetOper(obj)
+	if err != nil {
+		log.Errorf("BgpDelete retruned error for: %+v. Err: %v", obj, err)
+		return err
+	}
+
+	return nil
 }
 
 // LIST REST call
@@ -1461,8 +1507,31 @@ func httpInspectEndpointGroup(w http.ResponseWriter, r *http.Request, vars map[s
 	}
 	obj.Config = *objConfig
 
+	if err := GetOperEndpointGroup(&obj); err != nil {
+		log.Errorf("GetEndpointGroup error for: %+v. Err: %v", obj, err)
+		return nil, err
+	}
+
 	// Return the obj
 	return &obj, nil
+}
+
+// Get a endpointGroupOper object
+func GetOperEndpointGroup(obj *EndpointGroupInspect) error {
+	// Check if we handle this object
+	if objCallbackHandler.EndpointGroupCb == nil {
+		log.Errorf("No callback registered for endpointGroup object")
+		return errors.New("Invalid object type")
+	}
+
+	// Perform callback
+	err := objCallbackHandler.EndpointGroupCb.EndpointGroupGetOper(obj)
+	if err != nil {
+		log.Errorf("EndpointGroupDelete retruned error for: %+v. Err: %v", obj, err)
+		return err
+	}
+
+	return nil
 }
 
 // LIST REST call

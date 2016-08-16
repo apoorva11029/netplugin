@@ -148,6 +148,16 @@ class objmodelClient:
 
 
 
+	# Inspect Bgp
+	def createBgp(self, obj):
+	    postUrl = self.baseUrl + '/api/v1/inspect/Bgp/' + obj.hostname  + '/'
+
+	    retDate = urllib2.urlopen(postUrl)
+	    if retData == "Error":
+	        errorExit("list Bgp failed")
+
+	    return json.loads(retData)
+
 
 
 
@@ -200,6 +210,16 @@ class objmodelClient:
 	    return json.loads(retData)
 
 
+
+	# Inspect endpointGroup
+	def createEndpointGroup(self, obj):
+	    postUrl = self.baseUrl + '/api/v1/inspect/endpointGroup/' + obj.tenantName + ":" + obj.groupName  + '/'
+
+	    retDate = urllib2.urlopen(postUrl)
+	    if retData == "Error":
+	        errorExit("list EndpointGroup failed")
+
+	    return json.loads(retData)
 
 
 	# Create extContractsGroup
