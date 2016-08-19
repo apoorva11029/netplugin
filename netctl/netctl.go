@@ -621,6 +621,7 @@ func showGlobal(ctx *cli.Context) {
 		defer writer.Flush()
 		for _, gl := range *list {
 			writer.Write([]byte(fmt.Sprintf("Fabric mode: %v\n", gl.NetworkInfraType)))
+			writer.Write([]byte(fmt.Sprintf("Forward mode: %v\n", gl.FwdMode)))
 			writer.Write([]byte(fmt.Sprintf("Vlan Range: %v\n", gl.Vlans)))
 			writer.Write([]byte(fmt.Sprintf("Vxlan range: %v\n", gl.Vxlans)))
 		}
